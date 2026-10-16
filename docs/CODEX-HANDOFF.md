@@ -26,3 +26,9 @@ T01～T04 已完成基础交付，实际证据见 STATUS/TESTING。下一切片�
 Space/Folder/Tag/DocumentType 服务与契约 CRUD；遵循跨空间拒绝、目录防环和同级名称唯一。
 复用 T03 鉴权和 T04 ManagedStore，不重建项目、不把旧首轮交接理解为需要重复实现。
 T06 再接入 Document/Revision/Event 事务，T07 接任务，T08 实现真实 HTTP 上传。
+
+## 当前接续点 · T05 基础管理后
+
+T05 已交付分类定义接口，下一切片 T06 为 Document/Revision/Event 事务与软删除模型。
+不要重复实现旧首轮 T01/T02。目录非空删除两策略仍501，需在 T06/T09 使用文档事务补齐；
+标签删除当前已有版本递增与审计，后续统一到文档服务，保持现有行为与测试。

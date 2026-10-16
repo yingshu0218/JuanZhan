@@ -84,6 +84,17 @@ try:
     status, token, headers = request('/api/v1/auth/tokens', 'POST', {'name':'smoke'}, csrf)
     assert status == 201 and headers['Cache-Control'] == 'no-store'
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
+    status, catalog_space, _ = request('/api/v1/spaces', 'POST', {'name':'Smoke catalog'}, csrf)
+    assert status == 201
+    space_id = catalog_space['id']
+    status, catalog_folder, _ = request('/api/v1/folders', 'POST', {'space_id':space_id,'name':'Root'}, csrf)
+    assert status == 201
+    assert request('/api/v1/folders', 'POST', {'space_id':space_id,'name':'ROOT'}, csrf)[0] == 409
+    assert request('/api/v1/folders/'+catalog_folder['id'], 'PATCH', {'parent_id':catalog_folder['id']}, csrf)[0] == 409
+    status, catalog_tag, _ = request('/api/v1/tags', 'POST', {'space_id':space_id,'name':'important'}, csrf)
+    assert status == 201
+    status, catalog_type, _ = request('/api/v1/document-types', 'POST', {'space_id':space_id,'key':'contract','label':'Contract'}, csrf)
+    assert status == 201
     docker('exec', '-i', name, 'python', '-', input="""
 import io, os
 from pathlib import Path
@@ -115,12 +126,17 @@ with ManagedStore(Path('/data/managed')).open(key) as file:
 assert list(Path('/data/managed/.staging').iterdir()) == []
 """)
     assert request('/api/v1/auth/tokens')[0] == 200
+    assert any(s['id'] == space_id for s in request('/api/v1/spaces')[1])
+    assert request('/api/v1/document-types?space_id='+space_id)[1][0]['id'] == catalog_type['id']
+    assert request('/api/v1/document-types/'+catalog_type['id'], 'PATCH', {'is_active':False}, csrf)[0] == 200
+    assert request('/api/v1/tags/'+catalog_tag['id'], 'DELETE', csrf=csrf)[0] == 204
+    assert request('/api/v1/folders/'+catalog_folder['id']+'/delete', 'POST', {'mode':'only_if_empty'}, csrf)[0] == 204
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
     assert request('/api/v1/auth/tokens/' + token['id'], 'DELETE', csrf=csrf)[0] == 204
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object and staging recovery')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog create/conflict/update/delete')
 finally:
     if started:
         docker('rm', '-f', name)

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.1
+  version: 0.4.2
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -250,7 +250,7 @@ paths:
       - Spaces
       summary: 列出 Space
       operationId: get_spaces
-      description: ''
+      description: 单管理员可列出全部空间，稳定按 created_at/id 排序；Space 名称不要求唯一。
       x-roadmap-phase: MVP
       responses:
         '200':
@@ -271,6 +271,7 @@ paths:
       tags:
       - Spaces
       summary: 创建 Space
+      x-catalog-rules: 名称去除两端空白并以 NFC 保存，排除控制字符；文件夹与标签使用 NFKC+casefold 判重，名称最多255字符。不支持修改 space_id。
       operationId: post_spaces
       description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
       x-roadmap-phase: MVP
@@ -280,10 +281,12 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 name:
                   type: string
                   minLength: 1
+                  maxLength: 255
               required:
               - name
       responses:
@@ -316,7 +319,7 @@ paths:
       - Folders
       summary: 读取逻辑文件夹树
       operationId: get_folders
-      description: ''
+      description: 返回含 parent_id 的扁平树；未传 parent_id 为全部，传入则仅直属子项。space_id 可选，未知空间或父目录返回 404，父目录跨空间返回 422。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -328,6 +331,8 @@ paths:
         schema:
           type: string
       responses:
+        '422':
+          $ref: '#/components/responses/Validation'
         '200':
           description: 成功
           content:
@@ -440,6 +445,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 mode:
                   type: string
@@ -450,6 +456,12 @@ paths:
               required:
               - mode
       responses:
+        '501':
+          description: move_contents_to_parent 与 trash_contents 等待文档事务实现；当前仅支持 only_if_empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '204':
           description: 已完成（子树逻辑档案处理后生效）
         '409':
@@ -468,7 +480,7 @@ paths:
       - Tags
       summary: 列出标签
       operationId: get_tags
-      description: ''
+      description: space_id 为可选过滤条件，未知空间返回 404；未传则返回全部空间数据，采用稳定排序。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -476,6 +488,8 @@ paths:
         schema:
           type: string
       responses:
+        '422':
+          $ref: '#/components/responses/Validation'
         '200':
           description: 成功
           content:
@@ -503,16 +517,21 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 space_id: &id001
                   type: string
                   description: 不透明 ID，调用方不得假设自增或文件路径格式
                 name:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 color:
-                  type: string
+                  type: [string, "null"]
+                  maxLength: 100
                 description:
                   type: string
+                  maxLength: 4096
               required:
               - space_id
               - name
@@ -562,13 +581,19 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
+              minProperties: 1
               properties:
                 name:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 color:
-                  type: string
+                  type: [string, "null"]
+                  maxLength: 100
                 description:
                   type: string
+                  maxLength: 4096
       responses:
         '200':
           description: 成功
@@ -620,7 +645,7 @@ paths:
       - TypesAndFields
       summary: 列出业务文档类型
       operationId: get_document_types
-      description: ''
+      description: space_id 为可选过滤条件，未知空间返回 404；未传则返回全部空间数据，采用稳定排序。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -628,6 +653,8 @@ paths:
         schema:
           type: string
       responses:
+        '422':
+          $ref: '#/components/responses/Validation'
         '200':
           description: 成功
           content:
@@ -655,22 +682,33 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 space_id: *id001
                 key:
                   type: string
+                  pattern: ^[a-z][a-z0-9_]*$
+                  maxLength: 255
                 label:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 fields: &id003
                   type: array
+                  maxItems: 1000
                   items:
                     type: object
+                    additionalProperties: false
                     properties:
                       field_definition_id: *id001
                       required_for_filing: &id002
                         type: boolean
-                      display_order: &id004
-                        type: integer
+                      display_order:
+                        allOf:
+                        - &id004
+                          type: integer
+                        - minimum: -2147483648
+                          maximum: 2147483647
                     required:
                     - field_definition_id
                     - required_for_filing
@@ -724,9 +762,13 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
+              minProperties: 1
               properties:
                 label:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 is_active: *id002
                 fields: *id003
       responses:
@@ -2792,6 +2834,7 @@ components:
       - triage_status
     FolderCreate:
       type: object
+      additionalProperties: false
       properties:
         space_id: *id001
         parent_id:
@@ -2807,9 +2850,12 @@ components:
       - name
     FolderPatch:
       type: object
+      additionalProperties: false
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 255
         parent_id:
           type:
           - string

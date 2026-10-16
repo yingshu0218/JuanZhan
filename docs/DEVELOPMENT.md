@@ -145,3 +145,35 @@ with store.open(result.storage_key) as original:
 `python scripts/smoke_auth.py` 还验证隔离容器中 SQLite 引用的托管对象跨重启保留，
 以及启动恢复能清除预置的过期临时文件。上传/下载 HTTP API 尚未开放；测试中的私有 HTTP
 适配器不属于产品接口，未据此宣称 T08 上传完成。
+
+## T05 分类管理接口
+
+当前已实现以下 `/api/v1` 路径，均要求管理员 Cookie 或 Bearer，Cookie 写操作要求 CSRF：
+
+- GET/POST `/spaces`：列出与创建空间。名称不要求唯一，不提供空间编辑/删除接口。
+- GET/POST `/folders`、PATCH `/folders/{id}`：创建、重命名、移动目录。
+  GET 返回含 parent_id 的扁平树，未传 parent_id 返回全部，传入则只返回直属子项。
+- POST `/folders/{id}/delete`：当前仅 `only_if_empty` 可用；子目录、档案（含回收站档案）
+  或 Source 目标引用均阻止删除，返回 409。不触碰任何物理文件。
+  `move_contents_to_parent`、`trash_contents` 明确返回 501，待 T06/T09 文档事务接入再完成。
+- GET/POST `/tags`、PATCH/DELETE `/tags/{id}`：删除标签在同一事务内解除绑定，
+  为受影响档案递增 document_version、更新时间并记录 tag_deleted 事件，保留原件与 Revision。
+- GET/POST `/document-types`、PATCH `/document-types/{id}`：类型 key 固定不可改，
+  通过 is_active=false 停用，保留历史档案引用。fields 未传保留模板，显式 [] 清空模板；
+  替换模板校验字段存在、同空间、无重复，失败整笔回滚；不删除 metadata_values。
+  自定义字段定义 CRUD 和必填归档验证仍属于 T17/T18，当前可引用已有字段定义。
+
+folders/tags/document-types 的 space_id 为可选过滤条件；缺失时返回全部空间数据，
+未知空间/资源 404，跨空间引用 422，规范名称/类型 key 冲突与目录循环 409。
+单管理员对全部 Space 有访问权，Space 隔离指关系约束，不代表已实现多用户空间权限。
+列表按稳定键排序，尚无生产设置页面。首次需显式 POST /spaces 创建空间，无隐式用户数据生成。
+
+名称去掉两端空白，NFC 保存，控制字符/空名拒绝；最长255字符。
+文件夹同父级与标签同空间按 NFKC+casefold 判重，Space 名称可重复。
+类型 key 使用 `[a-z][a-z0-9_]*`，最长255字符；请求拒绝未知字段及空 PATCH。
+颜色为可清空的显示字符串（最长100字符），描述最长4096字符；未来 UI 应作为纯文本使用，
+不将字符串直接拼成 HTML/CSS。类型字段列表最多1000项，display_order 为有符号32位整数。
+
+写事务使用 BEGIN IMMEDIATE，并在持有数据库写锁后重新验证登录凭据与 CSRF，
+避免撤销或密码重置和分类写入产生竞态；列表使用一致性读事务。
+分类层实现位于 catalog.py，未新增表或修改已应用迁移；T06 可复用或收敛档案审计操作。
