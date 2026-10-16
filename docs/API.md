@@ -1,0 +1,93 @@
+# API 契约与接入
+
+## 权威文件
+
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1，base `/api/v1`，37 个 path 模板。
+- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
+
+不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
+
+| 接口簇 | 主要调用 |
+|---|---|
+| 组织 | /spaces、/folders、/tags |
+| 类型与字段 | /document-types、/field-definitions |
+| 档案 | /documents、/documents/upload、/documents/{id} |
+| 元数据 | /documents/{id}/metadata、/metadata/adopt-candidate |
+| 内容与版本 | /documents/{id}/content?format=blocks、/revisions、/parse-runs |
+| 原件 | /documents/{id}/download（先核验当前字节/版本可用性） |
+| 整理与删除 | /triage、/trash、/restore、/purge；不能删除外部原件 |
+| 搜索 | GET /documents?q=…、POST /documents/search |
+| 批量/来源/任务 | /documents/batch、/sources…、/jobs/{id}、/jobs/{id}/retry |
+| Converter | /healthz、/v1/capabilities、/v1/jobs、任务状态/result、/v1/artifacts/{artifact_ref} |
+
+表内以 / 开始的子路径在有上下文时为对应 document 路径下后缀；精确完整路径以 YAML 为准。
+
+## 结构化优先的详情加载
+
+选中 Document 后读取 document 详情、content blocks、metadata、parse-runs/revisions。分别显示原件状态、解析状态、业务确认状态。无内容不伪造“成功解析”；可显示排队、失败、unsupported 或旧成功快照。点击原件入口再调用受保护下载；浏览器 PDF 查看可以复用受保护内容通道，但若新增专门 preview/asset 路由，先补 API 契约，当前不能宣称已有预览路由。
+
+## 写入和错误
+
+Cookie 会话所有写请求带 X-CSRF-Token，Bearer API 无 CSRF。修改档案/字段带 expected_document_version，冲突 409；类型/跨空间非法输入按契约拒绝。上传默认 duplicate_policy=reject，检测重复返回 409 DUPLICATE_DETECTED；显式 keep_separate 后建独立 Document。
+
+分页 page/page_size；稳定次级 ID 排序；批量对象采用选择快照，逐档案报告失败，不动态扩大目标。错误体使用 YAML Error，而非任意字符串。
+
+## 必须补齐的接口设计缺口
+
+V0.4 定义了业务接口与鉴权方案，但未包含登录/登出/会话初始化、Token 生命周期等完整操作路径；T03 实现前应补 OpenAPI。结构化正文纠错/编辑与确认某标题为 Document.title 的精确映射尚未定义，不能把原型“确认候选”直接连到任意 PATCH。需要检查 adopt-candidate 与字段定义映射，并更新契约。以上为明确待实现工作，不虚构现成接口。
+
+## 完整路径索引（自动从原始契约读取）
+
+
+### archive-openapi-v0.4.yaml
+
+| 路径 | 方法 |
+|---|---|
+| `/spaces` | GET, POST |
+| `/folders` | GET, POST |
+| `/folders/{id}` | PATCH |
+| `/folders/{id}/delete` | POST |
+| `/tags` | GET, POST |
+| `/tags/{id}` | PATCH, DELETE |
+| `/document-types` | GET, POST |
+| `/document-types/{id}` | PATCH |
+| `/field-definitions` | GET, POST |
+| `/field-definitions/{id}` | PATCH |
+| `/documents` | GET |
+| `/documents/upload` | POST |
+| `/documents/search` | POST |
+| `/documents/{id}` | GET, PATCH |
+| `/documents/{id}/metadata` | GET, PATCH |
+| `/documents/{id}/metadata/adopt-candidate` | POST |
+| `/documents/{id}/triage` | POST |
+| `/documents/{id}/trash` | POST |
+| `/documents/{id}/restore` | POST |
+| `/documents/{id}/purge` | POST |
+| `/documents/{id}/revisions` | GET |
+| `/documents/{id}/parse-runs` | GET |
+| `/documents/{id}/content` | GET |
+| `/documents/{id}/download` | GET |
+| `/documents/{id}/reprocess` | POST |
+| `/documents/batch` | POST |
+| `/sources` | GET, POST |
+| `/sources/{id}` | GET |
+| `/sources/{id}/entries` | GET |
+| `/sources/{id}/preview-scan` | POST |
+| `/sources/{id}/scan` | POST |
+| `/sources/{id}/exclusions` | GET |
+| `/sources/{id}/exclude-entry` | POST |
+| `/sources/{id}/exclusions/{exclusion_id}` | DELETE |
+| `/jobs/{id}` | GET |
+| `/jobs/{id}/retry` | POST |
+| `/system/summary` | GET |
+
+### converter-openapi-v0.4.yaml
+
+| 路径 | 方法 |
+|---|---|
+| `/healthz` | GET |
+| `/v1/capabilities` | GET |
+| `/v1/jobs` | POST |
+| `/v1/jobs/{job_id}` | GET, DELETE |
+| `/v1/jobs/{job_id}/result` | GET |
+| `/v1/artifacts/{artifact_ref}` | GET |

@@ -1,0 +1,2682 @@
+openapi: 3.1.0
+info:
+  title: 档案库 Archive API
+  version: 0.4.0
+  description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
+    ID 为不透明字符串。
+servers:
+- url: /api/v1
+  description: 由反向代理提供同域路径
+tags:
+- name: Spaces
+- name: Folders
+- name: Tags
+- name: TypesAndFields
+- name: Documents
+- name: Search
+- name: Sources
+- name: Jobs
+- name: System
+security:
+- bearerAuth: []
+- sessionAuth: []
+paths:
+  /spaces:
+    get:
+      tags:
+      - Spaces
+      summary: 列出 Space
+      operationId: get_spaces
+      description: ''
+      x-roadmap-phase: MVP
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Spaces
+      summary: 创建 Space
+      operationId: post_spaces
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+              required:
+              - name
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /folders:
+    get:
+      tags:
+      - Folders
+      summary: 读取逻辑文件夹树
+      operationId: get_folders
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      - name: parent_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Folder'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Folders
+      summary: 创建逻辑文件夹
+      operationId: post_folders
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /folders/{id}:
+    patch:
+      tags:
+      - Folders
+      summary: 重命名或移动逻辑文件夹
+      operationId: patch_folders_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/FolderId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderPatch'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /folders/{id}/delete:
+    post:
+      tags:
+      - Folders
+      summary: 删除逻辑文件夹，需明确策略
+      operationId: post_folders_id_delete
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/FolderId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum:
+                  - only_if_empty
+                  - move_contents_to_parent
+                  - trash_contents
+              required:
+              - mode
+      responses:
+        '204':
+          description: 已完成（子树逻辑档案处理后生效）
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /tags:
+    get:
+      tags:
+      - Tags
+      summary: 列出标签
+      operationId: get_tags
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Tags
+      summary: 创建标签
+      operationId: post_tags
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                space_id: &id001
+                  type: string
+                  description: 不透明 ID，调用方不得假设自增或文件路径格式
+                name:
+                  type: string
+                color:
+                  type: string
+                description:
+                  type: string
+              required:
+              - space_id
+              - name
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /tags/{id}:
+    patch:
+      tags:
+      - Tags
+      summary: 更新标签
+      operationId: patch_tags_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                color:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+      - Tags
+      summary: 删除标签，仅解除关联、不删除档案
+      operationId: delete_tags_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      responses:
+        '204':
+          description: 已删除标签
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /document-types:
+    get:
+      tags:
+      - TypesAndFields
+      summary: 列出业务文档类型
+      operationId: get_document_types
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - TypesAndFields
+      summary: 创建业务文档类型
+      operationId: post_document_types
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                space_id: *id001
+                key:
+                  type: string
+                label:
+                  type: string
+                fields: &id003
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      field_definition_id: *id001
+                      required_for_filing: &id002
+                        type: boolean
+                      display_order: &id004
+                        type: integer
+                    required:
+                    - field_definition_id
+                    - required_for_filing
+              required:
+              - space_id
+              - key
+              - label
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /document-types/{id}:
+    patch:
+      tags:
+      - TypesAndFields
+      summary: 编辑类型名称/字段模板（不删除历史值）
+      operationId: patch_document_types_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                is_active: *id002
+                fields: *id003
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /field-definitions:
+    get:
+      tags:
+      - TypesAndFields
+      summary: 列出自定义字段定义
+      operationId: get_field_definitions
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - TypesAndFields
+      summary: 创建自定义字段定义
+      operationId: post_field_definitions
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                space_id: *id001
+                key:
+                  type: string
+                label:
+                  type: string
+                type: &id007
+                  type: string
+                  enum:
+                  - text
+                  - long_text
+                  - integer
+                  - decimal
+                  - date
+                  - boolean
+                  - single_select
+                constraints:
+                  type: object
+                  additionalProperties: true
+                searchable: *id002
+                filterable: *id002
+              required:
+              - space_id
+              - key
+              - label
+              - type
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /field-definitions/{id}:
+    patch:
+      tags:
+      - TypesAndFields
+      summary: 更新字段显示/约束；不允许修改字段 key/type
+      operationId: patch_field_definitions_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                constraints:
+                  type: object
+                  additionalProperties: true
+                searchable: *id002
+                filterable: *id002
+                is_active: *id002
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents:
+    get:
+      tags:
+      - Documents
+      summary: 档案列表（含普通筛选）
+      operationId: get_documents
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: folder_id
+        in: query
+        schema:
+          type: string
+      - name: triage_status
+        in: query
+        schema:
+          type: string
+      - name: source_kind
+        in: query
+        schema:
+          type: string
+      - name: document_type_id
+        in: query
+        schema:
+          type: string
+      - name: sort
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/upload:
+    post:
+      tags:
+      - Documents
+      summary: 上传单个原件并创建档案
+      operationId: post_documents_upload
+      description: multipart 单文件；前端并行/排队逐文件上传。duplicate_policy 默认 reject：命中已有哈希返回 409 DUPLICATE_DETECTED，error.details.duplicates
+        给出已存在 document ID，未建立新档案；用户确认后以 keep_separate 重传则 201 创建独立档案，绝不自动合并。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API
+        Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                space_id: *id001
+                folder_id:
+                  type: string
+                triage_status:
+                  type: string
+                  enum:
+                  - needs_review
+                  - filed
+                duplicate_policy:
+                  type: string
+                  enum:
+                  - reject
+                  - keep_separate
+              required:
+              - file
+              - space_id
+      responses:
+        '201':
+          description: 原件已登记；解析异步执行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /documents/search:
+    post:
+      tags:
+      - Search
+      summary: 结构化多条件搜索
+      operationId: post_documents_search
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /documents/{id}:
+    get:
+      tags:
+      - Documents
+      summary: 读取档案详情
+      operationId: get_documents_id
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags:
+      - Documents
+      summary: 修改基本属性和标签
+      operationId: patch_documents_id
+      description: 必须使用 expected_document_version；tags_add/remove 互斥成员按 add/remove 显式处理，不能覆盖全部标签。 使用 Cookie 会话调用时须携带
+        X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentPatch'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/metadata:
+    get:
+      tags:
+      - Documents
+      summary: 读取人工业务字段和值来源
+      operationId: get_documents_id_metadata
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: 字段列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetadataEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+      - Documents
+      summary: 保存自定义字段（字段类型由服务端验证）
+      operationId: patch_documents_id_metadata
+      description: null = 删除该字段值；boolean false 不是 null；decimal 使用数字字符串且最多四位小数。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API
+        Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetadataPatch'
+      responses:
+        '200':
+          description: 保存后的字段值
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetadataEntry'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/metadata/adopt-candidate:
+    post:
+      tags:
+      - Documents
+      summary: 显式采纳解析候选值
+      operationId: post_documents_id_metadata_adopt_candidate
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_document_version: *id004
+                extracted_metadata_id: *id001
+                field_definition_id: *id001
+              required:
+              - expected_document_version
+              - extracted_metadata_id
+              - field_definition_id
+      responses:
+        '200':
+          description: 候选值已采纳
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetadataEntry'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/triage:
+    post:
+      tags:
+      - Documents
+      summary: 标记待整理或完成整理
+      operationId: post_documents_id_triage
+      description: 仅更新 triage_status，不自动移动文件夹。完成整理时按 DocumentType 关联的 required_for_filing 验证。 使用 Cookie 会话调用时须携带
+        X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/trash:
+    post:
+      tags:
+      - Documents
+      summary: 移入回收站（不删除任何外部原件）
+      operationId: post_documents_id_trash
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_document_version: *id004
+              required:
+              - expected_document_version
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/restore:
+    post:
+      tags:
+      - Documents
+      summary: 恢复回收站档案
+      operationId: post_documents_id_restore
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/purge:
+    post:
+      tags:
+      - Documents
+      summary: 二次确认永久清理档案元数据；仅 GC 无引用托管对象
+      operationId: post_documents_id_purge
+      description: 必须先在回收站，永不删除外部来源文件。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirm_document_id: *id001
+              required:
+              - confirm_document_id
+      responses:
+        '202':
+          description: 已提交清理任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/revisions:
+    get:
+      tags:
+      - Documents
+      summary: 原件版本列表及历史二进制可恢复能力
+      operationId: get_documents_id_revisions
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: 历史版本
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileRevision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/parse-runs:
+    get:
+      tags:
+      - Documents
+      summary: 查看解析运行、候选元数据与失败原因
+      operationId: get_documents_id_parse_runs
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: 运行列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParseRun'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/content:
+    get:
+      tags:
+      - Documents
+      summary: 按格式获取最近一次成功解析的正文
+      operationId: get_documents_id_content
+      description: 当前 revision 失败或来源离线时仍可返回历史成功内容，但 stale_for_current_revision=true，必须在 UI 展示。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - text
+          - markdown
+          - blocks
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /documents/{id}/download:
+    get:
+      tags:
+      - Documents
+      summary: 下载当前原件
+      operationId: get_documents_id_download
+      description: 必须验证当前原件是否仍与所记录 revision 相符。外部文件已变动、来源离线时返回 409，不能悄然下载为旧版本原件。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: 原件二进制流
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{id}/reprocess:
+    post:
+      tags:
+      - Documents
+      summary: 重新解析文档（不修改人工元数据）
+      operationId: post_documents_id_reprocess
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ocr: *id002
+                force: *id002
+      responses:
+        '202':
+          description: 已提交解析任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/batch:
+    post:
+      tags:
+      - Documents
+      summary: 批量操作（每档案独立成功或失败）
+      operationId: post_documents_batch
+      description: document_ids 必须是服务端已确定的快照 ID 列表；批量修改不因过滤条件动态变化而扩张集合。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer
+        不需要 CSRF。
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '202':
+          description: 已提交批量任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /sources:
+    get:
+      tags:
+      - Sources
+      summary: 列出托管和外部文件来源
+      operationId: get_sources
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Source'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Sources
+      summary: 注册一个外部来源挂载别名
+      operationId: post_sources
+      description: 只能选择服务器白名单中已挂载的只读目录；禁止客户端提交任意宿主机路径。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceCreate'
+      responses:
+        '201':
+          description: 来源配置已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Source'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+  /sources/{id}:
+    get:
+      tags:
+      - Sources
+      summary: 查询来源配置/健康
+      operationId: get_sources_id
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Source'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/entries:
+    get:
+      tags:
+      - Sources
+      summary: 按真实来源路径列出文件
+      operationId: get_sources_id_entries
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: relative_prefix
+        in: query
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 来源文件列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SourceEntry'
+                  page: *id004
+                  page_size: *id004
+                  total: *id004
+                required:
+                - items
+                - page
+                - page_size
+                - total
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/preview-scan:
+    post:
+      tags:
+      - Sources
+      summary: 异步预扫描并统计将导入的数量与体量
+      operationId: post_sources_id_preview_scan
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      responses:
+        '202':
+          description: 扫描预览任务提交；结果见 jobs/{id}.result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/scan:
+    post:
+      tags:
+      - Sources
+      summary: 执行首次或增量扫描
+      operationId: post_sources_id_scan
+      description: 首次按配置导入目录树，仅执行一次；后续新增进入 needs_review 且不会更新旧逻辑位置。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要
+        CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum:
+                  - initial
+                  - incremental
+              required:
+              - mode
+      responses:
+        '202':
+          description: 扫描任务已提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/exclusions:
+    get:
+      tags:
+      - Sources
+      summary: 列出取消索引的条目
+      operationId: get_sources_id_exclusions
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      responses:
+        '200':
+          description: 忽略规则
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceExclusion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/exclude-entry:
+    post:
+      tags:
+      - Sources
+      summary: 外部档案取消索引并添加排除规则
+      operationId: post_sources_id_exclude_entry
+      description: 将关联 Document 置入逻辑回收站（可后续清理），不删除源文件。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_entry_id: *id001
+                reason:
+                  type: string
+              required:
+              - source_entry_id
+      responses:
+        '202':
+          description: 已提交取消索引任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /sources/{id}/exclusions/{exclusion_id}:
+    delete:
+      tags:
+      - Sources
+      summary: 移除排除规则，允许未来扫描再次发现
+      operationId: delete_sources_id_exclusions_exclusion_id
+      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: exclusion_id
+        in: path
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      responses:
+        '204':
+          description: 排除规则已移除
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /jobs/{id}:
+    get:
+      tags:
+      - Jobs
+      summary: 查询后台任务及逐条结果
+      operationId: get_jobs_id
+      description: ''
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /jobs/{id}/retry:
+    post:
+      tags:
+      - Jobs
+      summary: 重试可重试的失败任务
+      operationId: post_jobs_id_retry
+      description: 累计 attempts 不得超过 max_attempts，需具备幂等键或幂等逻辑。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      x-roadmap-phase: MVP
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
+        schema:
+          type: string
+      responses:
+        '202':
+          description: 重试已提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /system/summary:
+    get:
+      tags:
+      - System
+      summary: 首页计数、来源与处理状态统计
+      operationId: get_system_summary
+      description: ''
+      x-roadmap-phase: MVP
+      responses:
+        '200':
+          description: 总览聚合
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents_total: *id004
+                  inbox_total: *id004
+                  managed_total: *id004
+                  external_total: *id004
+                  failed_jobs: *id004
+                  offline_sources: *id004
+                required:
+                - documents_total
+                - inbox_total
+                - managed_total
+                - external_total
+                - failed_jobs
+                - offline_sources
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 管理员 API Token；应限制日志暴露和轮换
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: archive_session
+      description: Web 管理会话；非 GET 的会话请求必须携带 X-CSRF-Token
+  parameters:
+    DocumentId:
+      name: id
+      in: path
+      required: true
+      schema: *id001
+    FolderId:
+      name: id
+      in: path
+      required: true
+      schema: *id001
+    SourceId:
+      name: id
+      in: path
+      required: true
+      schema: *id001
+    JobId:
+      name: id
+      in: path
+      required: true
+      schema: *id001
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+            current_document_version:
+              type:
+              - integer
+              - 'null'
+          required:
+          - code
+          - message
+      required:
+      - error
+    PageInfo:
+      type: object
+      properties:
+        page: *id004
+        page_size: *id004
+        total: *id004
+      required:
+      - page
+      - page_size
+      - total
+    Job:
+      type: object
+      properties:
+        id: *id001
+        kind:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - cancelled
+        attempts: *id004
+        max_attempts: *id004
+        progress_done: *id004
+        progress_total:
+          type:
+          - integer
+          - 'null'
+        result: &id005
+          description: 任意合法 JSON 值
+        error: *id005
+        created_at: &id006
+          type: string
+          format: date-time
+        updated_at: *id006
+      required:
+      - id
+      - kind
+      - status
+      - attempts
+      - max_attempts
+      - created_at
+      - updated_at
+    AsyncJob:
+      type: object
+      properties:
+        job_id: *id001
+        status:
+          type: string
+      required:
+      - job_id
+      - status
+    Space:
+      type: object
+      properties:
+        id: *id001
+        name:
+          type: string
+        created_at: *id006
+      required:
+      - id
+      - name
+      - created_at
+    Folder:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        parent_id:
+          type:
+          - string
+          - 'null'
+        name:
+          type: string
+        name_norm:
+          type: string
+      required:
+      - id
+      - space_id
+      - parent_id
+      - name
+    Tag:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        name:
+          type: string
+        color:
+          type:
+          - string
+          - 'null'
+        description:
+          type: string
+      required:
+      - id
+      - space_id
+      - name
+    DocumentType:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        key:
+          type: string
+        label:
+          type: string
+        is_active: *id002
+        fields: *id003
+      required:
+      - id
+      - space_id
+      - key
+      - label
+      - is_active
+    FieldDefinition:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        key:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        label:
+          type: string
+        type: *id007
+        constraints:
+          type: object
+          additionalProperties: true
+        searchable: *id002
+        filterable: *id002
+        is_active: *id002
+      required:
+      - id
+      - space_id
+      - key
+      - label
+      - type
+      - is_active
+    MetadataEntry:
+      type: object
+      properties:
+        field_definition_id: *id001
+        key:
+          type: string
+        value: *id005
+        origin:
+          type: string
+          enum:
+          - manual
+          - imported
+          - rule
+          - extracted
+        is_confirmed: *id002
+        source_parse_run_id:
+          type:
+          - string
+          - 'null'
+        updated_at: *id006
+      required:
+      - key
+      - value
+      - origin
+      - is_confirmed
+    Document:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        folder_id:
+          type:
+          - string
+          - 'null'
+        title:
+          type: string
+        description:
+          type: string
+        document_date:
+          type:
+          - string
+          - 'null'
+        document_type_id:
+          type:
+          - string
+          - 'null'
+        tag_ids:
+          type: array
+          items: *id001
+        triage_status:
+          type: string
+          enum:
+          - needs_review
+          - filed
+        is_favorite: *id002
+        document_version: *id004
+        current_revision_id:
+          type:
+          - string
+          - 'null'
+        current_parse_run_id:
+          type:
+          - string
+          - 'null'
+        origin_kind:
+          type: string
+          enum:
+          - managed
+          - external
+        source_id:
+          type:
+          - string
+          - 'null'
+        availability_status:
+          type: string
+          enum:
+          - available
+          - source_offline
+          - suspected_missing
+          - missing
+          - needs_match
+        processing_status:
+          type: string
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - unsupported
+          - not_started
+        content_stale: *id002
+        imported_at: *id006
+        deleted_at:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - space_id
+      - title
+      - triage_status
+      - document_version
+      - availability_status
+      - processing_status
+      - content_stale
+      - imported_at
+    DocumentPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        page: *id004
+        page_size: *id004
+        total: *id004
+      required:
+      - items
+      - page
+      - page_size
+      - total
+    FileRevision:
+      type: object
+      properties:
+        id: *id001
+        revision_no: *id004
+        storage_kind:
+          type: string
+          enum:
+          - managed
+          - external
+        original_filename:
+          type: string
+        mime_type:
+          type: string
+        sha256:
+          type: string
+        size_bytes:
+          type: integer
+          minimum: 0
+        created_at: *id006
+        binary_available: *id002
+        can_restore_binary: *id002
+      required:
+      - id
+      - revision_no
+      - storage_kind
+      - original_filename
+      - mime_type
+      - sha256
+      - size_bytes
+      - created_at
+      - binary_available
+      - can_restore_binary
+    ParseRun:
+      type: object
+      properties:
+        id: *id001
+        revision_id: *id001
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - unsupported
+        schema_version:
+          type: string
+        parser_name:
+          type: string
+        parser_version:
+          type: string
+        ocr_used: *id002
+        text_available: *id002
+        language:
+          type:
+          - string
+          - 'null'
+        page_count:
+          type:
+          - integer
+          - 'null'
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              id: *id001
+              key:
+                type: string
+              value: *id005
+              confidence:
+                type:
+                - number
+                - 'null'
+              provenance: *id005
+            required:
+            - id
+            - key
+            - value
+        warnings:
+          type: array
+          items:
+            type: string
+        created_at: *id006
+      required:
+      - id
+      - revision_id
+      - status
+      - schema_version
+      - parser_name
+      - parser_version
+      - created_at
+    ContentBlock:
+      type: object
+      properties:
+        id: *id001
+        index: *id004
+        type:
+          type: string
+          enum:
+          - heading
+          - paragraph
+          - list_item
+          - table
+          - image
+          - page_break
+          - unknown
+        text:
+          type: string
+        structure:
+          type: object
+          additionalProperties: true
+        locator:
+          type: object
+          properties:
+            kind:
+              type: string
+              enum:
+              - page
+              - section
+              - character
+              - epub
+              - unknown
+          required:
+          - kind
+          additionalProperties: true
+        confidence:
+          type:
+          - number
+          - 'null'
+      required:
+      - id
+      - index
+      - type
+      - text
+      - locator
+    ContentResponse:
+      type: object
+      properties:
+        document_id: *id001
+        content_revision_id: *id001
+        parse_run_id: *id001
+        format:
+          type: string
+          enum:
+          - text
+          - markdown
+          - blocks
+        stale_for_current_revision: *id002
+        body:
+          oneOf:
+          - type: string
+          - type: array
+            items:
+              $ref: '#/components/schemas/ContentBlock'
+        warnings:
+          type: array
+          items:
+            type: string
+      required:
+      - document_id
+      - content_revision_id
+      - parse_run_id
+      - format
+      - stale_for_current_revision
+      - body
+    Source:
+      type: object
+      properties:
+        id: *id001
+        space_id: *id001
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+          - managed
+          - external
+        root_alias:
+          type: string
+          description: 已授权的挂载别名；不暴露服务端绝对路径
+        status:
+          type: string
+          enum:
+          - ready
+          - scanning
+          - offline
+          - error
+          - disabled
+        initial_import_policy:
+          type: string
+          enum:
+          - tree
+          - flat
+        initial_import_completed_at:
+          type:
+          - string
+          - 'null'
+        new_file_target_folder_id:
+          type:
+          - string
+          - 'null'
+        scan_interval_minutes:
+          type:
+          - integer
+          - 'null'
+        last_successful_scan_at:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - space_id
+      - name
+      - kind
+      - root_alias
+      - status
+    SourceEntry:
+      type: object
+      properties:
+        id: *id001
+        source_id: *id001
+        document_id:
+          type:
+          - string
+          - 'null'
+        relative_path:
+          type: string
+        size_bytes: *id004
+        status:
+          type: string
+          enum:
+          - available
+          - suspected_missing
+          - missing
+          - needs_match
+        sha256:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - source_id
+      - relative_path
+      - status
+    SourceExclusion:
+      type: object
+      properties:
+        id: *id001
+        source_id: *id001
+        relative_path:
+          type: string
+        reason:
+          type: string
+        created_at: *id006
+      required:
+      - id
+      - source_id
+      - relative_path
+      - created_at
+    ScanPreview:
+      type: object
+      properties:
+        source_id: *id001
+        estimated_files: *id004
+        estimated_bytes: *id004
+        ignored_files: *id004
+        by_extension:
+          type: object
+          additionalProperties: *id004
+        warnings:
+          type: array
+          items:
+            type: string
+      required:
+      - source_id
+      - estimated_files
+      - estimated_bytes
+      - ignored_files
+    SearchRequest:
+      type: object
+      properties:
+        space_id: *id001
+        text:
+          type: string
+        folder:
+          type: object
+          properties:
+            id: *id001
+            include_descendants: *id002
+        document_type_ids:
+          type: array
+          items: *id001
+        tags:
+          type: object
+          properties:
+            ids:
+              type: array
+              items: *id001
+            match:
+              type: string
+              enum:
+              - any
+              - all
+        metadata:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              operator:
+                type: string
+                enum:
+                - eq
+                - in
+                - contains
+                - gte
+                - lte
+                - between
+                - is_null
+              value: *id005
+            required:
+            - key
+            - operator
+        source_id: *id001
+        source_kind:
+          type: string
+          enum:
+          - managed
+          - external
+        triage_status:
+          type: string
+          enum:
+          - needs_review
+          - filed
+        availability_status:
+          type: string
+        processing_status:
+          type: string
+        sort:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                enum:
+                - relevance
+                - imported_at
+                - document_date
+                - title
+                - size_bytes
+              order:
+                type: string
+                enum:
+                - asc
+                - desc
+            required:
+            - field
+            - order
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+      - space_id
+    BatchRequest:
+      type: object
+      properties:
+        space_id: *id001
+        document_ids:
+          type: array
+          items: *id001
+        selection_mode:
+          type: string
+          enum:
+          - explicit
+          - snapshot
+        expected_versions:
+          type: object
+          additionalProperties: *id004
+        operation:
+          type: string
+          enum:
+          - move_folder
+          - add_tags
+          - remove_tags
+          - set_type
+          - set_triage
+          - set_favorite
+          - trash
+          - reprocess
+          - set_metadata
+        payload:
+          type: object
+          additionalProperties: true
+      required:
+      - space_id
+      - document_ids
+      - selection_mode
+      - operation
+      - payload
+    BatchResult:
+      type: object
+      properties:
+        job_id: *id001
+        succeeded: *id004
+        skipped: *id004
+        failed: *id004
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id: *id001
+              status:
+                type: string
+                enum:
+                - succeeded
+                - skipped
+                - failed
+              error_code:
+                type: string
+            required:
+            - document_id
+            - status
+      required:
+      - job_id
+      - succeeded
+      - skipped
+      - failed
+      - items
+    DocumentPatch:
+      type: object
+      properties:
+        expected_document_version: *id004
+        title:
+          type: string
+        description:
+          type: string
+        document_date:
+          type:
+          - string
+          - 'null'
+          format: date
+        folder_id:
+          type:
+          - string
+          - 'null'
+        document_type_id:
+          type:
+          - string
+          - 'null'
+        is_favorite: *id002
+        tags_add:
+          type: array
+          items: *id001
+        tags_remove:
+          type: array
+          items: *id001
+      required:
+      - expected_document_version
+      additionalProperties: false
+    MetadataPatch:
+      type: object
+      properties:
+        expected_document_version: *id004
+        values:
+          type: object
+          additionalProperties: true
+          description: 字段 key→值；decimal 字段必须用字符串；null 表示删除该字段值
+        confirm: *id002
+      required:
+      - expected_document_version
+      - values
+      - confirm
+    TriageRequest:
+      type: object
+      properties:
+        expected_document_version: *id004
+        triage_status:
+          type: string
+          enum:
+          - needs_review
+          - filed
+      required:
+      - expected_document_version
+      - triage_status
+    FolderCreate:
+      type: object
+      properties:
+        space_id: *id001
+        parent_id:
+          type:
+          - string
+          - 'null'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - space_id
+      - name
+    FolderPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        parent_id:
+          type:
+          - string
+          - 'null'
+      minProperties: 1
+    SourceCreate:
+      type: object
+      properties:
+        space_id: *id001
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+          - external
+        root_alias:
+          type: string
+          description: 只能传部署时预配置的挂载别名
+        initial_import_policy:
+          type: string
+          enum:
+          - tree
+          - flat
+        initial_target_folder_id:
+          type:
+          - string
+          - 'null'
+        initial_triage_status:
+          type: string
+          enum:
+          - filed
+          - needs_review
+        new_file_target_folder_id:
+          type:
+          - string
+          - 'null'
+        scan_interval_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      required:
+      - space_id
+      - name
+      - kind
+      - root_alias
+      - initial_import_policy
+    DocumentUploadResponse:
+      type: object
+      properties:
+        document_id: *id001
+        revision_id: *id001
+        job_id: *id001
+        upload_status:
+          type: string
+          enum:
+          - saved
+      required:
+      - document_id
+      - revision_id
+      - job_id
+      - upload_status
+  responses:
+    Unauthorized:
+      description: 未登录或 Token 无效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 无权访问该空间/路径
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: 版本冲突或原件已变化；error.current_document_version 可能返回
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Validation:
+      description: 字段格式/同空间约束/路径策略不满足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

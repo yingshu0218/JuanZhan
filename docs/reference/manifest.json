@@ -1,0 +1,30 @@
+{
+  "retrieved_date": "2026-10-16",
+  "files": [
+    {
+      "path": "docs/reference/archive-openapi-v0.4.yaml",
+      "bytes": 73773,
+      "sha256": "69c228cdf3ef39cae3eb8a8b3ec09a7924f44b82bb9c90bc74cac13ae1c81c0e"
+    },
+    {
+      "path": "docs/reference/archive-prd-v0.4.md",
+      "bytes": 56445,
+      "sha256": "219f6b4088e437b314b5030286da8b183094211e8d10a059aead49bc94e6bd3d"
+    },
+    {
+      "path": "docs/reference/archive-roadmap-v0.4.md",
+      "bytes": 13994,
+      "sha256": "4e4de19aa7e6aa17ef98197015416208c2580b99e5603f0ae89827aac62db868"
+    },
+    {
+      "path": "docs/reference/archive-schema-v0.4.sql",
+      "bytes": 20229,
+      "sha256": "f3cbbcd988da409a3ab44617c30de11ad5a2c54fff3d133f66e80cd43af874f0"
+    },
+    {
+      "path": "docs/reference/converter-openapi-v0.4.yaml",
+      "bytes": 12069,
+      "sha256": "c2acbb9b2f74c2e4c25f6cca1282b90e946135e3ac4f58ef1ae5c269e93c871c"
+    }
+  ]
+}
