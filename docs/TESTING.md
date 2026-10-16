@@ -97,3 +97,21 @@
   既有真实HTTP认证/分类/存储恢复均通过，测试容器与数据卷自动清理。
 - 正常Compose升级健康，`python scripts/smoke.py`通过。既有TestClient弃用警告仍在。
 - 未验证生产上传/下载、MIME嗅探、公开状态投影、外部扫描或后台任务幂等；这些能力尚未实现。
+
+## T07 本轮实测 · 2026-10-16
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：83项全部通过（新增15项任务测试）。
+  覆盖幂等键同请求复用/异请求409、入队与业务事务回滚、8路并发入队与唯一认领、
+  过期租约恢复与旧令牌拒绝、累计尝试上限、退避/手动提前重试、永久错误拒绝重试、进度与心跳。
+- effect和完成标记同事务测试：重复完成只执行一次业务SQL；effect抛错或提交时租约过期，业务写入回滚。
+  使用真实Document、原件与审计表验证文档版本/事件仅变化一次，原件保留。
+- 子进程限时测试确实终止长运行handler，handler直接退出被分类为WORKER_CHILD_EXITED；
+  实际独立进程在认领后os._exit，重启队列在租约过期后恢复同一任务，累计attempts继续而非归零。
+- 真实维护handler清理旧staging文件；未实现parse明确HANDLER_NOT_AVAILABLE，非法payload不回显私有值。
+- 迁移测试验证原任务与空间数据保留。既有认证迁移测试纳入新0003迁移版本。
+- 镜像构建及隔离容器验收通过：排队任务跨容器重启保留，真实 `worker --once` 执行清理，
+  HTTP查询/CSRF拒绝/手动重试/已完成拒绝重试及attempts累计均通过；测试容器/卷已清理。
+- 正常Compose的Archive API、Archive worker、Converter三个容器均healthy，
+  `python scripts/smoke.py` 验证API/Converter及worker心跳通过；已有生命周期/分类/认证验收仍通过。
+- 本轮未验证远程转换幂等、真实扫描/解析/上传handler、任务中心UI或多机队列；不得将其视为已实现。
+  整体为至少执行一次，不承诺文件/网络exactly-once；仍有既有TestClient弃用警告。

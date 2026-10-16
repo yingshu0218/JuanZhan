@@ -48,3 +48,6 @@ T04 已实现本地 managed 对象存储，发布与恢复协议见 ADR-017/DEVE
 T05 分类定义服务位于 catalog.py，复用 SQLite 跨空间约束与 T03 鉴权；写锁内复核凭据，读请求使用一致性事务。非空目录删除依赖文档生命周期，当前明确501，详见 ADR-018。
 
 T06 已实现 DocumentService 内部事务，管理托管文件登记、Revision追加和软删除/恢复；事件统一由 document_events.py 写入，公开接口及状态投影仍待后续，见ADR-019。
+
+T07 Compose增加Archive worker执行容器（非新业务服务），与API共用持久SQLite和托管卷；
+Converter仍不访问Archive数据库。worker子进程执行限时，队列恢复与围栏规则见ADR-020。

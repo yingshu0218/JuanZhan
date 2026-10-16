@@ -1,4 +1,4 @@
-# 生产开发（T01～T03）
+# 生产开发（T01～T07）
 
 代码在 `services/juanzhan/`，迁移在 `services/migrations/`，测试在 `tests/`。
 参考原型仍在 `docs/prototype/`，不连接本骨架。
@@ -216,3 +216,63 @@ current_document_version；统一错误体现在保留受控 details/版本信�
 审计插入统一到 document_events.py，T05 标签删除也复用它。Archive OpenAPI 0.4.3
 补齐 restore 的 expected_document_version 请求体；此公开路由仍待 T09 实现。
 `python scripts/smoke_auth.py` 在独立容器中验证创建→追加版本→软删除→重启→恢复与审计一致性。
+
+## T07 持久任务与 Archive worker
+
+Compose 现在运行三个进程容器：Archive API、Archive worker、Converter；仍是两个业务服务，
+worker 只是 Archive 的执行进程，复用同一镜像和数据卷，不引入 Redis。
+原启动命令 `docker compose up --build -d --wait` 会一并启动 worker。
+独立本地运行可在同样的 PYTHONPATH/JUANZHAN_DATA_DIR 下执行：
+
+```sh
+PYTHONPATH=services .venv/bin/python -m juanzhan.worker
+# 只处理至多一次尝试，用数据库任务状态判断成败，不把命令退出0当作任务成功：
+PYTHONPATH=services .venv/bin/python -m juanzhan.worker --once
+```
+
+每个 worker 同时执行一个任务，handler 在 spawn 子进程内运行。默认租约30秒，
+运行时至少每2秒续租；单次执行默认60秒（按任务可配置，最多3600秒），超过截止会终止子进程。
+正常退出会中止子进程并按可重试错误处理；崩溃遗留的 running 任务在租约到期后由下一次认领恢复。
+Compose worker 有独立心跳健康检查，10秒内无心跳视为不健康；不发布网络端口。
+本地手工 SIGKILL 后队列可恢复，文件/远程副作用仍需自身幂等，不能依赖 Python finally 保障。
+
+JobQueue/JobSpec 为内部入队接口，所有新任务必须提供幂等键；键与有效请求的规范JSON摘要绑定。
+同键同请求返回原任务，异请求409；幂等键不能复用于不同操作。payload/result 各限64KiB且拒绝NaN。
+可通过 enqueue(spec, db=transaction_connection) 将入队与业务写入同事务提交，调用者负责事务。
+不提供任意客户端 POST /jobs 入队，也不接受用户指定 handler 或服务器路径。
+
+任务认领使用 BEGIN IMMEDIATE，累计 attempts 在认领时递增，默认3次、最大10次。
+每次重认领分配新租约令牌；过期 worker 的续租、进度或完成写入均被拒绝。
+可重试错误按1/2/4…最多60秒退避；不可重试直接failed。预算耗尽后不再认领，
+手动 retry 也不能重置次数或绕过上限。auto_retry=false 的任务在失败后等待手动重试；
+等待自动退避的任务也可通过重试接口提前唤醒，但不获得额外预算。
+
+公开 GET `/api/v1/jobs/{id}` 与 POST `/api/v1/jobs/{id}/retry` 已实现；都要求鉴权，
+Cookie 重试要求CSRF，Bearer不要求。运行中/完成/不可重试/耗尽预算重试返回409。
+公开响应不返回payload、幂等键、请求摘要、租约令牌或worker身份。错误仅保存固定分类与安全消息，
+不保存异常原文或堆栈。result 由可信 handler 产生，新增handler必须排除敏感路径和凭据。
+
+当前只实现真实 `gc + managed_staging` handler，payload 可选 minimum_age_seconds（默认3600）；
+仅调用 T04 临时文件安全恢复，不删除已发布对象，不等同 T15 完整GC。
+其他任务种类明确失败 HANDLER_NOT_AVAILABLE，不能伪称解析/扫描/上传已完成。
+维护任务内部示例（从可信维护代码执行，同一操作重试复用同一 operation_key）：
+
+```python
+queue = JobQueue(settings)
+job = queue.enqueue(JobSpec(kind='gc', target_type='managed_staging',
+    idempotency_key=operation_key))
+```
+
+数据库业务副作用应通过 `queue.complete(id, lease_token, result, effect=callback)` 提交，
+callback 必须使用传入的同一 db 连接，不调用自行开启写事务的 DocumentService 方法，
+也不在事务内做长时间文件/网络操作。callback和任务完成标记同事务提交；失败或过期则回滚。
+同一完成任务不会再次运行callback。T08等后续handler接入时必须遵守这一约束。
+
+整体语义是“至少执行一次”，不是对文件或网络请求承诺 exactly-once。
+远程转换请求未来要使用稳定任务标识实现服务端幂等；本轮仅证明SQLite原子副作用和
+临时文件清理的幂等重跑。租约基于UTC机器时钟，部署主机需保持时钟正常。
+
+`0003_jobs.sql` 增加租约、调度、请求摘要与worker心跳，保留既有任务和业务数据；
+API契约扩展0.4.4，数据库迁移版本0.4.2，两者独立编号。
+`python scripts/smoke_auth.py` 验证任务跨容器重启保留、真实CLI worker执行、HTTP查询与重试；
+`python scripts/smoke.py` 同时验证独立worker心跳。生产任务中心UI和业务handler尚未实现。

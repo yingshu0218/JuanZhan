@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog
+from . import auth, catalog, jobs
 
 from .config import Settings
 from .database import connect, migrate
@@ -39,6 +39,7 @@ def create_app(kind, settings=None):
             app.state.storage = ManagedStore(settings.data_dir / 'managed')
             app.state.storage.initialize()
             app.state.documents = DocumentService(settings)
+            app.state.jobs = jobs.JobQueue(settings)
             try:
                 removed = app.state.storage.recover_staging()
                 logger.info("Managed staging recovery removed %d stale files", removed)
@@ -108,6 +109,7 @@ def create_app(kind, settings=None):
     if kind == "archive":
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))
+        app.include_router(jobs.router(settings))
 
     if kind == "converter":
         @app.get("/v1/capabilities")

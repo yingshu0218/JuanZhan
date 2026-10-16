@@ -26,7 +26,7 @@ def test_archive_restart_and_storage(settings):
                 path.write_bytes(b'real filesystem')
                 assert path.read_bytes() == b'real filesystem'
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 2
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 3
         assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
 
 
@@ -76,7 +76,7 @@ def test_concurrent_migrations(settings):
     with ThreadPoolExecutor(max_workers=2) as executor:
         list(executor.map(lambda _: migrate(settings.database), range(2)))
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 2
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 3
 
 
 def test_converter_boundary(settings):

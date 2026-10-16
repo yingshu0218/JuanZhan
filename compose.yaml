@@ -15,6 +15,23 @@ services:
       timeout: 4s
       retries: 10
     restart: unless-stopped
+  archive-worker:
+    image: juanzhan-foundation:dev
+    command: ["python", "-m", "juanzhan.worker"]
+    environment:
+      JUANZHAN_DATA_DIR: /data
+    volumes:
+      - archive_data:/data
+    depends_on:
+      archive:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "juanzhan.worker", "--healthcheck"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
+    stop_grace_period: 10s
+    restart: unless-stopped
   converter:
     image: juanzhan-foundation:dev
     build: .

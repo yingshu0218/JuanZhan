@@ -25,3 +25,6 @@ else:
     raise AssertionError('Unimplemented job accepted')
 '''], check=True)
 print('PASS: Archive readiness; Converter authentication, empty capabilities and 501 boundary')
+
+subprocess.run(['docker','compose','exec','-T','archive-worker','python','-m','juanzhan.worker','--healthcheck'],check=True)
+print('PASS: Archive worker heartbeat health')

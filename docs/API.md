@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T06 扩展版本 0.4.3），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T07 扩展版本 0.4.4），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -109,3 +109,9 @@ restore 契约现要求 JSON expected_document_version，防止恢复绕过并�
 统一 Error 响应保留受控 details/current_document_version。上传 DUPLICATE_DETECTED 的
  details.duplicates 采用同空间 Document ID 数组，含历史版本和回收站命中；keep_separate 不合并业务档案。
 原件替换的公开操作路径仍需接入前补契约，不能从内部方法推断现成 POST /revisions。
+
+## T07 任务接口已实现
+
+GET /jobs/{id} 返回安全公开状态；POST /jobs/{id}/retry 不重置尝试预算，允许未耗尽预算的
+可重试失败任务排队或提前唤醒退避任务，其他状态409。Cookie写操作要求CSRF。
+任务payload/幂等键/worker/租约令牌均不公开。详细有限重试与handler范围见 DEVELOPMENT。

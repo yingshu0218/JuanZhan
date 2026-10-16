@@ -48,3 +48,9 @@ DocumentService 直接复用既有 documents/file_revisions/managed_objects/docu
 未修改已应用迁移。当前 Revision 与创建/追加事件在一个事务提交；递增编号和乐观版本检查由写锁串行化。
 人工字段与旧 ParseRun 不被追加原件覆盖；软删除/恢复保留文件引用。审计写入失败触发整笔回滚。
 T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本。孤儿对象 GC 与扫描登记尚未实现。
+
+## T07 任务迁移
+
+0003_jobs.sql 对既有 jobs 增量添加幂等键/请求摘要、可认领时间、租约所有者/令牌/期限、
+执行限时与重试控制，补 worker_heartbeats。迁移不重建 jobs、不丢弃已有记录；原0001/0002不变。
+任务完成与业务 effect 必须共享同一SQLite事务，过期租约提交失败则整笔回滚；不得在effect中另开写事务。

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.3
+  version: 0.4.4
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1935,7 +1935,7 @@ paths:
       - Jobs
       summary: 查询后台任务及逐条结果
       operationId: get_jobs_id
-      description: ''
+      description: 返回公开进度/结果与经过分类的错误，不包含 payload、租约令牌、worker身份或幂等键。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/JobId'
@@ -1958,7 +1958,7 @@ paths:
       - Jobs
       summary: 重试可重试的失败任务
       operationId: post_jobs_id_retry
-      description: 累计 attempts 不得超过 max_attempts，需具备幂等键或幂等逻辑。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      description: 累计attempts不得超过max_attempts且不重置预算。允许失败且可重试任务重新排队，或提前唤醒等待退避的可重试任务；运行中、已完成、永久失败或预算耗尽返回409。Cookie写操作要求CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/JobId'

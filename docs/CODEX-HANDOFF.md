@@ -39,3 +39,11 @@ T05 已交付分类定义接口，下一切片 T06 为 Document/Revision/Event �
 Doc 服务为内部接口，公开上传/列表/状态投影/回收站路由待 T08/T09；恢复需要 expected_document_version。
 不要把 get_record 的内部事实当作完整公开 Document 响应，也不要在重试失败时删除共享文件。
 T05 非空目录两策略仍501，需在文档生命周期与T09接口层补齐。
+
+## 当前接续点 · T07 后
+
+下一切片T08：真实单文件HTTP上传、MIME嗅探、重复提示和异步任务返回。
+复用ManagedStore、DocumentService和JobQueue，先保证原件安全落盘，再将档案/Revision/事件/任务
+同事务登记。现有DocService和Queue的事务边界需按接入需要整理，不得嵌套两个SQLite写事务。
+尚未实现的parse handler不能返回伪成功；上传成功与解析能力分离，按实际状态反馈。
+之后T09补公开列表/详情/整理/回收站及非空目录策略，M0基础不等于产品已完成。

@@ -121,6 +121,10 @@ service.trash(doc['id'],VersionChange(expected_document_version=2))
 old = Path('/data/managed/.staging') / ('c' * 32 + '.part')
 old.write_bytes(b'interrupted')
 os.utime(old, (0, 0))
+from juanzhan.jobs import JobQueue, JobSpec
+JobQueue(Settings.from_env()).enqueue(JobSpec(kind='gc',target_type='managed_staging',
+    idempotency_key='container-staging-gc'))
+
 """)
     docker('restart', name)
     # Docker may allocate a new ephemeral host port on restart.
@@ -152,6 +156,41 @@ with connect('/data/database/archive.sqlite3') as db:
 
 """)
     assert request('/api/v1/auth/tokens')[0] == 200
+    job_id = docker('exec','-i',name,'python','-',input="""
+from pathlib import Path
+import os
+from juanzhan.config import Settings
+from juanzhan.jobs import JobQueue,JobSpec
+queue=JobQueue(Settings.from_env())
+job=queue.enqueue(JobSpec(kind='gc',target_type='managed_staging',idempotency_key='container-staging-gc'))
+assert job['status']=='queued' and job['attempts']==0
+old=Path('/data/managed/.staging')/('e'*32+'.part')
+old.write_bytes(b'worker cleanup')
+os.utime(old,(0,0))
+print(job['id'])
+""")
+    assert request('/api/v1/jobs/'+job_id)[1]['status']=='queued'
+    once = json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
+    assert once == {'job_id':job_id,'status':'completed'}
+    status, completed, _ = request('/api/v1/jobs/'+job_id)
+    assert status==200 and completed['result']=={'removed_staging_files':1} and completed['attempts']==1
+    assert 'lease_token' not in completed and 'payload_json' not in completed
+    assert request('/api/v1/jobs/'+job_id+'/retry','POST')[0]==403
+    assert request('/api/v1/jobs/'+job_id+'/retry','POST',csrf=csrf)[0]==409
+    retry_id=docker('exec','-i',name,'python','-',input="""
+from juanzhan.config import Settings
+from juanzhan.jobs import JobQueue,JobSpec
+queue=JobQueue(Settings.from_env())
+job=queue.enqueue(JobSpec(kind='gc',target_type='managed_staging',idempotency_key='manual-retry',auto_retry=False))
+claim=queue.claim('manual-test')
+assert claim['id']==job['id']
+queue.failure(job['id'],claim['lease_token'],'TEMPORARY','Temporary test error',retryable=True)
+print(job['id'])
+""")
+    assert request('/api/v1/jobs/'+retry_id+'/retry','POST',csrf=csrf)[0]==202
+    once=json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
+    assert once=={'job_id':retry_id,'status':'completed'}
+    assert request('/api/v1/jobs/'+retry_id)[1]['attempts']==2
     assert any(s['id'] == space_id for s in request('/api/v1/spaces')[1])
     assert request('/api/v1/document-types?space_id='+space_id)[1][0]['id'] == catalog_type['id']
     assert request('/api/v1/document-types/'+catalog_type['id'], 'PATCH', {'is_active':False}, csrf)[0] == 200
@@ -162,7 +201,7 @@ with connect('/data/database/archive.sqlite3') as db:
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document/revision/audit/trash/restore')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry')
 finally:
     if started:
         docker('rm', '-f', name)

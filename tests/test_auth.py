@@ -191,7 +191,7 @@ def test_migration_upgrade_preserves_baseline_data(tmp_path):
     migrate(database)
     with connect(database) as db:
         assert db.execute("SELECT name FROM spaces WHERE id='existing'").fetchone() == ('Original',)
-        assert db.execute('SELECT version FROM schema_migrations ORDER BY version').fetchall() == [('0.4.0',), ('0.4.1',)]
+        assert db.execute('SELECT version FROM schema_migrations ORDER BY version').fetchall() == [('0.4.0',), ('0.4.1',), ('0.4.2',)]
         assert db.execute('SELECT count(*) FROM auth_sessions').fetchone() == (0,)
 
 
