@@ -19,3 +19,10 @@
 - 配置与凭证分离，外部挂载只读；服务不能接受任意路径。
 - 如开发环境受限无法跑 Docker/测试，说明未验证，不能声称通过。
 - 继续 T03 前补会话/Token 操作 API；继续 T29 前补原件预览与候选映射契约缺口。
+
+## 当前接续点 · T04 后
+
+T01～T04 已完成基础交付，实际证据见 STATUS/TESTING。下一切片为 T05：
+Space/Folder/Tag/DocumentType 服务与契约 CRUD；遵循跨空间拒绝、目录防环和同级名称唯一。
+复用 T03 鉴权和 T04 ManagedStore，不重建项目、不把旧首轮交接理解为需要重复实现。
+T06 再接入 Document/Revision/Event 事务，T07 接任务，T08 实现真实 HTTP 上传。

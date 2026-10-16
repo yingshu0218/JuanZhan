@@ -40,3 +40,7 @@ Converter 无需直接挂载 Archive 数据库或 managed 写权限；文件经�
 T01/T02 已固化选择见 ADR-015，运行步骤见 DEVELOPMENT.md；其余依赖仍按对应任务实测决策。
 
 T03 已提供管理员 Cookie 会话与 API Token 边界；认证表属于 Archive，CLI 密码重置会撤销全部凭据，详见 ADR-016。
+
+T04 已实现本地 managed 对象存储，发布与恢复协议见 ADR-017/DEVELOPMENT。
+文件持久化先于数据库引用；崩溃后可以遗留完整孤儿对象，T15 再实现数据库感知清理。
+现有存储层不能替代 T06 文档事务或 T08 HTTP 上传，也不接入 external。

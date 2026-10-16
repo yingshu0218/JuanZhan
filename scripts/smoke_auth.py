@@ -84,18 +84,43 @@ try:
     status, token, headers = request('/api/v1/auth/tokens', 'POST', {'name':'smoke'}, csrf)
     assert status == 201 and headers['Cache-Control'] == 'no-store'
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
+    docker('exec', '-i', name, 'python', '-', input="""
+import io, os
+from pathlib import Path
+from juanzhan.storage import ManagedStore
+from juanzhan.database import connect
+store = ManagedStore(Path('/data/managed'))
+result = store.put(io.BytesIO(b'container original'), max_bytes=100)
+with connect('/data/database/archive.sqlite3') as db:
+    db.execute('INSERT INTO managed_objects VALUES (?,?,?,?,?)',
+               ('storage-smoke', result.sha256, result.size_bytes, result.storage_key, '2026-10-16T00:00:00Z'))
+    db.commit()
+old = Path('/data/managed/.staging') / ('c' * 32 + '.part')
+old.write_bytes(b'interrupted')
+os.utime(old, (0, 0))
+""")
     docker('restart', name)
     # Docker may allocate a new ephemeral host port on restart.
     port = docker('port', name, '8000/tcp').split(':')[-1]
     base = 'http://127.0.0.1:' + port
     ready()
+    docker('exec', '-i', name, 'python', '-', input="""
+from pathlib import Path
+from juanzhan.storage import ManagedStore
+from juanzhan.database import connect
+with connect('/data/database/archive.sqlite3') as db:
+    key = db.execute("SELECT storage_key FROM managed_objects WHERE id='storage-smoke'").fetchone()[0]
+with ManagedStore(Path('/data/managed')).open(key) as file:
+    assert file.read() == b'container original'
+assert list(Path('/data/managed/.staging').iterdir()) == []
+""")
     assert request('/api/v1/auth/tokens')[0] == 200
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
     assert request('/api/v1/auth/tokens/' + token['id'], 'DELETE', csrf=csrf)[0] == 204
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object and staging recovery')
 finally:
     if started:
         docker('rm', '-f', name)

@@ -13,6 +13,7 @@ from . import auth
 
 from .config import Settings
 from .database import connect, migrate
+from .storage import ManagedStore, StorageBusy
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -34,6 +35,13 @@ def create_app(kind, settings=None):
         if kind == "archive":
             settings.prepare_archive()
             migrate(settings.database)
+            app.state.storage = ManagedStore(settings.data_dir / 'managed')
+            app.state.storage.initialize()
+            try:
+                removed = app.state.storage.recover_staging()
+                logger.info("Managed staging recovery removed %d stale files", removed)
+            except StorageBusy:
+                logger.info("Managed staging recovery deferred while writers are active")
         elif not settings.converter_token.strip():
             raise RuntimeError("CONVERTER_SERVICE_TOKEN must be configured")
         logger.info("%s ready; document and conversion operations not implemented", kind)

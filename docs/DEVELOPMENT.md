@@ -102,3 +102,46 @@ Cookie 默认 `Secure`、`HttpOnly`、`SameSite=Strict`，路径 `/api/v1`。
 构建后运行 `python scripts/smoke_auth.py`，自动创建独立测试容器及数据卷，
 通过 CLI 初始化随机测试密码，验证真实 HTTP 登录/CSRF/Token/撤销/退出与重启持久化，
 最后删除测试容器与卷；不会修改正常 Compose 实例管理员。
+
+## T04 托管文件存储
+
+`services/juanzhan/storage.py` 提供内部 `ManagedStore`：
+
+```python
+store = ManagedStore(settings.data_dir / 'managed')
+store.initialize()
+result = store.put(binary_stream, max_bytes=explicit_limit,
+                   expected_sha256=optional_hash, expected_size=optional_size)
+# 仅在 put 成功返回后，后续业务事务才能登记 result.storage_key/sha256/size_bytes。
+with store.open(result.storage_key) as original:
+    consume(original)
+```
+
+调用者显式给出字节上限；本轮不预设最终上传配额，T08 再结合实际格式与请求层限制确定。
+固定 64 KiB 分块读取，过程中计算 SHA-256/size；超限、预期哈希/大小不符、读取中断均不发布。
+临时文件在 managed/.staging，完成后 flush、文件 fsync；通过同卷硬链接原子发布到
+`sha256/<前两位>/<完整哈希>-<字节数>`，随后 fsync 目标目录并清理临时文件。
+目标已存在时重新验证内容，不覆盖；新字节生成新键，不更改原件。文件权限为 0440，
+应用不提供覆写方法；拥有卷权限的系统管理员仍能修改物理文件，不将此误称为 WORM 存储。
+
+相同 hash+size 复用物理对象不等于合并 Document；Document/Revision 登记由 T06/T08 实现。
+存储层不自行写数据库；后续调用顺序为“完整持久化文件 → 数据库事务引用”。
+若文件发布后进程退出或数据库事务失败，可以留下完整孤儿文件，禁止立即删除：
+另一个事务可能已引用同一对象。数据库感知的孤儿/引用 GC 留在 T15，届时需与写入协议共同设计。
+当前不会自动删除任何已发布对象。
+
+路径仅接受服务生成的存储键，拒绝绝对路径、遍历、URL 和不匹配的分桶键。
+目录/文件通过目录描述符与 O_NOFOLLOW 打开，不跟随 staging、分桶或最终文件的符号链接。
+这只覆盖托管区，不代表 T11 外部来源白名单和只读扫描已经实现。
+
+所有写入共享卷内 `.store.lock` 的 flock 共享锁；恢复获取非阻塞排他锁。
+服务启动自动清理至少一小时前、名称符合规范的普通临时文件；存在活跃写入则延期。
+未知文件/符号链接保持原样，不跟随；活跃操作不会被年龄清理误删。
+同一存储实例的所有写入和清理必须使用此实现并保留锁文件，不能用外部脚本直接删 staging。
+需要手动重试恢复时，在可信本地环境调用 `store.recover_staging()`。
+依赖本地 POSIX 文件系统的硬链接、flock 和目录 fsync；不支持对象存储或任意 NAS 作为托管卷，
+也未验证断电/硬盘损坏恢复，只验证应用异常与进程中断。
+
+`python scripts/smoke_auth.py` 还验证隔离容器中 SQLite 引用的托管对象跨重启保留，
+以及启动恢复能清除预置的过期临时文件。上传/下载 HTTP API 尚未开放；测试中的私有 HTTP
+适配器不属于产品接口，未据此宣称 T08 上传完成。
