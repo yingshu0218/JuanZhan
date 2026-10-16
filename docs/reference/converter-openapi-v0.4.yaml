@@ -76,6 +76,12 @@ paths:
                   type: boolean
                   default: true
       responses:
+        '501':
+          description: 当前骨架未实现转换，不创建任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '202':
           description: 任务已接受
           content:

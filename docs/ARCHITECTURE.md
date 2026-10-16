@@ -2,7 +2,7 @@
 
 ## 既有 V0.4 基线
 
-- Archive 应用：Python HTTP API（FastAPI 为既有推荐，尚未有生产实现）、SQLite + FTS5、本地文件卷、SQLite 持久 Job/worker、Web 前端。
+- Archive 应用：Python HTTP API（T01 骨架已采用 FastAPI，业务接口尚未实现）、SQLite + FTS5、本地文件卷、SQLite 持久 Job/worker、Web 前端。
 - Converter：独立 Python HTTP 服务，受服务 Token 保护，读取任务输入，产出结构化结果和临时资产，不直接访问 Archive 业务库。
 - 两个主服务通过 Docker Compose 部署；MVP 不需要先引入 Redis、消息中间件、向量库或独立搜索集群。
 - 原型采用 React 19 + Vite 6 + Phosphor Icons；这是可运行的视觉成果，不等于生产前端选型已被用户最终锁定。
@@ -36,3 +36,5 @@ Converter 无需直接挂载 Archive 数据库或 managed 写权限；文件经�
 建议沿用 React 来复用原型；建议 FastAPI 作为 API。ORM/迁移框架、解析依赖、OCR 引擎、中文分词器、文档大小/页数/时间上限、保留配额需在相应任务中选择并记录 ADR。先验证依赖重量、许可证、Apple Silicon 与目标服务器容器兼容性，再定版本；不在无实测时承诺 10 万档案吞吐量。
 
 部署必须区分 UI 会话和服务 Token；Converter 默认仅内网，healthz 仅容器检查。生产运行配置与凭证由部署环境提供，不提交仓库。
+
+T01/T02 已固化选择见 ADR-015，运行步骤见 DEVELOPMENT.md；其余依赖仍按对应任务实测决策。

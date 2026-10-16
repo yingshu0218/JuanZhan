@@ -17,3 +17,18 @@
 真实 SQLite + 文件存储 + HTTP 集成是门槛；转换器至少每格式真实样本、扫描与图片 OCR 开/关、坏文件、超限和超时样本。默认详情必须展示结构化块/真实异常状态，原件仅通过关联入口打开，返回保持位置。
 
 每次记录实际命令与结果；未执行项明确未验证。不把 YAML 能解析当成所有请求响应已正确，不把构建成功当成浏览器验证。
+
+## T01/T02 本轮实测 · 2026-10-16
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：7 项通过。
+  覆盖真实磁盘 SQLite、逐连接 FK/WAL、目录循环/根重名/跨空间拒绝、
+  Document/Revision/托管文件持久化、并发迁移、失败回滚、校验和篡改拒绝、
+  Archive HTTP readiness、Converter 鉴权/空能力/501 和缺令牌启动拒绝。
+- Docker 镜像离线哈希校验安装成功；Compose 两服务健康检查通过。
+- `python scripts/smoke.py`：真实运行容器 HTTP 请求通过。
+- 容器重启/重建后，测试 Space 与 managed 文件均保留，integrity_check=ok；探针数据已清理。
+- 两份 OpenAPI YAML 解析通过，不代表业务接口已实现。
+- 存在 Starlette TestClient 对 httpx 的弃用警告，不影响本轮结果；后续维护需关注适配。
+- 本轮未验证业务认证、上传崩溃恢复、转换/OCR、外部只读来源或生产浏览器端到端行为。
+- 构建环境初始 DNS 不可用，改为宿主下载 wheelhouse、镜像离线复核哈希；
+  非 root 容器读取源码的权限问题已通过 COPY 显式权限修复。

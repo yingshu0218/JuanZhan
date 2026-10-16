@@ -21,6 +21,28 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /healthz:
+    servers:
+    - url: /
+    get:
+      tags: [System]
+      summary: 内部运维就绪检查，不经公共网关暴露
+      operationId: get_healthz
+      security: []
+      responses:
+        '200':
+          description: 数据库及初始迁移可用
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+        '503':
+          description: 数据库未就绪
   /spaces:
     get:
       tags:

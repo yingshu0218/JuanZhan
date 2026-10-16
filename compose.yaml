@@ -1,0 +1,32 @@
+services:
+  archive:
+    image: juanzhan-foundation:dev
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      JUANZHAN_DATA_DIR: /data
+    volumes:
+      - archive_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
+    restart: unless-stopped
+  converter:
+    image: juanzhan-foundation:dev
+    build: .
+    command: ["python", "-m", "uvicorn", "juanzhan.converter:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      CONVERTER_SERVICE_TOKEN: ${CONVERTER_SERVICE_TOKEN:?Set CONVERTER_SERVICE_TOKEN}
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  archive_data:

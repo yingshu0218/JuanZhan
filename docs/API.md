@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1，base `/api/v1`，37 个 path 模板。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1，base `/api/v1`，38 个 path 模板（含新增内部运维 healthz）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -91,3 +91,5 @@ V0.4 定义了业务接口与鉴权方案，但未包含登录/登出/会话初�
 | `/v1/jobs/{job_id}` | GET, DELETE |
 | `/v1/jobs/{job_id}/result` | GET |
 | `/v1/artifacts/{artifact_ref}` | GET |
+
+T01 新增根路径 `/healthz`（path-level server `/`），仅内部就绪检查，不属于 `/api/v1`。Converter 骨架的任务提交明确返回 501，能力为空。业务 API 尚未实现。

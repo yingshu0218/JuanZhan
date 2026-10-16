@@ -1,6 +1,6 @@
 # 开发任务与验收
 
-完整 34 项拓扑路线保留在 [V0.4 Roadmap](reference/archive-roadmap-v0.4.md)，所有 T01～T34 当前都不能标为生产完成。原型独立于该完成状态。
+完整 34 项拓扑路线保留在 [V0.4 Roadmap](reference/archive-roadmap-v0.4.md)，T01/T02 已交付基础实现与测试（见 STATUS/TESTING），T03～T34 尚未完成；不能据此认定 M0 或产品已完成。原型独立于该完成状态。
 
 ## 首轮 M0（按依赖）
 
