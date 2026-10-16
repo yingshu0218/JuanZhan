@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.4
+  version: 0.4.5
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -995,6 +995,7 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 file:
                   type: string
@@ -1015,9 +1016,20 @@ paths:
               required:
               - file
               - space_id
+              description: 单文件默认64MiB、请求体额外允许64KiB，元数据字段最多4个且每项4KiB。客户端声明MIME不作为可信依据；未知类型仍可归档。
       responses:
+        '400':
+          description: multipart不合法、不完整、多文件或过多表单字段
+        '408':
+          description: 上传接收超时
+        '413':
+          description: 文件或总请求体超过配置上限
+        '429':
+          description: 当前API进程两个上传槽位已占用
+        '503':
+          description: 原件未能安全存储
         '201':
-          description: 原件已登记；解析异步执行
+          description: 原件已登记，档案/Revision/审计/解析任务同事务提交；尚未实现的解析handler明确失败，不影响原件保存
           content:
             application/json:
               schema:

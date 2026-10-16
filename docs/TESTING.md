@@ -115,3 +115,23 @@
   `python scripts/smoke.py` 验证API/Converter及worker心跳通过；已有生命周期/分类/认证验收仍通过。
 - 本轮未验证远程转换幂等、真实扫描/解析/上传handler、任务中心UI或多机队列；不得将其视为已实现。
   整体为至少执行一次，不承诺文件/网络exactly-once；仍有既有TestClient弃用警告。
+
+## T08 本轮实测 · 2026-10-16
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：102项全部通过（新增19项上传测试）。
+  真实HTTP适配器/SQLite/文件存储验证单文件multipart归档、MIME不信任客户端声明、
+  同事务档案/Revision/对象/审计/Job登记、默认重复409与显式独立档案复用物理对象。
+- 验证Cookie/Bearer/CSRF，未知或跨空间引用拒绝、非法/重复字段、路径式文件名、多文件、
+  恰好文件上限成功、超限413、无Content-Length的分块总请求上限413、截断/主动断流400、接收超时408。
+- 两个挂起上传占满槽位时第三个立即429，结束后无数据库引用；中文文件名及约254KiB中文文件
+  走spool落盘后内容/MIME/大小一致；新建parse任务未实现时明确失败，原件仍保留。
+- ZIP/DOCX/EPUB元信息嗅探不解包路径条目；文本/HTML/Markdown/PDF/图片/未知二进制样本验证通过。
+  这是类型嗅探，不代表已完成真实转换、安全扫描或HTML消毒。
+- SQLite触发器注入入队失败：档案/Revision/对象记录/事件/任务全部回滚，完整孤儿字节保留。
+- 镜像通过锁定哈希安装新增python-multipart；隔离容器真实网络上传约273KiB原件、重复拒绝、
+  keep_separate、parse明确失败、容器重启后两个档案共享对象及字节校验均通过。
+  容器脚本的嵌套字符串转义问题已修正并重跑；测试容器/卷已清理。
+- 正常Compose API/worker/Converter全部healthy，`scripts/smoke.py`通过。
+  两份契约无重复键、全部本地$ref可定位。既有TestClient弃用警告仍在。
+- 未验证完整HTTP的64MiB/1GiB容量或吞吐量、生产上传UI、公开档案详情/下载、真实解析/OCR。
+  T04的64MiB存储实验不能替代完整HTTP容量测试。

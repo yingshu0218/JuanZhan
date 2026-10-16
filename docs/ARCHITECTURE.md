@@ -51,3 +51,5 @@ T06 已实现 DocumentService 内部事务，管理托管文件登记、Revision
 
 T07 Compose增加Archive worker执行容器（非新业务服务），与API共用持久SQLite和托管卷；
 Converter仍不访问Archive数据库。worker子进程执行限时，队列恢复与围栏规则见ADR-020。
+
+T08 上传服务位于uploads.py：受限接收、保守MIME与原子落盘后，档案/版本/事件/parse任务同事务登记；解析handler仍未实现，201只代表原件安全归档。详见ADR-021。

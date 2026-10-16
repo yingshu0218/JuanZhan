@@ -1,4 +1,4 @@
-# 生产开发（T01～T07）
+# 生产开发（T01～T08）
 
 代码在 `services/juanzhan/`，迁移在 `services/migrations/`，测试在 `tests/`。
 参考原型仍在 `docs/prototype/`，不连接本骨架。
@@ -211,7 +211,7 @@ current_document_version；统一错误体现在保留受控 details/版本信�
 
 外部档案的软删除/恢复只改数据库，不打开、移动或修改源文件。外部来源登记与扫描留到 T11～T14；
 给外部档案追加托管 Revision 会明确501，避免提前绕过 T16 的“纳入托管”流程。
-内部创建当前不接受直接 filed 参数；必填字段验证与整理操作留到 T09/T18。
+T08起内部创建支持显式filed；新档案若关联类型仍缺必填字段则拒绝，完整字段验证与整理操作留到T09/T18。
 
 审计插入统一到 document_events.py，T05 标签删除也复用它。Archive OpenAPI 0.4.3
 补齐 restore 的 expected_document_version 请求体；此公开路由仍待 T09 实现。
@@ -276,3 +276,40 @@ callback 必须使用传入的同一 db 连接，不调用自行开启写事务�
 API契约扩展0.4.4，数据库迁移版本0.4.2，两者独立编号。
 `python scripts/smoke_auth.py` 验证任务跨容器重启保留、真实CLI worker执行、HTTP查询与重试；
 `python scripts/smoke.py` 同时验证独立worker心跳。生产任务中心UI和业务handler尚未实现。
+
+## T08 真实单文件上传
+
+POST `/api/v1/documents/upload` 接收 multipart 单文件 `file` 与必填 `space_id`，可选
+`folder_id`、`triage_status`（needs_review/filed）、`duplicate_policy`（reject/keep_separate）。
+需先完成管理员初始化和登录，Cookie 写入携带 CSRF，自动化调用可用 Bearer。
+未提供文件夹则未分类；选择文件夹不自动改变默认 needs_review。
+
+请求流按64KiB交给受限 multipart 解析器；每个API进程最多两个并发上传，超出立即429。
+默认单文件64MiB，总请求体额外允许64KiB multipart/元数据开销；接收默认限时60秒。
+最多一个文件和四个元数据字段，每字段4KiB，每部分头8KiB；拒绝重复、未知、路径式文件名和截断表单。
+超过64KiB的文件spool到操作系统临时文件，随后由ManagedStore复制到托管卷并原子发布。
+因此需为同时存在的spool与托管临时文件预留磁盘空间；这不是全局配额，部署多API进程时并发限额按进程累计。
+建议反向代理也设置有限请求体与接收超时，生产容量/空间保留策略仍需后续实测。
+
+Compose可配置 `JUANZHAN_UPLOAD_MAX_BYTES`（1字节～1GiB，默认67108864）和
+`JUANZHAN_UPLOAD_TIMEOUT_SECONDS`（正数～3600秒，默认60）。默认值是本轮保守配置，
+不是宣称已通过1GiB容量或吞吐量验收。本轮验证恰好边界/超限、小配置请求、约254KiB中文文件和真实网络spool上传；
+T04另有64MiB存储流实验，不能把它等同完整HTTP容量测试。
+
+MIME忽略客户端声明，按文件头识别PDF/PNG/JPEG/GIF/TIFF；仅在有界ZIP目录内识别DOCX结构和EPUB mimetype。
+不展开归档内容；ZIP64、目录过大、复杂/坏ZIP保守返回通用ZIP。UTF-8文本按内容识别HTML，
+纯文本以md扩展名辅助区分Markdown；其他情况为text/plain或application/octet-stream。
+这只是保守类型嗅探，不是解析、恶意文件检测或HTML消毒；所有原件仍是不可信输入。
+
+原件成功发布并重验后，Document、Revision、managed_objects、审计事件与 parse Job 在一个事务中提交。
+返回201包含 document_id/revision_id/job_id/upload_status=saved。Job幂等键为该Revision的稳定标识；
+原件保存成功与解析成功分开。当前parse handler未实现，会明确HANDLER_NOT_AVAILABLE，
+GET /jobs/{id}可查看真实失败，原件与业务档案不因解析失败丢失。
+
+默认同空间重复返回409与已有档案ID，未新增档案或任务；显式keep_separate创建独立档案但复用物理对象。
+未知格式仍可归档。数据库或入队失败整笔回滚，但完整孤儿字节保留等待T15清理；
+接收中断/超时/超限则关闭spool，不产生档案引用。内容返回值和错误体均不暴露服务器路径。
+
+状态码：400非法或中断multipart，408接收超时，413超限，422元数据/重复表单字段非法，
+429容量满，503存储不可用；鉴权/CSRF/重复等沿用401/403/409。
+公开列表、详情、下载和回收站接口仍留T09及安全相关任务，不把上传接通视为完整档案库可用。

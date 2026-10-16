@@ -7,6 +7,8 @@ services:
     environment:
       JUANZHAN_DATA_DIR: /data
       JUANZHAN_COOKIE_SECURE: ${JUANZHAN_COOKIE_SECURE:-true}
+      JUANZHAN_UPLOAD_MAX_BYTES: ${JUANZHAN_UPLOAD_MAX_BYTES:-67108864}
+      JUANZHAN_UPLOAD_TIMEOUT_SECONDS: ${JUANZHAN_UPLOAD_TIMEOUT_SECONDS:-60}
     volumes:
       - archive_data:/data
     healthcheck:

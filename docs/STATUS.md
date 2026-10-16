@@ -72,3 +72,12 @@ M0基础能力已形成；公开完整档案流程、T05非空目录删除接续
 本轮只对SQLite原子副作用与真实临时文件恢复证明幂等，不承诺外部请求exactly-once。
 
 T07验证：83项测试通过；真实容器队列/worker/HTTP重试验收通过，API、worker、Converter均healthy。详见TESTING.md。
+
+## T08 开发进展 · 2026-10-16
+
+已实现真实单文件multipart上传、受限接收/spool、MIME嗅探、原件原子发布与重复提示。
+Document/Revision/对象记录/事件/parse任务同事务提交，返回201 saved与任务ID。
+parse handler仍未实现，任务明确失败但原件保留；不宣称已有解析结果或生产前端。
+公开档案列表/详情/整理/回收站与T05非空目录策略待T09，其他T09～T34尚未完成。
+
+T08验证：102项测试通过，容器真实网络上传/重复/任务/重启字节验证通过，API/worker/Converter均healthy。详见TESTING.md。

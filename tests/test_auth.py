@@ -77,7 +77,7 @@ def test_token_lifecycle_and_bearer_csrf_exemption(client, settings):
         assert PASSWORD not in db.execute('SELECT password_hash FROM auth_admin').fetchone()[0]
     headers = {'Authorization':'Bearer ' + token}
     # Valid Bearer reaches routing on writes without CSRF; business handler not implemented yet.
-    assert client.post('/api/v1/documents/upload', headers=headers).status_code == 404
+    assert client.post('/api/v1/documents/upload', headers=headers).status_code == 400
     assert client.get('/api/v1/auth/tokens', headers=headers).status_code == 403
     assert client.post('/api/v1/auth/tokens', headers=headers, json={'name':'escalation'}).status_code == 403
     assert client.get('/api/v1/documents', headers={'Authorization':'Bearer invalid'}).status_code == 401

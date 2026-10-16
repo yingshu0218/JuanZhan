@@ -44,6 +44,23 @@ def request(path, method='GET', body=None, csrf=None, bearer=None, use_cookie=Tr
         return response.status, json.loads(payload) if payload else None, response.headers
 
 
+def upload_original(space_id,policy='reject'):
+    boundary='upload-'+secrets.token_hex(12)
+    body=b''
+    for field,value in [('space_id',space_id),('duplicate_policy',policy)]:
+        body+=('--'+boundary+'\r\nContent-Disposition: form-data; name="'+field+'"\r\n\r\n'+value+'\r\n').encode()
+    body+=('--'+boundary+'\r\nContent-Disposition: form-data; name="file"; filename="network.txt"\r\nContent-Type: application/pdf\r\n\r\n').encode()
+    body+=b'http original\n'*20000+('\r\n--'+boundary+'--\r\n').encode()
+    req=urllib.request.Request(base+'/api/v1/documents/upload',data=body,
+        headers={'Cookie':cookie,'X-CSRF-Token':csrf,'Content-Type':'multipart/form-data; boundary='+boundary})
+    try:
+        response=urllib.request.urlopen(req,timeout=10)
+    except urllib.error.HTTPError as error:
+        response=error
+    with response:
+        return response.status,json.load(response)
+
+
 created = False
 started = False
 try:
@@ -95,7 +112,19 @@ try:
     assert status == 201
     status, catalog_type, _ = request('/api/v1/document-types', 'POST', {'space_id':space_id,'key':'contract','label':'Contract'}, csrf)
     assert status == 201
-    docker('exec', '-i', name, 'python', '-', input="""
+    status,uploaded=upload_original(space_id)
+    assert status==201 and uploaded['upload_status']=='saved'
+    status,duplicate=upload_original(space_id)
+    assert status==409 and duplicate['error']['details']['duplicates']==[uploaded['document_id']]
+    status,separate=upload_original(space_id,'keep_separate')
+    assert status==201 and separate['document_id']!=uploaded['document_id']
+    expected_jobs={uploaded['job_id'],separate['job_id']}
+    for _ in range(2):
+        outcome=json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
+        assert outcome['job_id'] in expected_jobs and outcome['status']=='failed'
+        expected_jobs.remove(outcome['job_id'])
+        assert request('/api/v1/jobs/'+outcome['job_id'])[1]['error']['code']=='HANDLER_NOT_AVAILABLE'
+    docker('exec', '-i', name, 'python', '-', input=r"""
 import io, os
 from pathlib import Path
 from juanzhan.storage import ManagedStore
@@ -131,7 +160,7 @@ JobQueue(Settings.from_env()).enqueue(JobSpec(kind='gc',target_type='managed_sta
     port = docker('port', name, '8000/tcp').split(':')[-1]
     base = 'http://127.0.0.1:' + port
     ready()
-    docker('exec', '-i', name, 'python', '-', input="""
+    docker('exec', '-i', name, 'python', '-', input=r"""
 from pathlib import Path
 from juanzhan.storage import ManagedStore
 from juanzhan.database import connect
@@ -140,6 +169,14 @@ with connect('/data/database/archive.sqlite3') as db:
 with ManagedStore(Path('/data/managed')).open(key) as file:
     assert file.read() == b'container original'
 assert list(Path('/data/managed/.staging').iterdir()) == []
+
+with connect('/data/database/archive.sqlite3') as db:
+    uploaded=db.execute("SELECT r.mime_type,r.size_bytes,m.storage_key FROM file_revisions r JOIN managed_objects m ON m.id=r.managed_object_id WHERE r.original_filename='network.txt'").fetchall()
+assert len(uploaded)==2 and uploaded[0][2]==uploaded[1][2]
+assert uploaded[0][0]=='text/plain' and uploaded[0][1]==len(b'http original\n'*20000)
+with ManagedStore(Path('/data/managed')).open(uploaded[0][2]) as file:
+    assert file.read()==b'http original\n'*20000
+
 from juanzhan.config import Settings
 from juanzhan.documents import DocumentService, VersionChange
 service = DocumentService(Settings.from_env())
@@ -156,7 +193,7 @@ with connect('/data/database/archive.sqlite3') as db:
 
 """)
     assert request('/api/v1/auth/tokens')[0] == 200
-    job_id = docker('exec','-i',name,'python','-',input="""
+    job_id = docker('exec','-i',name,'python','-',input=r"""
 from pathlib import Path
 import os
 from juanzhan.config import Settings
@@ -177,7 +214,7 @@ print(job['id'])
     assert 'lease_token' not in completed and 'payload_json' not in completed
     assert request('/api/v1/jobs/'+job_id+'/retry','POST')[0]==403
     assert request('/api/v1/jobs/'+job_id+'/retry','POST',csrf=csrf)[0]==409
-    retry_id=docker('exec','-i',name,'python','-',input="""
+    retry_id=docker('exec','-i',name,'python','-',input=r"""
 from juanzhan.config import Settings
 from juanzhan.jobs import JobQueue,JobSpec
 queue=JobQueue(Settings.from_env())
@@ -201,7 +238,7 @@ print(job['id'])
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence')
 finally:
     if started:
         docker('rm', '-f', name)

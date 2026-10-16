@@ -42,6 +42,7 @@ class Registration(RevisionInput):
     document_type_id: ID | None = None
     title: Annotated[str, Field(min_length=1, max_length=1000)]
     duplicate_policy: Literal['reject','keep_separate'] = 'reject'
+    triage_status: Literal['needs_review','filed'] = 'needs_review'
 
     @field_validator('title')
     @classmethod
@@ -145,7 +146,7 @@ class DocumentService:
                     info.original_filename,info.mime_type,utc_now()))
         return id
 
-    def register_managed(self, obj: StoredObject, info: Registration, *, request=None):
+    def register_managed(self, obj: StoredObject, info: Registration, *, request=None, after_create=None):
         self.verify_object(obj)
         with self.write(request) as db:
             required(db, 'spaces', info.space_id)
@@ -155,6 +156,10 @@ class DocumentService:
                 type = same_space(db, 'document_types', info.document_type_id, info.space_id)
                 if not type['is_active']:
                     fail(422, 'INACTIVE_DOCUMENT_TYPE', 'Cannot assign a disabled document type')
+            if info.triage_status=='filed' and info.document_type_id is not None and db.execute(
+                'SELECT 1 FROM document_type_fields WHERE document_type_id=? AND required_for_filing=1 LIMIT 1',
+                (info.document_type_id,)).fetchone():
+                fail(422,'MISSING_REQUIRED_FIELDS','Required metadata must be supplied before filing')
             duplicates = [row[0] for row in db.execute(
                 'SELECT DISTINCT d.id FROM documents d JOIN file_revisions r ON r.document_id=d.id '
                 'WHERE d.space_id=? AND r.sha256=? AND r.size_bytes=? ORDER BY d.id',
@@ -168,9 +173,11 @@ class DocumentService:
                        'VALUES (?,?,?,?,?,?,?,?)',
                        (id,info.space_id,info.folder_id,info.document_type_id,info.title,timestamp,timestamp,timestamp))
             revision_id = self.insert_revision(db, id, 1, object_id, obj, info)
-            db.execute('UPDATE documents SET current_revision_id=? WHERE id=?', (revision_id,id))
+            db.execute('UPDATE documents SET current_revision_id=?,triage_status=? WHERE id=?', (revision_id,info.triage_status,id))
             after = snapshot(db, id)
             record_event(db, id, 'document_created', None, after, timestamp=timestamp)
+            if after_create is not None:
+                after_create(db,after)
             return after
 
     def append_managed_revision(self, document_id, obj: StoredObject, info: RevisionChange, *, request=None):

@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T07 扩展版本 0.4.4），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T08 扩展版本 0.4.5），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -115,3 +115,9 @@ restore 契约现要求 JSON expected_document_version，防止恢复绕过并�
 GET /jobs/{id} 返回安全公开状态；POST /jobs/{id}/retry 不重置尝试预算，允许未耗尽预算的
 可重试失败任务排队或提前唤醒退避任务，其他状态409。Cookie写操作要求CSRF。
 任务payload/幂等键/worker/租约令牌均不公开。详细有限重试与handler范围见 DEVELOPMENT。
+
+## T08 上传接口已实现
+
+POST /documents/upload接受单文件multipart，受鉴权/CSRF保护，201只表示saved。
+默认重复409给出details.duplicates，keep_separate保留独立Document；parse任务同事务登记但当前handler如实失败。
+文件/表单/时间/并发限制、保守MIME及400/408/413/429/503语义见DEVELOPMENT。
