@@ -34,3 +34,10 @@ SQLite >=3.38，启用 JSON/FTS5。每个连接配置 foreign_keys=ON、busy_tim
 验证复合 FK、同文档引用、root folder 唯一、防环、各字段类型和托管对象 hash/size；审查 UPDATE 路径及跨表约束，SQL 未覆盖的由应用事务补齐。FTS 删除旧投影再插入一次并更新 state，保证单文档当前记录，无重复。
 
 本次仅执行空库 SQL、重复执行与 integrity_check；不是对全部业务并发与异常规则的完整证明。完整测试见 TESTING。
+
+## T03 增量认证表
+
+`services/migrations/0002_auth.sql` 新增 auth_admin、auth_sessions、auth_api_tokens、
+auth_login_throttle，schema_migrations 记录 0.4.1。0001 与 V0.4 参考 DDL 保持不变。
+认证摘要、期限和限流计数持久化于 Archive SQLite；Converter 不访问这些表。
+密码重置事务内撤销会话和 Token；Cookie 凭据管理写入在事务锁内再次验证会话及 CSRF。

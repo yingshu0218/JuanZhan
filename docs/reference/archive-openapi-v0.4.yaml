@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.0
+  version: 0.4.1
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,207 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /auth/session:
+    get:
+      tags:
+      - Auth
+      summary: 读取会话；无有效 Cookie 时创建十分钟匿名会话供登录 CSRF 使用
+      responses:
+        '200':
+          description: '会话与 CSRF；Cache-Control: no-store，设置 HttpOnly SameSite=Strict
+            Cookie'
+          content:
+            application/json:
+              schema: &auth001
+                type: object
+                required:
+                - authenticated
+                - csrf_token
+                - expires_at
+                properties:
+                  authenticated:
+                    type: boolean
+                  csrf_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: UTC RFC3339
+        '429':
+          description: 匿名会话容量已满，请稍后重试
+        '401': &auth002
+          description: 请求失败，使用统一 Error 响应体
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: 单管理员登录；要求匿名或现有会话 Cookie 与 CSRF，成功轮换会话，固定八小时过期
+      responses:
+        '200':
+          description: 已登录，会话和 CSRF 均轮换
+          content:
+            application/json:
+              schema: *auth001
+        '401': *auth002
+        '403': *auth002
+        '422': *auth002
+        '429': *auth002
+        '503': *auth002
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - username
+              - password
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 1024
+      parameters:
+      - in: header
+        name: X-CSRF-Token
+        required: true
+        schema:
+          type: string
+  /auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: 撤销当前 Cookie 会话并清除 Cookie；不接受 API Token
+      responses:
+        '204':
+          description: 已退出
+        '401': *auth002
+        '403': *auth002
+      security:
+      - sessionAuth: []
+      parameters:
+      - in: header
+        name: X-CSRF-Token
+        required: true
+        schema:
+          type: string
+  /auth/tokens:
+    get:
+      tags:
+      - Auth
+      summary: 列出未撤销且未过期 API Token 的元信息；仅管理员 Cookie 会话
+      responses:
+        '200':
+          description: 不返回 Token 明文或摘要
+          content:
+            application/json:
+              schema:
+                type: array
+                items: &auth003
+                  type: object
+                  required:
+                  - id
+                  - name
+                  - created_at
+                  - expires_at
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    expires_at:
+                      type: string
+                      format: date-time
+        '401': *auth002
+        '403': *auth002
+      security:
+      - sessionAuth: []
+    post:
+      tags:
+      - Auth
+      summary: 创建管理员权限 API Token；仅 Cookie 会话且通过 CSRF，明文仅返回一次
+      responses:
+        '201':
+          description: 'Token 明文仅此一次；Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - *auth003
+                - type: object
+                  required:
+                  - token
+                  properties:
+                    token:
+                      type: string
+        '401': *auth002
+        '403': *auth002
+        '422': *auth002
+      security:
+      - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                expires_in_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  default: 90
+      parameters:
+      - in: header
+        name: X-CSRF-Token
+        required: true
+        schema:
+          type: string
+  /auth/tokens/{id}:
+    delete:
+      tags:
+      - Auth
+      summary: 立即撤销指定 API Token（幂等）；仅 Cookie 会话且通过 CSRF
+      responses:
+        '204':
+          description: 已撤销或不存在
+        '401': *auth002
+        '403': *auth002
+      security:
+      - sessionAuth: []
+      parameters:
+      - in: header
+        name: X-CSRF-Token
+        required: true
+        schema:
+          type: string
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
   /healthz:
     servers:
     - url: /

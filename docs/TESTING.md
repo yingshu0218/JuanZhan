@@ -32,3 +32,18 @@
 - 本轮未验证业务认证、上传崩溃恢复、转换/OCR、外部只读来源或生产浏览器端到端行为。
 - 构建环境初始 DNS 不可用，改为宿主下载 wheelhouse、镜像离线复核哈希；
   非 root 容器读取源码的权限问题已通过 COPY 显式权限修复。
+
+## T03 本轮实测 · 2026-10-16
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：19 项全部通过（含 T01/T02）。
+  新增真实 SQLite 认证测试覆盖会话轮换与 Cookie 标志、未授权读写拒绝、登录/退出/Token 管理 CSRF、
+  跨站写拒绝、Bearer 免 CSRF、无效 Bearer 不回退 Cookie、令牌撤销/过期、密码重置撤销全部凭据、
+  持久限流、匿名会话容量与过期清理、输入错误不回显秘密、重启会话保留、增量迁移保留旧数据。
+- `DOCKER_CONFIG="$PWD/.local/docker" docker compose build archive`：镜像构建通过。
+- `python scripts/smoke_auth.py`：隔离容器 + 独立真实数据卷 + 管理员 CLI + 实际 HTTP 全链路通过；
+  Secure Cookie 属性已检查，内部 HTTP hop 手动传 Cookie 模拟 TLS 终止后的请求，未声称完成浏览器 HTTPS 验收。
+  容器重启后会话和 API Token 有效，撤销及退出后立即拒绝；测试容器/卷已清理。
+- `docker compose up -d --wait --no-build` 与 `python scripts/smoke.py`：当前两服务升级与健康检查通过。
+- 两份 YAML 可解析，全部本地 $ref 可定位；认证契约扩展为 Archive API 0.4.1。
+- 仍有既有 Starlette/httpx TestClient 弃用警告。尚未实现生产登录 UI、部署 HTTPS 代理、
+  多用户/角色、密码邮件找回及档案 CRUD；未将这些能力计为已验证。

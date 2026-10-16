@@ -19,14 +19,14 @@ def test_archive_restart_and_storage(settings):
     for _ in range(2):
         with TestClient(create_app('archive', settings)) as client:
             assert client.get('/healthz').json() == {'status': 'ok'}
-            assert client.get('/api/v1/documents').status_code == 404
+            assert client.get('/api/v1/documents').status_code == 401
             assert settings.database.exists()
             for directory in ('managed', 'derived'):
                 path = settings.data_dir / directory / 'probe'
                 path.write_bytes(b'real filesystem')
                 assert path.read_bytes() == b'real filesystem'
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 1
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 2
         assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
 
 
@@ -76,7 +76,7 @@ def test_concurrent_migrations(settings):
     with ThreadPoolExecutor(max_workers=2) as executor:
         list(executor.map(lambda _: migrate(settings.database), range(2)))
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 1
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 2
 
 
 def test_converter_boundary(settings):

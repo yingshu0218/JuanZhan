@@ -38,3 +38,5 @@ Converter 无需直接挂载 Archive 数据库或 managed 写权限；文件经�
 部署必须区分 UI 会话和服务 Token；Converter 默认仅内网，healthz 仅容器检查。生产运行配置与凭证由部署环境提供，不提交仓库。
 
 T01/T02 已固化选择见 ADR-015，运行步骤见 DEVELOPMENT.md；其余依赖仍按对应任务实测决策。
+
+T03 已提供管理员 Cookie 会话与 API Token 边界；认证表属于 Archive，CLI 密码重置会撤销全部凭据，详见 ADR-016。

@@ -7,11 +7,16 @@ from pathlib import Path
 class Settings:
     data_dir: Path
     converter_token: str
+    cookie_secure: bool = True
 
     @classmethod
     def from_env(cls):
+        cookie_secure = os.getenv("JUANZHAN_COOKIE_SECURE", "true").lower()
+        if cookie_secure not in ("true", "false"):
+            raise ValueError("JUANZHAN_COOKIE_SECURE must be true or false")
         return cls(Path(os.getenv("JUANZHAN_DATA_DIR", ".local/archive")).resolve(),
-                   os.getenv("CONVERTER_SERVICE_TOKEN", ""))
+                   os.getenv("CONVERTER_SERVICE_TOKEN", ""),
+                   cookie_secure == "true")
 
     @property
     def database(self):
