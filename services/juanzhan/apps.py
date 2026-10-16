@@ -14,15 +14,16 @@ from . import auth, catalog
 from .config import Settings
 from .database import connect, migrate
 from .storage import ManagedStore, StorageBusy
+from .documents import DocumentService
 
 logger = logging.getLogger("uvicorn.error")
 
 
-def error(status, code, message):
+def error(status, code, message, **extra):
     headers = {"Cache-Control": "no-store"}
     if status == 401:
         headers["WWW-Authenticate"] = "Bearer"
-    return JSONResponse({"error": {"code": code, "message": message}}, status_code=status, headers=headers)
+    return JSONResponse({"error": {"code": code, "message": message, **extra}}, status_code=status, headers=headers)
 
 
 def create_app(kind, settings=None):
@@ -37,6 +38,7 @@ def create_app(kind, settings=None):
             migrate(settings.database)
             app.state.storage = ManagedStore(settings.data_dir / 'managed')
             app.state.storage.initialize()
+            app.state.documents = DocumentService(settings)
             try:
                 removed = app.state.storage.recover_staging()
                 logger.info("Managed staging recovery removed %d stale files", removed)
@@ -53,7 +55,8 @@ def create_app(kind, settings=None):
     @app.exception_handler(HTTPException)
     async def http_error(request, exc):
         if isinstance(exc.detail, dict):
-            return error(exc.status_code, exc.detail['code'], exc.detail['message'])
+            return error(exc.status_code, exc.detail['code'], exc.detail['message'],
+                         **{key:exc.detail[key] for key in ('details','current_document_version') if key in exc.detail})
         return error(exc.status_code, "NOT_FOUND" if exc.status_code == 404 else "HTTP_ERROR", "Request rejected")
 
     @app.exception_handler(RequestValidationError)

@@ -46,3 +46,5 @@ T04 已实现本地 managed 对象存储，发布与恢复协议见 ADR-017/DEVE
 现有存储层不能替代 T06 文档事务或 T08 HTTP 上传，也不接入 external。
 
 T05 分类定义服务位于 catalog.py，复用 SQLite 跨空间约束与 T03 鉴权；写锁内复核凭据，读请求使用一致性事务。非空目录删除依赖文档生命周期，当前明确501，详见 ADR-018。
+
+T06 已实现 DocumentService 内部事务，管理托管文件登记、Revision追加和软删除/恢复；事件统一由 document_events.py 写入，公开接口及状态投影仍待后续，见ADR-019。

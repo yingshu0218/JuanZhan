@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.2
+  version: 0.4.3
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1343,7 +1343,7 @@ paths:
       - Documents
       summary: 恢复回收站档案
       operationId: post_documents_id_restore
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: 恢复同样要求 expected_document_version，冲突返回409及current_document_version。Cookie 写操作要求CSRF；原件和历史版本不变。T06补齐契约，公开路由在T09实现。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1353,6 +1353,20 @@ paths:
         description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
         schema:
           type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                expected_document_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9223372036854775806
+              required:
+              - expected_document_version
       responses:
         '200':
           description: 成功

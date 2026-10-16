@@ -106,6 +106,18 @@ with connect('/data/database/archive.sqlite3') as db:
     db.execute('INSERT INTO managed_objects VALUES (?,?,?,?,?)',
                ('storage-smoke', result.sha256, result.size_bytes, result.storage_key, '2026-10-16T00:00:00Z'))
     db.commit()
+from juanzhan.config import Settings
+from juanzhan.documents import DocumentService, Registration, RevisionChange, VersionChange
+service = DocumentService(Settings.from_env())
+with connect('/data/database/archive.sqlite3') as db:
+    space = db.execute("SELECT id FROM spaces WHERE name='Smoke catalog'").fetchone()[0]
+doc = service.register_managed(result, Registration(space_id=space,title='Lifecycle smoke',
+    original_filename='original.txt',mime_type='text/plain'))
+next_object = store.put(io.BytesIO(b'container revision'), max_bytes=100)
+updated = service.append_managed_revision(doc['id'],next_object,
+    RevisionChange(expected_document_version=1,original_filename='revision.txt',mime_type='text/plain'))
+assert updated['id'] == doc['id'] and updated['document_version'] == 2
+service.trash(doc['id'],VersionChange(expected_document_version=2))
 old = Path('/data/managed/.staging') / ('c' * 32 + '.part')
 old.write_bytes(b'interrupted')
 os.utime(old, (0, 0))
@@ -124,6 +136,20 @@ with connect('/data/database/archive.sqlite3') as db:
 with ManagedStore(Path('/data/managed')).open(key) as file:
     assert file.read() == b'container original'
 assert list(Path('/data/managed/.staging').iterdir()) == []
+from juanzhan.config import Settings
+from juanzhan.documents import DocumentService, VersionChange
+service = DocumentService(Settings.from_env())
+with connect('/data/database/archive.sqlite3') as db:
+    id = db.execute("SELECT id FROM documents WHERE title='Lifecycle smoke'").fetchone()[0]
+before = service.get_record(id)
+assert before['document_version'] == 3 and before['deleted_at'] is not None
+after = service.restore(id,VersionChange(expected_document_version=3))
+assert after['document_version'] == 4 and after['deleted_at'] is None
+assert [r['revision_no'] for r in service.revisions(id)] == [1,2]
+with connect('/data/database/archive.sqlite3') as db:
+    assert db.execute('SELECT count(*) FROM document_events WHERE document_id=?',(id,)).fetchone() == (4,)
+    assert db.execute('PRAGMA foreign_key_check').fetchall() == []
+
 """)
     assert request('/api/v1/auth/tokens')[0] == 200
     assert any(s['id'] == space_id for s in request('/api/v1/spaces')[1])
@@ -136,7 +162,7 @@ assert list(Path('/data/managed/.staging').iterdir()) == []
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog create/conflict/update/delete')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document/revision/audit/trash/restore')
 finally:
     if started:
         docker('rm', '-f', name)

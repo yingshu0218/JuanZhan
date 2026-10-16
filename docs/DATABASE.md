@@ -41,3 +41,10 @@ SQLite >=3.38，启用 JSON/FTS5。每个连接配置 foreign_keys=ON、busy_tim
 auth_login_throttle，schema_migrations 记录 0.4.1。0001 与 V0.4 参考 DDL 保持不变。
 认证摘要、期限和限流计数持久化于 Archive SQLite；Converter 不访问这些表。
 密码重置事务内撤销会话和 Token；Cookie 凭据管理写入在事务锁内再次验证会话及 CSRF。
+
+## T06 事务接入
+
+DocumentService 直接复用既有 documents/file_revisions/managed_objects/document_events 表，
+未修改已应用迁移。当前 Revision 与创建/追加事件在一个事务提交；递增编号和乐观版本检查由写锁串行化。
+人工字段与旧 ParseRun 不被追加原件覆盖；软删除/恢复保留文件引用。审计写入失败触发整笔回滚。
+T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本。孤儿对象 GC 与扫描登记尚未实现。

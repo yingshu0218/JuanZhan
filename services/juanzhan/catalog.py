@@ -1,5 +1,4 @@
 """Space-scoped catalog definitions. No file paths or Document lifecycle APIs."""
-import json
 import sqlite3
 import unicodedata
 import uuid
@@ -12,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .auth import authorize, fail
 from .database import connect
+from .document_events import record_event
 
 ID = Annotated[str, Field(min_length=1, max_length=255)]
 Name = Annotated[str, Field(min_length=1, max_length=255)]
@@ -270,9 +270,7 @@ def router(settings):
             # Removing a binding changes document facts: invalidate optimistic versions and audit.
             for row in documents:
                 db.execute('UPDATE documents SET document_version=document_version+1,updated_at=? WHERE id=?', (timestamp,row[0]))
-                db.execute('INSERT INTO document_events(id,document_id,event_type,before_json,after_json,actor,created_at) '
-                           'VALUES (?,?,?,?,?,?,?)', (uuid.uuid4().hex,row[0],'tag_deleted',
-                            json.dumps({'tag_id':id}),json.dumps({'tag_id':None}),'admin',timestamp))
+                record_event(db, row[0], 'tag_deleted', {'tag_id':id}, {'tag_id':None}, timestamp=timestamp)
             db.execute('DELETE FROM document_tags WHERE tag_id=?', (id,))
             db.execute('DELETE FROM tags WHERE id=?', (id,))
 

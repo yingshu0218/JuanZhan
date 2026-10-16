@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T05 扩展版本 0.4.2），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T06 扩展版本 0.4.3），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -101,3 +101,11 @@ Space 仅 GET/POST；类型用 PATCH is_active 停用。folders GET 为扁平树
 可选 space_id 省略时跨空间列出（单管理员），父目录过滤只读直属子项。
 目录删除仅 only_if_empty 实现；另外两种删除策略在契约中明确501，待 T09 接入。
 接口更新未添加表，现有跨空间/防环/唯一 SQL 约束复用，严格输入校验与事务错误使用统一 Error。
+
+## T06 服务与公开路由边界
+
+内部 DocumentService 已实现托管登记/追加版本/软删除恢复，不新增公开 Document 路由。
+restore 契约现要求 JSON expected_document_version，防止恢复绕过并发校验，公开实现留T09。
+统一 Error 响应保留受控 details/current_document_version。上传 DUPLICATE_DETECTED 的
+ details.duplicates 采用同空间 Document ID 数组，含历史版本和回收站命中；keep_separate 不合并业务档案。
+原件替换的公开操作路径仍需接入前补契约，不能从内部方法推断现成 POST /revisions。

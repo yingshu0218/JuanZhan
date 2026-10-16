@@ -32,3 +32,10 @@ T06 再接入 Document/Revision/Event 事务，T07 接任务，T08 实现真实 
 T05 已交付分类定义接口，下一切片 T06 为 Document/Revision/Event 事务与软删除模型。
 不要重复实现旧首轮 T01/T02。目录非空删除两策略仍501，需在 T06/T09 使用文档事务补齐；
 标签删除当前已有版本递增与审计，后续统一到文档服务，保持现有行为与测试。
+
+## 当前接续点 · T06 后
+
+接续 T07：SQLite 持久任务、worker、claim/租约、有限重试与幂等，先读 T06 DocumentService 与审计工具。
+Doc 服务为内部接口，公开上传/列表/状态投影/回收站路由待 T08/T09；恢复需要 expected_document_version。
+不要把 get_record 的内部事实当作完整公开 Document 响应，也不要在重试失败时删除共享文件。
+T05 非空目录两策略仍501，需在文档生命周期与T09接口层补齐。

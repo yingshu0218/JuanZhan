@@ -177,3 +177,42 @@ folders/tags/document-types 的 space_id 为可选过滤条件；缺失时返回
 写事务使用 BEGIN IMMEDIATE，并在持有数据库写锁后重新验证登录凭据与 CSRF，
 避免撤销或密码重置和分类写入产生竞态；列表使用一致性读事务。
 分类层实现位于 catalog.py，未新增表或修改已应用迁移；T06 可复用或收敛档案审计操作。
+
+## T06 档案生命周期内部事务
+
+`DocumentService` 在 Archive 启动后可由 `app.state.documents` 访问；它是后续上传、扫描和
+档案路由调用的内部服务，不直接接受客户端路径或未验证的对象描述符：
+
+- `register_managed(StoredObject, Registration)`：确认文件真实存在且哈希/大小匹配，
+  在同一事务登记/复用 managed_objects、创建 Document、Revision 1、当前版本引用与创建事件。
+  默认为 needs_review，即使已选文件夹也不会自动完成整理。
+- 相同空间任一当前/历史版本（含回收站档案）的 hash+size 命中时，默认返回
+  409 DUPLICATE_DETECTED，details.duplicates 为稳定排序的 Document ID 数组。
+  显式 keep_separate 创建不同 Document/Revision；不同空间不互相返回重复提示，
+  仍可共享物理对象。不会用哈希当作 Document ID。
+- `append_managed_revision(id, object, RevisionChange)`：要求 expected_document_version，
+  在写锁内检查版本、分配下一 revision_no，保持 Document ID，更新当前原件引用并递增文档版本，
+  与 revision_added 事件一起提交。旧原件、人工字段、标签、旧成功 ParseRun 均保留。
+  旧 ParseRun 与当前 Revision 不同的 stale 状态由后续公开投影计算，不能据当前服务返回值称已完成解析。
+- `trash/restore(id, VersionChange)`：仅更新 deleted_at/版本/时间及审计事件，
+  保留原件、Revision、元数据、标签与整理状态；恢复时无有效目录则回到未分类。
+  已处于目标状态且版本匹配时不重复记事件或递增版本；过期版本始终409。
+- `get_record/revisions` 是内部事实读取，不是带原件可用性/解析状态的完整公开 Document 响应。
+  当前没有新增公开 Document 创建、详情、原件替换或回收站路由；T08/T09 再接入完整契约。
+
+写事务 BEGIN IMMEDIATE；若传入 Request，持锁后复核认证/CSRF。内部 worker 可不传 Request，
+但这只适用于可信代码，不能由 HTTP 路由绕过 T03 鉴权。409 VERSION_CONFLICT 返回
+current_document_version；统一错误体现在保留受控 details/版本信息，不回显存储路径。
+
+文件持久化先于数据库引用；新对象、Revision、Document 和事件任一数据库步骤失败均整笔回滚。
+完整已发布孤儿文件保留，不在异常路径删除，等待 T15 的数据库感知 GC。
+未来 GC 接入时必须协调“文件验证—数据库引用”窗口，不得直接扫描删除暂时未引用的对象。
+文件名只接收不含路径分隔符的名称；MIME 由后续服务器嗅探逻辑提供，本轮不声称已实现 MIME 嗅探。
+
+外部档案的软删除/恢复只改数据库，不打开、移动或修改源文件。外部来源登记与扫描留到 T11～T14；
+给外部档案追加托管 Revision 会明确501，避免提前绕过 T16 的“纳入托管”流程。
+内部创建当前不接受直接 filed 参数；必填字段验证与整理操作留到 T09/T18。
+
+审计插入统一到 document_events.py，T05 标签删除也复用它。Archive OpenAPI 0.4.3
+补齐 restore 的 expected_document_version 请求体；此公开路由仍待 T09 实现。
+`python scripts/smoke_auth.py` 在独立容器中验证创建→追加版本→软删除→重启→恢复与审计一致性。
