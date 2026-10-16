@@ -54,3 +54,9 @@ T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本
 0003_jobs.sql 对既有 jobs 增量添加幂等键/请求摘要、可认领时间、租约所有者/令牌/期限、
 执行限时与重试控制，补 worker_heartbeats。迁移不重建 jobs、不丢弃已有记录；原0001/0002不变。
 任务完成与业务 effect 必须共享同一SQLite事务，过期租约提交失败则整笔回滚；不得在effect中另开写事务。
+
+## T09 事务接入
+
+未新增或改写迁移。公开档案编辑/整理与目录子树删除复用document_version和document_events；
+子树操作在BEGIN IMMEDIATE中验证Source引用、更新档案并审计，再按深度删除目录。失败整体回滚。
+软删除/恢复、目录删除不删除Revision或managed_objects，也不触碰外部原件。

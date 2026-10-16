@@ -53,3 +53,8 @@ T07 Compose增加Archive worker执行容器（非新业务服务），与API共�
 Converter仍不访问Archive数据库。worker子进程执行限时，队列恢复与围栏规则见ADR-020。
 
 T08 上传服务位于uploads.py：受限接收、保守MIME与原子落盘后，档案/版本/事件/parse任务同事务登记；解析handler仍未实现，201只代表原件安全归档。详见ADR-021。
+
+## T09 公开管理投影
+
+Document API复用DocumentService写事务与共享快照/版本检查；Folder删除以同连接完成子树档案和审计更新。
+读API返回字段白名单，独立投影原件可用性、当前版本处理状态及旧内容stale；不输出托管键或来源文件路径。

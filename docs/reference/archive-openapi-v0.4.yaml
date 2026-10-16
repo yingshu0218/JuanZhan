@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.5
+  version: 0.4.6
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -427,9 +427,9 @@ paths:
     post:
       tags:
       - Folders
-      summary: 删除逻辑文件夹，需明确策略
+      summary: 确认后逻辑删除子树，物理文件保持不变
       operationId: post_folders_id_delete
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: only_if_empty拒绝任何引用；move_contents_to_parent把整个子树档案扁平移到根目录的父目录后删除子树；trash_contents把子树档案移入回收站并设未分类。非空两策略要求confirm_folder_id，Source引用则409且不修改配置。Cookie写操作要求CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/FolderId'
@@ -453,15 +453,22 @@ paths:
                   - only_if_empty
                   - move_contents_to_parent
                   - trash_contents
+                confirm_folder_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: 两种非空删除策略必须与路径id一致
               required:
               - mode
+              allOf:
+              - if:
+                  properties:
+                    mode:
+                      enum: [move_contents_to_parent, trash_contents]
+                  required: [mode]
+                then:
+                  required: [confirm_folder_id]
       responses:
-        '501':
-          description: move_contents_to_parent 与 trash_contents 等待文档事务实现；当前仅支持 only_if_empty
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '204':
           description: 已完成（子树逻辑档案处理后生效）
         '409':
@@ -933,7 +940,7 @@ paths:
       - Documents
       summary: 档案列表（含普通筛选）
       operationId: get_documents
-      description: ''
+      description: 默认排除回收站。trash=only列出回收站，include包含全部；q非空当前返回501等待全文搜索。分页稳定以id次级排序。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -964,9 +971,25 @@ paths:
         in: query
         schema:
           type: string
+          enum: [imported_at, "-imported_at", title, "-title", document_date, "-document_date", size_bytes, "-size_bytes"]
+          default: "-imported_at"
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/PageSize'
+      - name: trash
+        in: query
+        schema:
+          type: string
+          enum: [exclude, only, include]
+          default: exclude
+      - name: is_favorite
+        in: query
+        schema:
+          type: boolean
       responses:
+        '422':
+          $ref: '#/components/responses/Validation'
+        '501':
+          description: 全文搜索未实现，不用部分标题匹配伪装完整搜索
         '200':
           description: 成功
           content:
@@ -1290,6 +1313,8 @@ paths:
             schema:
               $ref: '#/components/schemas/TriageRequest'
       responses:
+        '501':
+          description: 必填字段存在尚未实现的自定义约束，等待T18完整校验
         '200':
           description: 成功
           content:
@@ -2325,6 +2350,7 @@ components:
           - suspected_missing
           - missing
           - needs_match
+          - unknown
         processing_status:
           type: string
           enum:
@@ -2804,12 +2830,16 @@ components:
       - items
     DocumentPatch:
       type: object
+      minProperties: 2
       properties:
         expected_document_version: *id004
         title:
           type: string
+          minLength: 1
+          maxLength: 1000
         description:
           type: string
+          maxLength: 65536
         document_date:
           type:
           - string
@@ -2848,6 +2878,7 @@ components:
       - confirm
     TriageRequest:
       type: object
+      additionalProperties: false
       properties:
         expected_document_version: *id004
         triage_status:

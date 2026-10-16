@@ -100,7 +100,7 @@ try:
     assert request('/api/v1/auth/tokens', 'POST', {'name':'blocked'})[0] == 403
     status, token, headers = request('/api/v1/auth/tokens', 'POST', {'name':'smoke'}, csrf)
     assert status == 201 and headers['Cache-Control'] == 'no-store'
-    assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
+    assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 200
     status, catalog_space, _ = request('/api/v1/spaces', 'POST', {'name':'Smoke catalog'}, csrf)
     assert status == 201
     space_id = catalog_space['id']
@@ -124,6 +124,22 @@ try:
         assert outcome['job_id'] in expected_jobs and outcome['status']=='failed'
         expected_jobs.remove(outcome['job_id'])
         assert request('/api/v1/jobs/'+outcome['job_id'])[1]['error']['code']=='HANDLER_NOT_AVAILABLE'
+    document_path='/api/v1/documents/'+uploaded['document_id']
+    assert request(document_path)[1]['document_version']==1
+    assert request(document_path,'PATCH',{'expected_document_version':1,'is_favorite':True},csrf)[1]['document_version']==2
+    assert request(document_path,'PATCH',{'expected_document_version':1,'title':'stale'},csrf)[0]==409
+    assert request(document_path+'/triage','POST',{'expected_document_version':2,'triage_status':'filed'},csrf)[1]['document_version']==3
+    assert request(document_path+'/trash','POST',{'expected_document_version':3},csrf)[0]==200
+    assert any(d['id']==uploaded['document_id'] for d in request('/api/v1/documents?trash=only')[1]['items'])
+    assert request(document_path+'/restore','POST',{'expected_document_version':4},csrf)[0]==200
+    root=request('/api/v1/folders','POST',{'space_id':space_id,'name':'Disposable subtree'},csrf)[1]
+    child=request('/api/v1/folders','POST',{'space_id':space_id,'parent_id':root['id'],'name':'Child'},csrf)[1]
+    separate_path='/api/v1/documents/'+separate['document_id']
+    assert request(separate_path,'PATCH',{'expected_document_version':1,'folder_id':child['id']},csrf)[0]==200
+    assert request('/api/v1/folders/'+root['id']+'/delete','POST',{'mode':'trash_contents','confirm_folder_id':root['id']},csrf)[0]==204
+    result=request(separate_path)[1]
+    assert result['deleted_at'] and result['folder_id'] is None and result['document_version']==3
+    assert request(separate_path+'/restore','POST',{'expected_document_version':3},csrf)[0]==200
     docker('exec', '-i', name, 'python', '-', input=r"""
 import io, os
 from pathlib import Path
@@ -233,12 +249,12 @@ print(job['id'])
     assert request('/api/v1/document-types/'+catalog_type['id'], 'PATCH', {'is_active':False}, csrf)[0] == 200
     assert request('/api/v1/tags/'+catalog_tag['id'], 'DELETE', csrf=csrf)[0] == 204
     assert request('/api/v1/folders/'+catalog_folder['id']+'/delete', 'POST', {'mode':'only_if_empty'}, csrf)[0] == 204
-    assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 404
+    assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 200
     assert request('/api/v1/auth/tokens/' + token['id'], 'DELETE', csrf=csrf)[0] == 204
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore')
 finally:
     if started:
         docker('rm', '-f', name)

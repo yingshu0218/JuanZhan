@@ -135,3 +135,14 @@
   两份契约无重复键、全部本地$ref可定位。既有TestClient弃用警告仍在。
 - 未验证完整HTTP的64MiB/1GiB容量或吞吐量、生产上传UI、公开档案详情/下载、真实解析/OCR。
   T04的64MiB存储实验不能替代完整HTTP容量测试。
+
+## T09 验证 · 2026-10-16
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：112通过，保留一项Starlette/httpx既有弃用警告。
+新增真实SQLite/文件测试覆盖列表排序/筛选/分页、编辑/标签/日期/跨空间拒绝、并发版本冲突、必填与false值、
+旧解析与新任务状态、外部未验证/离线、文件缺失、目录两种子树策略、Source引用阻止及注入审计失败回滚。
+OpenAPI 0.4.6的YAML重复键和全部本地引用验证通过，43个path模板。
+
+重建镜像后运行`python scripts/smoke_auth.py`：隔离容器真实HTTP上传后编辑/冲突/整理/回收恢复、
+子树回收/恢复、原件及数据库重启持久化通过。随后Compose升级与`python scripts/smoke.py`通过，API/worker/Converter健康。
+尚无生产界面验证；未声明转换、OCR、下载、全文检索或完整类型约束已完成。

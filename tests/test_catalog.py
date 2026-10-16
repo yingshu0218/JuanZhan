@@ -87,7 +87,7 @@ def test_folder_empty_delete_and_dependent_modes(catalog):
     path = '/api/v1/folders/'+parent['id']+'/delete'
     assert client.post(path, json={'mode':'only_if_empty'}, headers=headers).status_code == 409
     for mode in ('trash_contents','move_contents_to_parent'):
-        assert client.post(path, json={'mode':mode}, headers=headers).status_code == 501
+        assert client.post(path, json={'mode':mode}, headers=headers).status_code == 422
     assert client.post('/api/v1/folders/'+child['id']+'/delete', json={'mode':'only_if_empty'}, headers=headers).status_code == 204
     with connect(settings.database) as db:
         db.execute("INSERT INTO sources(id,space_id,name,kind,root_ref,initial_target_folder_id,created_at,updated_at) VALUES ('source',?,'NAS','external','nas',?,'now','now')", (a,parent['id']))

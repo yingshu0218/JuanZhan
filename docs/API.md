@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T08 扩展版本 0.4.5），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T09 扩展版本 0.4.6），base `/api/v1`，43 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -121,3 +121,12 @@ GET /jobs/{id} 返回安全公开状态；POST /jobs/{id}/retry 不重置尝试�
 POST /documents/upload接受单文件multipart，受鉴权/CSRF保护，201只表示saved。
 默认重复409给出details.duplicates，keep_separate保留独立Document；parse任务同事务登记但当前handler如实失败。
 文件/表单/时间/并发限制、保守MIME及400/408/413/429/503语义见DEVELOPMENT。
+
+## T09 档案管理已实现（覆盖前文历史待实现项）
+
+GET documents及/{id}、PATCH /{id}、POST /{id}/triage、trash、restore与GET /{id}/revisions已实现。
+列表默认排除回收站，trash=only/include可调整；支持空间/目录/类型/整理/收藏/来源过滤和稳定分页排序。
+非空q返回501，不能把普通列表当成搜索结果。编辑、整理、回收恢复要求expected_document_version，冲突409附当前版本。
+类型必填值缺失422，自定义归档约束尚不支持时501；完整类型验证留T18。
+目录非空删除支持move_contents_to_parent/trash_contents，必须confirm_folder_id等于路径ID；Source引用阻止删除409。
+可用性新增unknown，外部未验证挂载不宣称available。详情与版本列表不泄露内部路径。

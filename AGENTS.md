@@ -5,7 +5,7 @@
 1. 读 `docs/README.md`、`docs/STATUS.md`、`docs/PRD.md`、`docs/UI-UX.md`。
 2. 实现前读 `docs/ARCHITECTURE.md`、`docs/DATABASE.md`、`docs/API.md` 和对应的原始 SQL/OpenAPI。
 3. 从 `docs/TASKS.md` 的 M0 开始，不把界面示例当成功能实现。交接指令见 `docs/CODEX-HANDOFF.md`。
-4. 当前已交付设计知识库、参考原型及 T01～T08 服务/数据库迁移/认证/托管存储/分类管理/档案事务/任务/真实上传基础；公开档案业务接口、真实转换器、OCR 与生产 UI 尚未实现。
+4. 当前已交付设计知识库、参考原型及 T01～T09 服务/数据库迁移/认证/托管存储/分类管理/档案事务/任务/真实上传与公开档案管理；批量操作、真实转换器、OCR、检索与生产 UI 尚未实现。
 
 ## 需求优先级
 
@@ -36,4 +36,4 @@
 - 业务验证至少包含真实 SQLite + 文件存储 + HTTP 集成；转换验收用真实样本，不能仅靠 Mock。
 - 所有后台任务有限重试、可恢复、幂等。失败不抹除原件、既有业务字段或最近成功解析结果。
 - 实施 UI 采用“资料列表 → 结构化详情 → 关联原文件预览 → 返回原位置”。不直接复制旧原型默认原文行为。
-- 生产代码位于 services/juanzhan，迁移位于 services/migrations，技术选择见 ADR-015～021；`docs/prototype/` 不应直接成为生产应用或被赋予生产安全承诺。
+- 生产代码位于 services/juanzhan，迁移位于 services/migrations，技术选择见 ADR-015～022；`docs/prototype/` 不应直接成为生产应用或被赋予生产安全承诺。

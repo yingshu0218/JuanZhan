@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from .auth import authorize, fail
 from .database import connect
 from .document_events import record_event
+from .folder_deletion import delete_subtree
 
 ID = Annotated[str, Field(min_length=1, max_length=255)]
 Name = Annotated[str, Field(min_length=1, max_length=255)]
@@ -68,6 +69,7 @@ class FolderPatch(Patch):
 
 class FolderDelete(Input):
     mode: Literal['only_if_empty', 'move_contents_to_parent', 'trash_contents']
+    confirm_folder_id: ID | None = None
 
 
 class TagCreate(Input):
@@ -223,9 +225,12 @@ def router(settings):
     @routes.post('/folders/{id}/delete', status_code=204)
     def delete_folder(id: str, body: FolderDelete, request: Request):
         with transaction(settings, request) as db:
-            required(db, 'folders', id)
+            root=required(db, 'folders', id)
             if body.mode != 'only_if_empty':
-                fail(501, 'NOT_IMPLEMENTED', 'Document move/trash deletion modes await document transactions')
+                if body.confirm_folder_id != id:
+                    fail(422,'CONFIRMATION_REQUIRED','Confirm the exact folder ID before deleting its subtree')
+                delete_subtree(db,root,body.mode)
+                return
             if (db.execute('SELECT 1 FROM folders WHERE parent_id=? LIMIT 1', (id,)).fetchone()
                     or db.execute('SELECT 1 FROM documents WHERE folder_id=? LIMIT 1', (id,)).fetchone()
                     or db.execute('SELECT 1 FROM sources WHERE initial_target_folder_id=? '

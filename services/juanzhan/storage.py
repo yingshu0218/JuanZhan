@@ -193,6 +193,26 @@ class ManagedStore:
         finally:
             os.close(root)
 
+    def probe(self, storage_key):
+        """Check readability/type/size without hashing whole originals for a list view."""
+        try:
+            sha256, size = parse_key(storage_key)
+            root = os.open(self.root, DIRECTORY_FLAGS)
+            try:
+                with directory(root, 'sha256') as objects, directory(objects, sha256[:2]) as bucket:
+                    fd = os.open(f'{sha256}-{size}', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=bucket)
+                    try:
+                        info = os.fstat(fd)
+                        return 'available' if stat.S_ISREG(info.st_mode) and info.st_size == size else 'missing'
+                    finally:
+                        os.close(fd)
+            finally:
+                os.close(root)
+        except FileNotFoundError:
+            return 'missing'
+        except (OSError, ValueError):
+            return 'unknown'
+
     def recover_staging(self, *, minimum_age_seconds=3600):
         """Remove only old regular staging files while no writer is active.
 

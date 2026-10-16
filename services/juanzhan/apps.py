@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog, jobs, uploads
+from . import auth, catalog, jobs, uploads, document_api
 
 from .config import Settings
 from .database import connect, migrate
@@ -111,6 +111,7 @@ def create_app(kind, settings=None):
         app.include_router(catalog.router(settings))
         app.include_router(jobs.router(settings))
         app.include_router(uploads.router(settings))
+        app.include_router(document_api.router(settings))
 
     if kind == "converter":
         @app.get("/v1/capabilities")
