@@ -42,7 +42,7 @@ Converter 除健康检查外要求服务 Bearer Token；能力列表为空，任
 Archive 已提供认证、分类、上传、档案/元数据/批量业务API及同源生产Web；其余范围见STATUS，服务令牌只从运行环境注入。
 
 Archive 命名卷保存 database/managed/derived；Converter 临时区使用 tmpfs，不挂载业务卷。
-尚无外部来源接入；T11 引入时必须配置只读 bind mount 和别名白名单，不能接受任意客户端路径。
+外部来源默认未配置；T11～T15已支持只读来源API，T28提供Web入口。接入必须配置只读 bind mount 和别名白名单，不能接受任意客户端路径。
 停止用 `docker compose down`，保留数据；不要随意使用 `down -v`。
 
 无需 Docker 时，在根目录设置 `PYTHONPATH=services`，执行：
@@ -461,3 +461,13 @@ POST /documents/{id}/purge必须已Trash，并明确confirm_document_id和expect
 托管原件GC默认至少24小时宽限，仍被任何历史/回收Revision引用都保留。Purge自动排延迟任务，孤儿发现排后续任务；本地管理员可`python -m juanzhan.maintenance gc`排队，由正常worker执行。无强制缩短保留期选项，不在正常卷运行测试时间快进。
 GC独占store锁且持DB写锁，注册/追加共享store锁贯穿验证与提交；不得颠倒锁序。上传繁忙时GC可能有限重试/失败，应查看真实Job结果，不把排队当成已删。
 `python scripts/smoke_maintenance.py`使用一次性RO挂载、数据卷、随机管理员，验证排除/扫描/外部purge、托管共享引用/宽限/实际unlink、恢复竞态与重启回执；只快进fixture候选时间，不触碰用户文件或正常管理员。
+
+## T28 来源浏览器验收
+
+先执行前端构建及Archive镜像构建，再运行：
+
+```sh
+JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium DOCKER_CONFIG="$PWD/.local/docker" npm run test:e2e:sources --prefix web
+```
+
+需可用Docker及本机Chromium；不新增前端依赖。测试使用8768业务端口和8769夹具就绪端口，临时只读来源/随机管理员/独立卷及真实worker；SIGTERM时删除仅本次容器/卷/临时目录。普通`test:e2e`仍为原8项主机临时服务回归，两个套件可独立运行。正常Compose挂载/管理员/环境启动配置未变，默认来源别名为空。

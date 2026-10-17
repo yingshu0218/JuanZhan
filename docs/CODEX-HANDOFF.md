@@ -175,3 +175,10 @@ GC仅managed，全部Revision（含旧版本/回收）仍有引用就保留。�
 OpenAPI0.4.16/48paths；无新依赖或云安装启动步骤。不声称派生物理GC、来源UI、人工匹配/自动调度或正式生产部署完成。
 
 T15最终验收：238项Python通过（新增10项），smoke_maintenance真实容器通过，Archive/worker/Converter升级健康且smoke.py通过；OpenAPI0.4.16/48路径唯一键/引用验证通过。无用户来源或正常卷清理测试。
+
+## 当前接续点 · T28 后（优先于上文历史交接）
+
+T01～T15、T17/T18与T26～T28已交付。Sources/SourceWizard沿用既有Web视觉，使用真实来源/任务/排除API；不修改参考原型。分段目录导航显示库存文件，30项稳定分页，没有目录枚举/空目录接口，不能把当前页当完整树。
+下一切片T19：先读CONVERTER/ARCHITECTURE/API和独立Converter OpenAPI，补齐真实输入输出、资源限制与归档worker适配；按路线图接T20/T21/T22，不用空能力声明或假解析结果宣称转换完成。默认结构化内容优先和人工字段保护继续适用。
+Sources回执仅当前空间页面生命周期，离开来源导航保留，切空间/刷新需凭Job ID调用已有接口；T31才提供完整中心。自动调度/人工匹配/来源配置编辑API均不存在，不加假入口。取消索引版本冲突应重新读取并确认，不自动重试写请求。
+来源浏览器验收需先build web和Archive镜像，再运行npm run test:e2e:sources --prefix web；使用一次性Docker卷/随机管理员/真实只读bind/worker，不接正常卷，清理仅针对本次夹具。现有8项浏览器套件仍用独立主机临时API，无新增依赖。

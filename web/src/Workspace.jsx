@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  HardDrives,
   FileText,
   Books,
   UploadSimple,
@@ -15,6 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
+import { Sources } from "./Sources.jsx";
 import { Library } from "./Library.jsx";
 import { Detail } from "./Detail.jsx";
 import { Operations, useOperations } from "./Operations.jsx";
@@ -24,8 +26,15 @@ const views = {
   inbox: "收件箱",
   favorite: "已收藏",
   trash: "回收站",
+  sources: "来源",
 };
-const navIcons = { all: FileText, inbox: Tray, favorite: Star, trash: Trash };
+const navIcons = {
+  all: FileText,
+  inbox: Tray,
+  favorite: Star,
+  trash: Trash,
+  sources: HardDrives,
+};
 
 export function Workspace({ api, logout, authError }) {
   const [spaces, setSpaces] = useState([]);
@@ -196,6 +205,10 @@ export function Workspace({ api, logout, authError }) {
     );
     resetDrag();
     if (files.length) {
+      if (section === "sources" && kind === "files") {
+        setNotice("来源为只读。请返回档案列表上传，或将文件拖到逻辑目录。");
+        return;
+      }
       if (!space) {
         setNotice("请先建立或选择空间。");
         return;
@@ -411,7 +424,7 @@ export function Workspace({ api, logout, authError }) {
       onDragOver={(e) => dragOver(e, "files")}
       onDrop={(e) => drop(e)}
     >
-      {fileDrag ? (
+      {fileDrag && section !== "sources" ? (
         <div className="drop-overlay" role="status">
           松开文件，上传至所选空间 /{" "}
           {catalog.folders.find(
@@ -615,77 +628,95 @@ export function Workspace({ api, logout, authError }) {
           </div>
         ) : (
           <>
-            <Library
-              documents={documents}
-              total={total}
-              page={page}
-              setPage={(n) => {
-                setPage(n);
-                setSelected(null);
-              }}
-              sort={sort}
-              setSort={(value) => {
-                setSort(value);
-                setPage(1);
-                setSelected(null);
-              }}
-              types={catalog.types}
-              type={type}
-              setType={(value) => {
-                setType(value);
-                setPage(1);
-                setSelected(null);
-              }}
-              view={view}
-              setView={setView}
-              selected={selected}
-              onSelect={(id) => {
-                setSelected(id);
-                setMobileDetail(true);
-              }}
-              title={title}
-              loading={loading}
-              error={error}
-              retry={() => setRefresh((n) => n + 1)}
-              importFiles={importFiles}
-              checked={checked}
-              toggle={toggle}
-              selectPage={(value) => {
-                setSelectionMode("explicit");
-                setChecked(
-                  value
-                    ? new Map(documents.map((doc) => [doc.id, { ...doc }]))
-                    : new Map(),
-                );
-              }}
-              selectResults={selectResults}
-              snapshotBusy={snapshotBusy}
-              clearSelection={() => setChecked(new Map())}
-              operate={() =>
-                prepare(
-                  [...checked.values()],
-                  section === "trash" ? "restore" : "move_folder",
-                )
-              }
-              operationPending={operations.pending}
-              onDragStart={dragStart}
-              onDragEnd={resetDrag}
-            />
-            <Detail
-              key={selected || "empty"}
+            <Sources
+              key={space}
               api={api}
-              id={selected}
-              types={catalog.types}
+              space={space}
               folders={catalog.folders}
-              tags={catalog.tags}
-              definitions={catalog.definitions}
-              onBack={() => setMobileDetail(false)}
-              refreshKey={refresh}
-              operationPending={operations.pending}
+              catalog={catalog}
               onOperate={(doc) =>
                 prepare([doc], doc.deleted_at ? "restore" : "set_triage")
               }
+              operationPending={operations.pending}
+              refreshKey={refresh}
+              active={section === "sources"}
+              onRefresh={() => setRefresh((n) => n + 1)}
             />
+            {section !== "sources" && (
+              <>
+                <Library
+                  documents={documents}
+                  total={total}
+                  page={page}
+                  setPage={(n) => {
+                    setPage(n);
+                    setSelected(null);
+                  }}
+                  sort={sort}
+                  setSort={(value) => {
+                    setSort(value);
+                    setPage(1);
+                    setSelected(null);
+                  }}
+                  types={catalog.types}
+                  type={type}
+                  setType={(value) => {
+                    setType(value);
+                    setPage(1);
+                    setSelected(null);
+                  }}
+                  view={view}
+                  setView={setView}
+                  selected={selected}
+                  onSelect={(id) => {
+                    setSelected(id);
+                    setMobileDetail(true);
+                  }}
+                  title={title}
+                  loading={loading}
+                  error={error}
+                  retry={() => setRefresh((n) => n + 1)}
+                  importFiles={importFiles}
+                  checked={checked}
+                  toggle={toggle}
+                  selectPage={(value) => {
+                    setSelectionMode("explicit");
+                    setChecked(
+                      value
+                        ? new Map(documents.map((doc) => [doc.id, { ...doc }]))
+                        : new Map(),
+                    );
+                  }}
+                  selectResults={selectResults}
+                  snapshotBusy={snapshotBusy}
+                  clearSelection={() => setChecked(new Map())}
+                  operate={() =>
+                    prepare(
+                      [...checked.values()],
+                      section === "trash" ? "restore" : "move_folder",
+                    )
+                  }
+                  operationPending={operations.pending}
+                  onDragStart={dragStart}
+                  onDragEnd={resetDrag}
+                />
+                <Detail
+                  key={selected || "empty"}
+                  api={api}
+                  id={selected}
+                  types={catalog.types}
+                  folders={catalog.folders}
+                  tags={catalog.tags}
+                  definitions={catalog.definitions}
+                  onBack={() => setMobileDetail(false)}
+                  refreshKey={refresh}
+                  operationPending={operations.pending}
+                  onOperate={(doc) =>
+                    prepare([doc], doc.deleted_at ? "restore" : "set_triage")
+                  }
+                />
+              </>
+            )}
           </>
         )}
       </main>

@@ -121,3 +121,8 @@ exclusions.py集中精确路径规则/待处理屏障/epoch，inventory在文件
 maintenance.py提供接口、围栏exclude/purge处理、GC与本地排队CLI。清理任务不调用任何外部文件写入/删除函数；外部来源永久清理会先写排除规则再删除系统引用。
 GC仅遍历managed/sha256合法键，以store独占锁+数据库写锁检查全部Revision引用后unlink/fsync；注册/追加持shared锁直到DB提交，统一store→SQLite锁序。候选持久化使24小时延迟/孤儿恢复可跨重启。
 无新服务/依赖；派生字节GC待其安全存储协议，当前原件外部卷不受清理器访问。
+
+## T28 来源Web边界
+
+Sources负责当前空间来源/库存/排除读取与任务回执，SourceWizard负责两步只读别名配置；关联档案复用Detail。相对路径导航直接使用现有relative_prefix完整段查询和稳定分页，不枚举无界全树。
+读请求在条件变化时abort，写操作捕获来源/条目/版本快照且不自动网络重试。任务串行有界轮询独立于来源选择，完成后刷新当前空间资源；切空间卸载仅停止浏览器查询，持久worker任务仍执行。OpenAPI/数据库保持T15版本，未新增端点或迁移。

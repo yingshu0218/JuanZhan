@@ -280,3 +280,26 @@ T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容�
 未在正常数据卷执行purge/GC时间快进，未改正常管理员。派生物理GC/生产来源UI尚未验收，前端未改，不重复浏览器套件。
 
 最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：238 passed，52.07秒（新增10项），仅既有弃用提示。过期异常GC候选不再阻断新孤儿后续任务，有针对性回归。最终镜像重新运行smoke_maintenance通过；Compose三容器升级健康，smoke.py通过Web/CSP/静态资源、API/Converter边界与worker心跳。OpenAPI0.4.16/48路径唯一键/本地引用校验通过。
+
+## T28 验收 · 2026-10-17
+
+环境：Linux云工作区、实际SQLite/文件/HTTP/独立worker，Chromium通过Playwright运行。Browser插件未提供（工具发现为空），采用仓库现有Playwright；无业务响应Mock。保留既有暖白/深绿参考，检查实际截图而非仅断言DOM。
+目标流程：配置只读来源 → 预扫描 → tree/flat首次导入 → 分页/目录下钻与结构化详情返回 → 离线/失联/恢复 → 排除/移除规则。
+
+| 检查 | 结果 |
+|---|---|
+| `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q` | 238 passed，58.89秒；仅既有Starlette/httpx弃用提示 |
+| `npm run build --prefix web` | 通过；无新应用依赖 |
+| `JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e --prefix web` | 原有8项通过，最终1.3分钟 |
+| `JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium DOCKER_CONFIG=$PWD/.local/docker npm run test:e2e:sources --prefix web` | 新增1条完整来源场景通过，最终44.5秒 |
+| Compose构建/升级与`python scripts/smoke.py` | 三容器健康；Web/CSP/资源、鉴权/Converter未实现边界及worker心跳通过 |
+| 浏览器入口/显示/控制台 | URL/标题/真实内容正确，无Vite错误覆盖层/未捕获异常；唯一预期409为主动制造的档案版本冲突 |
+| 响应式截图 | 1440×1000桌面、1024×768平板、390×844手机；平板/手机无页面横向溢出，实际截图已查看 |
+
+来源场景用独立Docker只读bind和数据卷：33份可读文件/1份忽略文件，预扫描后Document仍为0；首扫33份真实登记，30项分页可访问后页中文相对目录，打开结构化档案后返回保持前缀。第二独立来源flat导入亦成功。离线通过移动测试目录模拟，库存保留、扫描按钮禁用，恢复同inode目录后继续；一次完整增量suspected_missing，下一次独立成功扫描missing，原件重现恢复available。
+取消索引弹窗捕获版本后通过真实HTTP并发修改档案，确认返回VERSION_CONFLICT且未回收；重新读取确认后真实worker成功，字节读取前后相同。移除排除规则后回收档案仍在Trash，未伪恢复；重复hash新路径明确needs_match，没有假匹配入口。OS文件drop到来源明确拒绝且不上传，初始预扫描仍无Document。实际任务排在首扫产生的parse失败任务之后，验收等待真实队列完成（最多60秒），不跳过后台任务。最后补充真实GET延迟（放行原请求，不伪造响应）后切换导航，验证取消索引读取被中止、返回来源不弹出过期确认；关联详情同时复用工作区整理刷新信号。
+
+夹具首次运行揭示云环境umask 077导致非特权容器不可读，已对仅测试目录/文件显式设置755/644，内核只读仍保留；浏览器option禁用断言改为直接验证disabled属性。两处均在修复后重跑通过。fixture容器/卷/目录在退出后清理，正常数据卷/管理员未修改。Python后端/迁移/OpenAPI未改，本轮没有重复T11～T15全部专项容器脚本，保留其阶段证据。
+
+截图证据（本机/tmp，不入Git）：`/tmp/juanzhan-t28-sources.png`桌面库存，`/tmp/juanzhan-t28-wizard.png`配置确认，`/tmp/juanzhan-t28-offline.png`离线历史库存，`/tmp/juanzhan-t28-mobile.png`手机歧义状态。当前工作区无Browser插件，后续若安装可优先使用；此次真实浏览器证据已完成。
+边界：只展示已登记文件及其路径层次，不宣称完整物理目录枚举；没有自动扫描、人工匹配写入口、来源配置编辑、任务列表/刷新恢复、正文/原件预览或真实转换能力。来源回执仅当前空间页面保留。下一阶段T19，不是最终产品验收。

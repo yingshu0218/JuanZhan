@@ -234,3 +234,8 @@ GET /sources/{id}/exclusions、POST /sources/{id}/exclude-entry、DELETE /source
 待处理屏障立即阻止扫描该文件；失败终态释放，有限重试期间保留。排除epoch改变时扫描提交SOURCE_CHANGED重试。规则仅精确路径，不glob、不按hash屏蔽其他副本；移除不自动恢复回收站，但允许重新观察/清理后重新建档。
 永久清理body必须confirm_document_id和expected_document_version，ID不一致422，非Trash/旧版本409；执行时再校验，恢复后的旧任务不能删除新状态。完成清系统记录，外部路径留排除规则；最小receipt支持同ID/版本返回原completed Job，外部字节永不删除。
 托管文件不随purge立即物理删；Job.result含gc_job_id，GC延迟至少24小时且核查全部历史/回收引用。GC只由内部持久任务/本地管理员CLI触发，无客户端路径或缩短保留期选项。派生物理文件GC尚未开放。
+
+## T28 Web接入（契约不变）
+
+来源界面使用source-mounts、sources、entries(relative_prefix/page/page_size)、preview-scan、scan(initial/incremental)、exclusions、exclude-entry及jobs读取/条件重试。目录导航仅从已登记文件路径生成，不承诺目录枚举或空目录接口。取消索引先GET document取得document_version，确认后写expected_document_version；版本冲突不自动重提。
+任务回执和统计按真实result展示；预扫描不是导入/解析，离线不是单项missing。无新HTTP结构，Archive OpenAPI仍为0.4.16、48路径。

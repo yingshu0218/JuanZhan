@@ -7,6 +7,22 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  SOURCE_OFFLINE: "来源离线，请检查挂载后刷新。",
+  SOURCE_NOT_READ_ONLY: "来源挂载可写，必须由管理员改为只读。",
+  SOURCE_UNREADABLE: "来源无法读取，请检查挂载权限。",
+  SOURCE_ALIAS_NOT_ALLOWED: "挂载别名未获授权，请刷新来源。",
+  SOURCE_OVERLAP: "此目录已被来源覆盖，请选择独立挂载。",
+  SOURCE_OVERLAP_UNVERIFIED: "已有来源不可用，暂时无法验证目录是否重叠。",
+  SOURCE_SCAN_BUSY: "此来源已有其他扫描任务，请等待完成后刷新。",
+  SOURCE_INITIAL_REQUIRED: "请先完成首次导入。",
+  SOURCE_ROOT_CHANGED: "挂载根身份发生变化，请管理员核对原挂载。",
+  SOURCE_ROOT_UNVERIFIED: "尚无法验证原挂载身份，请管理员核对。",
+  SOURCE_CHANGED: "扫描期间来源变化，请确认稳定后重试。",
+  SOURCE_FOLDER_CONFLICT: "逻辑目录名称冲突，请调整后重试。",
+  SOURCE_MANIFEST_LIMIT: "来源超过本次扫描限制，请缩小来源范围。",
+  SOURCE_PREVIEW_LIMIT: "来源超过预扫描限制，请缩小来源范围。",
+  JOB_NOT_RETRYABLE: "此任务当前不能重试，请刷新核对。",
+  JOB_TIMEOUT: "任务执行超时，请检查来源规模及连接。",
   INVALID_CREDENTIALS: "用户名或密码不正确",
   ADMIN_NOT_CONFIGURED: "管理员尚未初始化，请由服务管理员完成初始化。",
   LOGIN_THROTTLED: "登录尝试过于频繁，请稍后重试。",

@@ -76,6 +76,7 @@ export const processing = {
   unsupported: "暂不支持解析",
 };
 export const availability = {
+  needs_match: "待人工匹配",
   available: "原件可用",
   missing: "原件缺失",
   suspected_missing: "原件待核验",

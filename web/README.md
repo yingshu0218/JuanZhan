@@ -21,3 +21,6 @@ npm run build --prefix web
 
 T27 已提供整理/批量/拖放/恢复操作，当前页与全部筛选结果选择分开，最多100份且超限明确拒绝；操作固定ID/版本，结果可逐项查看与受保护撤销。结果入口仅保留当前页面生命周期，刷新恢复留T31。
 OS文件拖入走上传队列，内部拖放仅作同空间逻辑整理并先确认。正文、缩略图、预览、下载或搜索仍未实现；字段/日期/文件大小全部来自实际API。
+
+T28 新增Sources/SourceWizard：只读别名配置、预扫描/首扫/增量、分页路径导航、离线/失联/歧义标记、关联档案详情、版本保护取消索引与排除移除。任务结果仅当前空间页面保留；调度/匹配/配置编辑/完整任务中心未实现。
+来源真实浏览器验收先构建Web和Archive镜像，再执行`JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium DOCKER_CONFIG="$PWD/.local/docker" npm run test:e2e:sources --prefix web`。夹具独立Docker/只读bind/SQLite/worker，8768/8769端口，不使用正常数据卷；截图保存`/tmp/juanzhan-t28-*.png`。
