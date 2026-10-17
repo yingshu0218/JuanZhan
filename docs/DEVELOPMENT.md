@@ -1,11 +1,11 @@
-# 生产开发（T01～T08）
+# 生产开发
 
 代码在 `services/juanzhan/`，迁移在 `services/migrations/`，测试在 `tests/`。
-参考原型仍在 `docs/prototype/`，不连接本骨架。
+生产前端在 `web/`；参考原型仍在 `docs/prototype/`，保持独立示例数据。
 
 ## 本地依赖与测试
 
-需要 Python 3.12、uv；SQLite >=3.38，支持 JSON 与 FTS5。
+需要 Python 3.12、uv、Node >=22.12 和 npm；SQLite >=3.38，支持 JSON 与 FTS5。
 从仓库根目录执行：
 
 ```sh
@@ -30,6 +30,8 @@ if not p.exists():
     p.write_text('CONVERTER_SERVICE_TOKEN=' + secrets.token_urlsafe(32) + '\n')
 PY
 python -m pip download --no-cache-dir --require-hashes --only-binary=:all: --no-deps -r requirements.lock -d wheelhouse
+npm ci --prefix web --cache /workspace/.npm
+npm run build --prefix web
 DOCKER_CONFIG="$PWD/.local/docker" docker compose up --build -d --wait
 python scripts/smoke.py
 ```
@@ -37,7 +39,7 @@ python scripts/smoke.py
 Archive 仅绑定宿主机 loopback 8000；Converter 无宿主机端口，仅内部网络可达。
 `/healthz` 是无敏感信息的运维端点，不应经生产公共网关发布。
 Converter 除健康检查外要求服务 Bearer Token；能力列表为空，任务请求返回 501。
-Archive 已提供 T03 认证接口，暂未提供档案业务路由；服务令牌只从运行环境注入。
+Archive 已提供认证、分类、上传、档案/元数据/批量业务API及同源生产Web；其余范围见STATUS，服务令牌只从运行环境注入。
 
 Archive 命名卷保存 database/managed/derived；Converter 临时区使用 tmpfs，不挂载业务卷。
 尚无外部来源接入；T11 引入时必须配置只读 bind mount 和别名白名单，不能接受任意客户端路径。
@@ -81,7 +83,7 @@ Cookie 默认 `Secure`、`HttpOnly`、`SameSite=Strict`，路径 `/api/v1`。
 `JUANZHAN_COOKIE_SECURE=false` 后重建容器。此项只用于可信本地开发，生产保持 true。
 健康检查不依赖 Cookie，不会因未初始化管理员而失败。
 
-浏览器客户端流程（当前尚无生产登录 UI）：
+生产登录界面已接入的会话流程：
 
 1. GET `/api/v1/auth/session`，获取匿名 Cookie 和 `csrf_token`（十分钟有效）。
 2. POST `/api/v1/auth/login`，JSON 含 username/password，携带 Cookie 和 `X-CSRF-Token`。
@@ -97,7 +99,7 @@ Cookie 默认 `Secure`、`HttpOnly`、`SameSite=Strict`，路径 `/api/v1`。
 认证表由 `0002_auth.sql` 增量建立，不改变已应用的 0001。私有认证表以 Unix 秒计算期限，
 对外时间统一 UTC RFC3339。失败登录按单管理员全局窗口限流：一分钟最多五次失败，随后返回 429；
 计数持久化，不信任客户端代理 IP。匿名会话总量上限 1000，超出返回 429，过期会话创建时清理。
-本轮不提供密码找回邮件、多用户、角色权限或生产登录页面。
+不提供密码找回邮件、多用户与角色权限。
 
 构建后运行 `python scripts/smoke_auth.py`，自动创建独立测试容器及数据卷，
 通过 CLI 初始化随机测试密码，验证真实 HTTP 登录/CSRF/Token/撤销/退出与重启持久化，
@@ -369,3 +371,25 @@ API限制1000键/256KiB JSON、文本65536字符；停用字段不允许写入�
 采纳只接受同档案当前成功ParseRun/Revision候选，按目标类型验证，不接受null擦除；版本检查保护后续编辑。
 显式采纳的前后值和候选ID进审计，候选行保持原样；解析器不会通过此接口自动采纳。生产解析仍未实现。
 批量set_metadata仍501，后续需接同服务及批量撤销语义，不绕过版本/确认/规则。无新迁移与文件副作用。
+
+## T26 生产前端构建、开发与验收
+
+web/使用React19/Vite6/Phosphor图标，与已接受原型同一视觉语言；不引入第二套生产框架或第三个业务服务。
+`npm ci --prefix web --cache /workspace/.npm`按锁安装，`npm run build --prefix web`生成web/dist，之后才能构建Docker镜像。
+本次初始JS gzip约82KiB；dist/node_modules不提交，Dockerfile离线复制编译产物，镜像不带npm或前端开发服务器。
+未构建时Python API仍可运行，根路径返回503 WEB_NOT_BUILT；不要用空壳成功替代真实构建。
+
+开发启动API后，在web/运行`npm run dev -- --port 5174 --strictPort`。Vite绑定loopback，/api同源代理默认Archive8000，
+可通过JUANZHAN_API_URL指定已运行API；不启用任意源CORS，不把令牌放浏览器localStorage。可信本地HTTP Cookie配置见认证节。
+生产Archive根路径提供公开HTML及/assets；HTML no-store、同源CSP、禁止嵌入。仅GET/HEAD静态资源免鉴权，所有业务API仍鉴权。
+管理员无默认密码，使用既有交互CLI初始化；UI只调用现有登录API，不代设管理员或显示服务端路径。
+
+上传默认顺序执行，每次一份原件，最多20份等待/上传项；入队时固定空间/目录，切导航不改变上传目的地。
+进度取真实XHR发送量，100%仍等服务器确认；201 saved才显示保存，解析任务状态另行轮询，不声称解析成功。
+取消正在传输或网络中断可能发生在服务端提交之后，提示刷新核对，不自动重试；重复原件只允许显式另存为独立档案。
+会话失效会卸载工作区并中止请求；导航/详情请求有取消保护，失败与空结果区分，移动端返回保留列表滚动位置。
+
+E2E：先构建，再`JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e --prefix web`（存在系统Chromium时）。
+也可用Playwright安装的默认浏览器省略该变量；当前云环境已有系统Chromium，无需关闭TLS/签名校验或另下载浏览器。
+测试自动启动一次性Archive/SQLite/随机管理员，不接正常Compose卷；产物默认放/tmp，服务端测试上传限32KiB用于验证真实413。
+后续T27增加整理/拖拽/批量/恢复，T29接正文/预览/字段编辑等真实能力；当前只读详情外壳如实提示未实现功能。

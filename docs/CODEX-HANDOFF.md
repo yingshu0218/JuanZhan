@@ -92,3 +92,13 @@ constraints新配置仅接受已知词汇；历史未知键501，需显式修复
 候选采纳仅接受当前Revision/current_parse_run_id的completed候选，事件保留候选ID；原候选不删除，不自动改写人工值。
 批量set_metadata/reprocess仍501，生产UI不得假装支持；真实候选生成留T19/T23。
 169项测试及HTTP/容器重启验证见TESTING；OpenAPI0.4.9、44paths，无新迁移。T11～T16仍待来源里程碑。
+
+## 当前接续点 · T26 后（优先于上文历史交接）
+
+T01～T10、T17/T18、T26完成。下一切片T27：收件箱整理、文件夹移动/标签/收藏与回收恢复、批量操作栏、OS/内部拖拽。
+复用web/既有ApiClient/CSRF/组件，不改docs/prototype假数据应用；任务结果和版本冲突要逐项可见，撤销不覆盖新编辑。
+保持默认真实结构化字段/状态，关联原件信息按需dialog；下载/预览/正文尚无真实接口，不能画出成功按钮或示例页码。
+生产构建先npm ci --prefix web、npm run build --prefix web，再Compose build/up；产物不提交，Dockerfile只复制web/dist，不需要镜像内联网Node构建。
+Browser插件当前不可用，已用Playwright+系统Chromium；测试命令、隔离临时服务/随机密码、视觉差异记录见TESTING。
+171项Python测试、3条E2E与三容器通过；OpenAPI0.4.10共47路径，新增的三组仅公开Web资源，业务API鉴权不变。
+云环境install_script/start_skill草稿已更新但未发布；进程不会跨任务保留，按保存步骤重新启动，不擅自设置/重置正常实例管理员。

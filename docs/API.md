@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T18 扩展版本 0.4.9），base `/api/v1`，44 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T26 扩展版本 0.4.10），base `/api/v1`，47 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -174,3 +174,10 @@ integer为有符号64位；date为有效YYYY-MM-DD；Decimal只接普通十进�
 候选采纳必须指向同档案当前成功内容/当前Revision，旧候选409、跨档案422、null候选不允许删除。
 显式版本化采纳可替换人工值，记录origin=extracted/is_confirmed=true/source_parse_run_id和事件候选ID，原值留审计，原候选保留。
 真实解析候选生成仍待后续；批量set_metadata/reprocess尚未开放。
+
+## T26 Web承载边界
+
+Archive根路径`/`及`/favicon.svg`、`/assets/{asset_path}`提供公开GET/HEAD编译静态资源，path-level server为根路径，不在/api/v1下。
+只包含Web外壳和代码，不包含档案/凭证；根HTML no-store及同源CSP，assets拒绝目录穿越。不开放POST或数据卷路径。
+所有业务API仍按既有鉴权/CSRF执行；生产UI完全使用已实现接口，未新增假上传/正文/预览/搜索API。
+未构建web/dist时根路径明确503 WEB_NOT_BUILT，不影响健康和API测试。OpenAPI0.4.10，47个路径模板。

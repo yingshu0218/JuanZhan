@@ -80,3 +80,8 @@ T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本
 API null删除行；boolean false存0，未设置无行。Decimal API固定四位字符串，不用浮点或文本做数值比较。
 元数据变化/版本递增/含前后metadata的document_events同事务；采纳事件附extracted_metadata_id，行关联source_parse_run_id。
 候选行不删除、旧人工值保留审计；失败回滚、no-op不改updated_at或版本。历史值读取不自动迁移/强制转型。
+
+## T26 浏览器边界
+
+无新迁移。浏览器不含演示业务数据库，不写localStorage中的档案/认证凭证；空间/目录/上传由既有API事务落SQLite。
+E2E临时SQLite与随机管理员跟随一次性测试服务清理，不使用或重置正常Compose卷。

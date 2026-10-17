@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.9
+  version: 0.4.10
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,98 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /:
+    servers:
+    - url: /
+    get:
+      tags: [System]
+      operationId: get_web_shell
+      summary: 生产Web登录及应用外壳
+      security: []
+      description: 公开编译HTML，无档案数据或凭证。Cache-Control=no-store，CSP限定同源并禁止嵌入。所有业务数据仍需认证API读取。
+      responses:
+        '200':
+          description: HTML外壳
+          content:
+            text/html:
+              schema:
+                type: string
+        '503':
+          description: WEB_NOT_BUILT，先构建web/dist
+    head:
+      tags: [System]
+      operationId: head_web_shell
+      summary: 检查Web外壳
+      security: []
+      responses:
+        '200':
+          description: 同GET响应头，无正文
+        '503':
+          description: Web未构建
+  /favicon.svg:
+    servers:
+    - url: /
+    get:
+      tags: [System]
+      operationId: get_web_favicon
+      summary: 公开Web图标
+      security: []
+      responses:
+        '200':
+          description: 静态SVG
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        '404':
+          description: 构建图标不存在
+    head:
+      tags: [System]
+      operationId: head_web_favicon
+      summary: 检查Web图标
+      security: []
+      responses:
+        '200':
+          description: 同GET响应头，无正文
+        '404':
+          description: 图标不存在
+  /assets/{asset_path}:
+    servers:
+    - url: /
+    parameters:
+    - name: asset_path
+      in: path
+      required: true
+      description: 编译静态资源相对路径；拒绝目录穿越，不能读取数据卷
+      schema:
+        type: string
+    get:
+      tags: [System]
+      operationId: get_web_asset
+      summary: 公开编译JS/CSS资源
+      security: []
+      responses:
+        '200':
+          description: 编译静态资源
+          content:
+            text/javascript:
+              schema:
+                type: string
+            text/css:
+              schema:
+                type: string
+        '404':
+          description: 资源不存在或路径不合法
+    head:
+      tags: [System]
+      operationId: head_web_asset
+      summary: 检查Web资源
+      security: []
+      responses:
+        '200':
+          description: 同GET响应头，无正文
+        '404':
+          description: 资源不存在或路径不合法
   /auth/session:
     get:
       tags:

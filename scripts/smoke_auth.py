@@ -84,6 +84,9 @@ try:
         raise AssertionError('Container did not become ready')
 
     ready()
+    with urllib.request.urlopen(base+'/',timeout=5) as response:
+        assert response.status==200 and 'JuanZhan' in response.read().decode()
+        assert response.headers['Cache-Control']=='no-store'
     assert request('/api/v1/documents')[0] == 401
     docker('exec', '-i', name, 'python', '-m', 'juanzhan.admin', 'set-password', '--stdin',
            input=password + '\n')

@@ -2,10 +2,10 @@
 
 ## 既有 V0.4 基线
 
-- Archive 应用：Python HTTP API（T01 骨架已采用 FastAPI，业务接口尚未实现）、SQLite + FTS5、本地文件卷、SQLite 持久 Job/worker、Web 前端。
+- Archive 应用：Python HTTP API（已采用 FastAPI，当前实现范围见 STATUS）、SQLite + FTS5、本地文件卷、SQLite 持久 Job/worker、Web 前端。
 - Converter：独立 Python HTTP 服务，受服务 Token 保护，读取任务输入，产出结构化结果和临时资产，不直接访问 Archive 业务库。
 - 两个主服务通过 Docker Compose 部署；MVP 不需要先引入 Redis、消息中间件、向量库或独立搜索集群。
-- 原型采用 React 19 + Vite 6 + Phosphor Icons；这是可运行的视觉成果，不等于生产前端选型已被用户最终锁定。
+- 生产与原型均采用 React 19 + Vite 6 + Phosphor Icons（ADR-026 实施选择）；原型仍是独立的示例视觉成果。
 
 ## 数据流
 
@@ -74,3 +74,10 @@ Field API共享catalog空间检查、写锁内认证和唯一性冲突处理；�
 
 类型/约束与filing检查集中metadata_values.py，HTTP、整理、批量类型/状态与撤销均复用；metadata.py提供版本化人工值与显式采纳。
 规则配置更新也验证已知词汇，旧未知配置保留但使用时拒绝；regex匹配具独立超时。候选生成/索引仍与人工事实写入隔离。
+
+## T26 Web运行边界
+
+web/生产React组件分为会话入口、工作区导航、列表、详情、上传队列、API/通用UI；数据请求并发获取并在切换/卸载时取消。
+Vite开发时/api代理到Archive；生产由Archive公开编译静态资源同源承载，Cookie/CSRF只在内存与HttpOnly Cookie中流转。
+HTML提供CSP/no-store/nosniff，静态路径不能访问业务卷；API鉴权在middleware保留，仅GET/HEAD的根HTML/favicon/assets豁免。
+Docker不运行Node前端进程，构建在宿主按锁生成dist；生产仍为两个业务服务和独立worker进程。无数据库迁移。

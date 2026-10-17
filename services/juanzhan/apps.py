@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata
+from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata, web
 
 from .config import Settings
 from .database import connect, migrate
@@ -81,7 +81,8 @@ def create_app(kind, settings=None):
             if request.url.path != "/v1/capabilities":
                 return error(501, "NOT_IMPLEMENTED", "Conversion is not implemented")
         if kind == "archive" and request.url.path != "/healthz":
-            public = (request.method, request.url.path) in {
+            public_web = request.method in ('GET','HEAD') and (request.url.path in ('/','/favicon.svg') or request.url.path.startswith('/assets/'))
+            public = public_web or (request.method, request.url.path) in {
                 ('GET', '/api/v1/auth/session'), ('POST', '/api/v1/auth/login')}
             if not public:
                 try:
@@ -107,6 +108,7 @@ def create_app(kind, settings=None):
         return {"status": "ok"}
 
     if kind == "archive":
+        web.install(app)
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))
         app.include_router(fields.router(settings))

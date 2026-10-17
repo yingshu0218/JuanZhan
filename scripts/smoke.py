@@ -1,10 +1,19 @@
 """Validate the running Compose services without exposing the service token."""
 import json
+import re
 import subprocess
 import urllib.request
 
 with urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5) as response:
     assert json.load(response) == {'status': 'ok'}
+with urllib.request.urlopen('http://127.0.0.1:8000/',timeout=5) as response:
+    html=response.read().decode()
+    assert response.status==200 and 'JuanZhan' in html
+    assert "frame-ancestors 'none'" in response.headers['Content-Security-Policy']
+asset=re.search(r'src="(/assets/[^"]+\.js)"',html).group(1)
+with urllib.request.urlopen('http://127.0.0.1:8000'+asset,timeout=5) as response:
+    assert response.status==200 and len(response.read())>0
+print('PASS: public Web shell/CSP and compiled assets')
 subprocess.run(['docker', 'compose', 'exec', '-T', 'converter', 'python', '-c', '''
 import json, os, urllib.request, urllib.error
 base='http://127.0.0.1:8000'
