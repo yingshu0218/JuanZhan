@@ -168,3 +168,8 @@ content.py以SQLite只读快照查询当前成功指针/历史/候选，分别�
 ## T25 统一检索查询
 
 search.py共用GET简单与POST高级查询，复用tokenizer字面词元AND、真实FTS5/bm25及空间校验；数值/日期元数据使用既有typed列索引的无关联子查询，标签/类型/目录范围作用于业务SQL。索引范围统计、命中数和分页在同一读事务；不读原件重新解析。状态筛选仅观察已有投影（真实managed probe/来源挂载健康与任务状态），请求内最多5000档案并缓存状态，外部文件系统不享有SQLite快照。3秒SQLite预算/1MiB请求/16MiB响应及先验页预算，明确失败不静默截断。见ADR-040与OpenAPI0.4.19。
+
+
+## T29 生产阅读组件
+
+ContentReader.jsx以完整请求路径隔离结果、AbortController取消过期读取；正文/候选/历史独立并行，各自加载/错误/分页，不向全局挂载无限正文。Detail负责业务字段/版本读取和刷新，采纳复用既有CSRF ApiClient与版本保护API。React文本与语义table显示块，Markdown源文本不走HTML转换器。阅读测试使用独立临时Archive/store、真实TCP Converter与worker；生产服务/数据库未改。

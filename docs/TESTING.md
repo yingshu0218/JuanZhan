@@ -411,3 +411,22 @@ OpenAPI0.4.19/49路径及Converter0.4.3/6路径通过唯一YAML键和全部本�
 最终镜像真实Docker构建及两组容器验收退出0：smoke_formats.py --persist --index --daemon --external与--persist --index --ocr。均经公开鉴权GET/POST查中文正文/相关性、范围索引完整性和真实summary；HTTP标题编辑后的搜索结果正确。六格式只读来源首扫、自动解析、持续worker脏队列及重建无重复保留，外部同大小变字节拒绝后仍可读旧缓存。第二Archive完全无来源挂载，经正式POST FTS+availability_status=source_offline仍搜到旧正文，未用Mock离线标志。
 
 正常Compose保留.env/管理员/卷，以新镜像up --wait --no-build成功；smoke.py验证Web/CSP/编译资源、Archive就绪、Converter鉴权/六格式能力及worker心跳，三个容器healthy。实际正常库8迁移、foreign_key_check=0、0档案；正文检索证据来自隔离实物夹具，夹具均已清理。安装/启动流程未改变，无需更新已有环境草稿，也未声称发布或新任务恢复完成。
+
+## T29 生产正文阅读验证 · 2026-10-18
+
+Browser plugin not available，使用仓库Playwright及现有/usr/bin/chromium，无新增浏览器依赖。目标路径：真实登录/上传→详情正文与表格→候选显式选字段确认→历史切换→手机返回原列表。npm run build --prefix web通过；本轮未运行搜索专项或全量Python，正文与Web后端相关测试15 passed（31.32秒），仅既有Starlette/httpx弃用警告，无跳过/禁用。
+
+独立reading-server.py使用临时业务SQLite/managed/derived及真实TCP Converter/worker，随机服务Token/独立管理员、不接正常数据卷；reading专项最终3 passed（17.1秒）。真实DOCX属性产生候选，先人工并发修改触发409、证明未写业务字段，再刷新后显式采纳，确认人工字段origin/值更新且档案标题未改变；历史旧Run不能采纳，返回当前结果恢复。实际DOCX标题/列表/表格单元格可读，Markdown只作为源文本；45段真实TXT分页20/20/5，切纯文本后回结构块重置第一页，img/script/iframe/a元素不产生。损坏PDF真实解析failed，不虚造正文，业务字段仍显示；失效会话刷新回登录。
+
+Chromium 1440×1000与390×844：页面身份/非空/无框架overlay、页面异常与控制台检查通过（预期409版本冲突单独核对），DOM和截图证明桌面/手机正文可读且无横向溢出，返回列表保持父级位置。截图在/tmp/juanzhan-t29-desktop.png及/tmp/juanzhan-t29-mobile.png；截图人工核对了标题、正文/表格、来源折叠信息、刷新入口和手机工具栏。报告/截图/日志均不入库。
+
+验证中修复两处读取边界：按完整路径隔离usePage结果，格式切换首帧不把旧块数组作为字符串渲染；没有成功ParseRun时不请求必然404的正文，避免重复控制台错误，保留真实失败/未处理提示。既有过期会话测试允许后台详情读已提前收到401返回登录，仍断言实际登录页和会话过期提示，不忽略鉴权失败。
+
+无后端/迁移/依赖或HTTP规范变更（Archive0.4.19/49路径、Converter0.4.3/6路径、8迁移）。未演练超大正文/十页历史/OCR浏览器视觉；底层内容/转换器边界沿用既有后端测试，不将本轮浏览器测试当全格式/完整产品验收。原件预览下载T32、任务/重解析UI T31及生产搜索UI T30仍待开发。
+
+
+既有库/整理浏览器回归最终8 passed（1.1分钟），真实只读来源向导/首扫/tree-flat/分页/失联/排除回归1 passed（1.1分钟）；没有修改这些功能的业务断言来掩盖失败。最初无正文读取产生404已通过产品代码修复；登出测试先后收到401的竞态仅调整等待方式，最终仍验证真实过期提示和拒绝访问。
+
+最终Docker构建、正常Compose up --wait --no-build及smoke.py通过（Web/CSP/新编译资源、Archive/Converter鉴权/能力、worker心跳）；三个服务healthy，实际8迁移及foreign_key_check=0，保留.env/管理员/正常数据卷。来源夹具退出后自动清理自身容器/卷/目录。无安装或服务启动步骤变化，未另改环境草稿，未声称发布/新任务恢复验证。
+
+最终阅读复验不再过滤404控制台错误，只单独识别并发版本冲突测试预期的409；3项全部通过，无其他页面异常/控制台错误。新增12项浏览器验证计数为阅读3+既有库/整理8+来源1，未将其与15项后端测试混作同一套全量运行。

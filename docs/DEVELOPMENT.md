@@ -536,3 +536,10 @@ smoke_formats.py --persist --index --daemon --external验证六格式、自动�
 无新依赖/环境变量/凭证/迁移，沿用冻结依赖和既有Compose镜像构建/启动流程。search.py直接消费T24索引；持续worker需运行以自动推进脏代次，API不会同步排队/解析来掩盖索引缺失。GET /documents?q=与POST /documents/search已实现，详见API/ADR-040；系统摘要同样已接真实数据。
 
 专项：uv run --frozen pytest -q tests/test_search.py。容器：smoke_formats.py --persist --index --daemon --external及--persist --index --ocr现在同时经鉴权HTTP验证简单/高级中文搜索、相关性/索引摘要/首页聚合及离线过滤。全部夹具隔离正常卷；新版本不重放旧失败任务。查询预算3秒SQLite/状态观察5000档案，POST 1MiB及响应16MiB；超限请收窄筛选/分页，不改安全限额绕过验证。无前端变更，搜索界面仍T30。
+
+
+## T29 前端阅读验证
+
+沿用npm ci --prefix web、npm run build --prefix web和既有Compose流程，无新依赖/凭证/模型/迁移。新增npm run test:e2e:reading --prefix web，需已安装Chromium（本环境JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium）。Playwright缺省库/整理测试和reading专项共享8767端口，必须依次运行；sources独立8768。reading-server.py生成临时Archive/store及随机服务Token、启动真实TCP Converter与worker，退出清理，不使用正常Compose卷或管理员。
+
+reading专项验证真实DOCX正文/表格/候选显式采纳/冲突保护、历史切换和手机返回，以及多页TXT/源文本格式切换/恶意标签不执行/失败解析及过期会话。截图、日志与报告均放/tmp；Browser plugin not available，因此使用仓库Playwright。正文/候选/历史分别20/10/10项分页，不添加服务端原件读取或下载接口。

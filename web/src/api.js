@@ -7,6 +7,10 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  DERIVED_CONTENT_UNAVAILABLE: "缓存文本暂时不可读，请切换结构化正文或联系管理员检查派生产物。",
+  CONTENT_NOT_COMPLETED: "所选解析尚未成功，请查看其他结果。",
+  CONTENT_RESPONSE_LIMIT: "内容超过读取上限，请使用结构化正文分页读取。",
+  STALE_CANDIDATE: "候选所属结果已过期，请刷新后核对当前候选。",
   SOURCE_OFFLINE: "来源离线，请检查挂载后刷新。",
   SOURCE_NOT_READ_ONLY: "来源挂载可写，必须由管理员改为只读。",
   SOURCE_UNREADABLE: "来源无法读取，请检查挂载权限。",

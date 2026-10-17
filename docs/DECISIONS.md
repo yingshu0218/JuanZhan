@@ -260,3 +260,12 @@ GET /documents?q与POST /documents/search共用search.py查询器。用T24同版
 范围索引摘要在text匹配前计算，零命中也报告missing/pending/failed、无成功正文、无文本层/仍需OCR、旧Revision正文、后台解析中及最近失败；计数可重叠，不能求和。每个结果给current/pending/missing/failed。旧索引仍可能命中已改内容、未索引内容可能漏检，明确incomplete而不伪造完整性；content_stale与原件availability保持独立。当前索引不保证OCR识别或原始布局语义完美。
 
 实时availability/processing筛选复用已有真实档案投影，按请求缓存观察值、最多5000档案；超限503需缩小空间/索引过滤范围，不返回部分计数。SQLite快照统一业务条件/计数/分页，不能冻结外部文件系统。每查询3秒SQLite进度预算，POST流1MiB、条件32项/in100项/分页100项、响应16MiB且先验页字节预算；超限413/503。无新迁移/依赖/环境凭证。首页summary用持久聚合，offline_sources是扫描状态而非当前全来源探测。
+
+
+## ADR-041 · 2026-10-18 · T29 安全缓存阅读与显式候选确认
+
+沿用Detail双栏结构，将占位正文换成ContentReader。正文/候选/解析历史独立有界并行读取（20/10/10项），失败互不遮蔽人工业务字段；无成功指针不请求必然404的正文。每次请求以完整路径标识结果并AbortController取消，切档案/Run/格式/页码不会把旧数组作为新格式字符串渲染。格式/历史变化重置相关页码；列表与移动端返回保留父级状态。
+
+结构块使用React文本、表格元素和真实locator，不插入HTML、执行脚本或加载远端链接/图片；text/markdown作为安全源文本而非活动HTML。OCR/转换警告/null置信度与缓存stale独立显示；未知定位不造页码、EPUB不称物理页。完整Run/Revision标识折叠于来源信息，历史保留失败代码和原始版本身份，不将失败尝试作为成功正文。
+
+候选只显示真实值/来源/定位/置信度，历史或旧Revision候选不可采纳。用户须手选active业务字段并确认覆盖；提交当前document_version及candidate ID，类型/范围/候选时效和跨空间约束仍由既有后端守护。并发编辑409不覆盖，刷新后可重试；采纳成功重新读取业务字段，不修改档案标题或其他字段。不提供原件下载/预览（T32）或假任务操作；重解析公开API已存在，任务/重解析交互接续T31。

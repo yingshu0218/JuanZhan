@@ -199,7 +199,11 @@ test("list pagination, sorting, space isolation and rejected stale-session acces
     ),
   ).toBe(true);
   await api(page, "/auth/logout", "POST");
-  await page.getByRole("button", { name: "已收藏", exact: true }).click();
+  // Detail reads can already receive 401 before this next interaction.
+  // Either route must end on the real expired-session login screen.
+  await page.getByRole("button", { name: "已收藏", exact: true }).click({ timeout: 2000 }).catch(async () => {
+    await expect(page.getByRole("heading", { name: "欢迎回到档案库" })).toBeVisible();
+  });
   await expect(
     page.getByRole("heading", { name: "欢迎回到档案库" }),
   ).toBeVisible();

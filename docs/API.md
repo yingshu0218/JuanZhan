@@ -289,3 +289,8 @@ metadata使用active/filterable字段当前值。eq/in支持七类型，contains
 响应items为真实Document并增加search_index{status,indexed_at,content_incomplete}；顶层search_index{total,missing,pending,failed,without_content,limited_content,stale_content,processing,failed_processing,incomplete,tokenizer_version}统计text匹配前的其他筛选范围，计数可重叠，不是命中数。旧索引失败/滞后继续可查，不保证包含新内容；empty items且incomplete=true不能当确定无结果。availability/processing筛选使用请求内真实投影观察，最多5000候选，超过503 SEARCH_STATUS_LIMIT；不是旧来源状态冒充在线核验。
 
 POST流最大1MiB、最多32元数据条件/100标签或类型、5排序/每页100；查询SQLite预算3秒、响应16MiB，返回413 SEARCH_REQUEST_LIMIT/SEARCH_RESPONSE_LIMIT或503 SEARCH_TIMEOUT/SEARCH_STATUS_LIMIT，无部分结果。成功与错误nosniff/no-store。GET /system/summary可选space_id，返回非回收档案/inbox/managed/external计数、失败任务及持久offline来源数；限定空间失败任务按目标档案/来源归属统计，全局含全部失败任务。
+
+
+## T29 前端消费范围
+
+无HTTP契约变更，Archive0.4.19/49路径、Converter0.4.3/6路径保持。生产详情使用既有content(format=blocks/text/markdown)、candidates和parse-runs分页，以及版本保护的metadata/adopt-candidate；只展示真实缓存，不执行HTML/原件、不提供派生产物下载。历史/旧Revision候选不采纳；正文暂无成功指针时直接呈现真实状态，不请求必然404的正文。

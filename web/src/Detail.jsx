@@ -5,6 +5,7 @@ import {
   Paperclip,
   ArrowClockwise,
 } from "@phosphor-icons/react";
+import { ContentReader } from "./ContentReader.jsx";
 import { message } from "./api.js";
 import {
   Dialog,
@@ -142,24 +143,9 @@ export function Detail({
               <span>{processing[doc.processing_status] || "状态未知"}</span>
             </div>
             {doc.content_stale ? (
-              <Notice>已保存的内容来自旧版本，当前原件的处理尚未完成。</Notice>
+              <Notice>当前处理未替代最近成功正文：可能是原件已更新或最近一次解析失败。</Notice>
             ) : null}
-            <section className="content-state">
-              <h3>正文内容</h3>
-              <p>
-                {doc.processing_status === "queued" ||
-                doc.processing_status === "running"
-                  ? "原件已保存，等待处理结果。"
-                  : "当前尚无可显示的结构化正文。"}
-              </p>
-              <p className="muted">
-                {doc.processing_status === "unsupported"
-                  ? "当前文件暂不支持解析，已保存的原件和业务字段不受影响。"
-                  : doc.processing_status === "failed"
-                    ? "本次处理失败，已保存的原件和业务字段不受影响。"
-                    : "结构化正文暂未开放。"}
-              </p>
-            </section>
+            <ContentReader api={api} doc={doc} definitions={definitions} onChanged={() => setAttempt((n) => n + 1)} />
             <section className="business-fields">
               <h3>业务字段</h3>
               {metadata.length ? (
