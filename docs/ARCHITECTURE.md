@@ -100,3 +100,10 @@ source_api负责别名配置、健康投影与库存查询，source_scans负责�
 创建预扫描事务内登记scan_runs及Job；队列claim/failure/complete在同一事务同步关联扫描状态/结果，租约恢复同样适用。
 worker将设置中的白名单显式送入spawn子进程；子进程仅读取并返回小型计数结果，parent围栏完成落库。目录栈最多64层，流式scandir，不收集完整文件列表，不将私有路径放进错误/结果。
 即时挂载health、扫描状态与已有条目状态独立；来源健康失败不执行批量missing。首扫/增量、规则和来源前端待后续。
+
+## T13 首扫准备与原子发布
+
+source_scans.inventory供预扫描与首扫复用，描述符逐段访问/只读校验，流式scandir及文件/目录观察前后指纹校验；预扫描仅计数，首扫读取字节并hash/sniff。
+source_initial将元数据流式写入匿名TemporaryFile，不缓存完整列表或复制原件；准备成功后，子handler在受租约保护的JobQueue.complete回调中原子publish，parent只接收committed确认。
+publish以临时SQLite映射表将相对目录映射到逻辑Folder，注册外部SourceEntry/Revision与稳定Document，排幂等parse并写审计；Job/scan_runs/来源完成标记同事务。所有失败回滚，匿名清单由进程/内核清理。
+长期数据库不保存持续目录映射；first完成后重放原任务，后续增量不得重建物理层级。无新服务/依赖/迁移，Converter未获外部卷访问。

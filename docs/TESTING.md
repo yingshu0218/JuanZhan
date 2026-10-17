@@ -252,3 +252,13 @@ Archive镜像构建及正常Compose升级通过，三个容器健康；`python s
 `python scripts/smoke_sources.py`已通过真实只读bind/SQLite/HTTP/worker：保存来源、CSRF、跨bind别名同根与父子根拒绝、预扫描活动合并、2份文件24字节/2项忽略的精确统计、嵌套可写挂载终态失败、Job与scan_runs结果一致、容器重启后会话/来源/结果保留。无档案/条目/Revision产生、原件hash不变、fixture卷和容器清理。
 1,000份真实文件的元数据预扫描基线为0.032秒、进程峰值RSS 21,368 KiB（本开发机Linux容器；非大规模性能承诺），逐项数/深度的低限实验均以SOURCE_PREVIEW_LIMIT失败，未静默截断。默认上限100,000项/64层为可调整保护值，未声称验证10万文件吞吐。重启验收发现Docker临时端口可能变化，脚本已重新查询映射后检查就绪。
 补充移除/遗留预扫描目标的队列验证：不存在scan_runs时handler明确INVALID_SOURCE_PREVIEW失败，不在claim阶段回滚造成队首阻塞。
+
+## T13 验收 · 2026-10-17
+
+新增7项Python验证首扫CSRF/模式边界、预扫描互斥/活动请求合并、真实worker空来源完成/重启重放、tree/flat同哈希独立登记与初始triage、目录/规范名冲突的整体回滚与修复重试、发布中租约过期连同parse Job回滚、匿名元数据上限失败与临时文件清理。SQL发布测试使用可信清单夹具；真实文件读取/hash/全链路由容器验收覆盖，未把清单夹具冒充真实NAS导入。
+`python scripts/smoke_initial.py`初次通过真实只读bind/HTTP/SQLite/worker：tree的3份文件（含空文件）与2层目录（含空目录）、flat的2份文件、同hash不同路径各自建档；规范名冲突无部分记录，修复后成功；人工改名/移动与后续新文件不会被initial重放覆盖/导入。
+额外1,000份真实文件的首扫/队列执行最终基线2.924秒（并行回归首次3.545秒；本开发机测量，不是大规模性能承诺）；共1007个Document/Entry/外部Revision、1007个审计/parse任务，托管对象/原件副本为零，FK检查通过，匿名清单退出无残留。容器重启后结果/会话/人工改名保留，原件hash保持不变。
+共享遍历器改造后`python scripts/smoke_sources.py`回归通过，预扫描仍只统计，嵌套可写/链接拒绝、资源上限、重启和原件完整性验证保留；本轮1,000文件预扫描0.064秒、峰值RSS21608 KiB（当前开发机）。前端未改，未重复浏览器验收。
+
+T13最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：216 passed，40.84秒，仅既有弃用提示。最终smoke_initial还验证宿主在文件被安全遍历器打开时改变字节，迭代继续前明确SOURCE_CHANGED，未接受过期观察；随后还原测试原件并确认hash。
+`DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compose build archive`与`docker compose up -d --wait --no-build`通过，三容器健康；`python scripts/smoke.py`验证Web/CSP/资源、API/Converter边界与worker心跳。OpenAPI0.4.14/48路径唯一键与本地引用检查通过。

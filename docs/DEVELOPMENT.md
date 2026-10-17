@@ -433,3 +433,12 @@ POST /sources/{id}/preview-scan需要Cookie CSRF或Bearer，返回持久job_id�
 Source.health反映当前挂载，Source.status也反映最后预扫描错误/当前任务；挂载恢复不等于已有成功导入。GET entries读取持久库存，来源离线也可用，不修改available/missing。
 scan_interval_minutes仅保存配置，尚无自动调度；/scan首次导入、增量/忽略规则、目录冲突预检与来源UI后续交付。1千真实文件资源基线只用于当前开发机，不代表大规模性能承诺。
 `python scripts/smoke_sources.py`已扩展隔离来源配置/真实worker预扫描、嵌套可写失败、重启持久化与资源上限检查；仅处理一次性测试目录/卷/容器，结束清理。Docker重启可能重分配临时主机端口，脚本重新查询后等待就绪。
+
+## T13 首次外部导入
+
+先沿用T11配置真正只读bind与别名、通过T12 POST /sources保存tree/flat、初始目标及filed/needs_review；再POST /sources/{id}/scan body={"mode":"initial"}，以既有CSRF或Bearer调用，轮询Job。
+首扫300秒/最多3次尝试、100000访问项/64层；匿名元数据清单最多64MiB（只含相对路径/文件事实，无原件字节）。准备阶段不持有业务写锁，发布阶段原子且受剩余租约限制；大型导入未作吞吐承诺。
+tree将相对目录（含空目录）创建到初始目标下，flat所有候选文件放初始目标。tree不合并现有同名或规范化冲突目录，SOURCE_FOLDER_CONFLICT时可通过现有目录改名/移动解决后重新提交；源目录自有规范名碰撞需调整来源布局/后续配置，不对外部目录自动改名。
+成功后反复initial只返回原completed任务，不导入新文件、不覆盖人工改名/分类/版本。新增文件与失联确认留T14；当前incremental为501。解析任务真实排队，但handler尚未实现，原件状态unknown不代表可预览/下载。
+原件不复制/移动/删除，managed对象为零；匿名清单退出/kill后消失，任何发布异常/租约丢失全部回滚。原件被宿主机更改时指纹检查拒绝当前观察，不承诺跨文件原子快照或历史字节保存。
+镜像构建后运行`python scripts/smoke_initial.py`验证真实tree/flat、冲突恢复、重放/重启、hash/审计/解析任务不变量和1千文件原子发布；该脚本仅使用一次性测试挂载/卷/随机管理员，不接触正常管理员或用户来源。

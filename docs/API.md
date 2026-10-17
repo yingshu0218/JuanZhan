@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T12 扩展版本 0.4.13），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T13 扩展版本 0.4.14），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -206,3 +206,13 @@ Source增加initial_target_folder_id/initial_triage_status与health{mount_status
 结果含source_id/estimated_files/estimated_bytes/ignored_files/by_extension/warnings；METADATA_ESTIMATE_NOT_SNAPSHOT表示动态元数据估算，IGNORED_UNSUPPORTED_UNSAFE_OR_INVALID_ENTRIES表示跳过项（符号链接目录按一个项计）。
 默认访问项100000、目录深度64、执行120秒、最多3次尝试，超限SOURCE_PREVIEW_LIMIT失败；不可读/嵌套可写不返回截断成功。scan_runs与Job状态/结果同事务保存，preview不设置成功扫描/导入时间。
 /source…/scan、排除规则/取消索引及来源UI仍待T13～T15/T28，自动扫描调度、忽略规则及同名逻辑目录冲突预检不在本轮实现。
+
+## T13 首次导入契约
+
+POST /sources/{id}/scan需要{mode:"initial"}，拒绝未知字段；incremental仍501 INCREMENTAL_SCAN_NOT_IMPLEMENTED。OpenAPI0.4.14、48路径。
+活动initial复用原Job；与活动preview互斥409 SOURCE_SCAN_BUSY。成功完成后再次initial返回原Job/status=completed，不创建新扫描或改写档案；遗留成功标记无对应Job时409 SOURCE_INITIAL_ALREADY_COMPLETED。
+按配置tree/flat和初始triage登记，初始目标目录同空间；tree创建相对目录含空目录，flat忽略物理目录。规范名碰撞（含磁盘大小写/Unicode碰撞）或目标已有同名子目录使任务SOURCE_FOLDER_CONFLICT，修复逻辑目录后可新建首扫。
+Job.result为SourceInitialResult：source_id/mode=initial/imported_files/imported_bytes/created_folders/ignored_files。相同hash不同路径独立建档，不合并业务记录；未支持扩展名/非法路径/链接/特殊项计入忽略。
+读取/分块hash/sniff在写锁外；变化SOURCE_CHANGED可有限重试。匿名元数据清单64MiB，超限SOURCE_MANIFEST_LIMIT；访问100000项/64层沿用SOURCE_PREVIEW_LIMIT；initial超时300秒、最多3次尝试。超限或冲突均整体失败，无截断成功。
+发布事务同时写目录、条目、外部Revision、档案/事件/parse Job及扫描结果/两个来源完成时间；异常或过期租约回滚全部。已有遗留条目且无完成标记SOURCE_INITIAL_STATE_CONFLICT，不覆盖。
+导入不复制/移动外部原件，哈希仅记录观察时事实，不构成历史字节快照。原件当前可用性仍unknown；parse排队不表示已转换。增量、排除与来源UI后续交付。

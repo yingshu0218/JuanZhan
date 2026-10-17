@@ -135,3 +135,16 @@ JobQueue在claim/failure/complete中同事务同步scan_runs和来源状态，�
 来源即时health与最后扫描状态分开：挂载ready但上一预扫描失败时status可为error。离线读取库存照常，不改available/suspected_missing/missing；后续T14再实现缺失确认。
 entries.relative_prefix为完整目录段，无尾斜杠，%/_字面匹配；按规范路径/ID稳定分页，每页最多100。未知字段与任意根路径均拒绝。
 209项Python及真实容器HTTP/worker/RO挂载/重启验证见TESTING；OpenAPI0.4.13/48paths，无新迁移/依赖/前端改动。云配置安装启动不变，不新增用户挂载或发布既有草稿。
+
+## 当前接续点 · T13 后（优先于上文历史交接）
+
+T01～T13、T17/T18、T26/T27完成，下一切片T14增量、可信重关联、失联二次确认与离线处理。incremental当前明确501，不把initial重复请求当成增量。
+source_initial.initial在写锁外只读遍历/分块hash/sniff，匿名TemporaryFile只暂存相对路径/hash/统计等元数据（64MiB上限，无原件字节），退出/kill自动清除。
+同一fenced complete事务publish逻辑目录、SourceEntry/Document/外部Revision、document_created(actor=source_scan)、幂等parse Job，随后Job/scan_runs与sources两个完成时间一起提交。失去租约/异常整次回滚，不保留半套首扫。
+共享source_scans.inventory验证root/逐层只读、NOFOLLOW、普通文件、前后dev/ino/size/mtime/ctime；目录前后也检查变化。100000访问项/64层，initial限300秒/3次尝试；写入长于剩余租约会回滚，不允许绕过围栏。
+tree在initial_target_folder_id下创建所有安全相对目录（含空目录），规范名碰撞或现有同名目录SOURCE_FOLDER_CONFLICT，不合并；flat不复制目录。根文件放初始目标。临时映射表随事务/连接消失，不形成后续物理镜像。
+初始配置triage可filed或needs_review；同hash不同路径各自Document，无managed_objects。SourceEntry保存精确Unicode路径/mtime_ns/identity_hint及last_seen_scan_id，Revision只存相对历史路径，不承诺旧字节可恢复。
+首扫成功后重放返回原completed Job，保持后续人工改名/逻辑移动/版本，也不导入后来文件；preview与initial活动互斥。已有遗留条目而完成标记为空时SOURCE_INITIAL_STATE_CONFLICT，不能盲目覆盖。
+解析仅排持久任务，真实handler仍未实现；原件availability维持unknown，不把登记成功画成已转换/可预览。来源UI仍留T28，安装/云配置步骤不变，无新迁移或依赖。
+
+T13验收：216项Python通过，scripts/smoke_initial.py与smoke_sources.py真实容器验收通过，正常Compose三容器健康；OpenAPI0.4.14/48paths。T14必须延续这些契约与原件零写入边界。

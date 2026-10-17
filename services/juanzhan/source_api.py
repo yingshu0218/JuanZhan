@@ -12,6 +12,10 @@ from .jobs import JobQueue, JobSpec
 from .source_paths import SourceMounts, SourcePathError, components
 
 
+class ScanRequest(Input):
+    mode: Literal['initial', 'incremental']
+
+
 class SourceCreate(Input):
     space_id: ID
     name: Name
@@ -44,7 +48,7 @@ def public(db, mounts, source):
         if result['health']['mount_status'] != 'ready':
             result['status'] = 'offline' if result['health']['mount_status'] == 'offline' else 'error'
         elif db.execute("SELECT 1 FROM scan_runs r JOIN jobs j ON j.target_id=r.id "
-                        "WHERE r.source_id=? AND j.target_type='source_preview' AND j.status IN ('queued','running')",
+                        "WHERE r.source_id=? AND j.target_type IN ('source_preview','source_initial') AND j.status IN ('queued','running')",
                         (source['id'],)).fetchone():
             result['status'] = 'scanning'
         else:
@@ -131,9 +135,11 @@ def router(settings):
             source = required(db, 'sources', id)
             if source['kind'] != 'external' or source['status'] == 'disabled':
                 fail(409, 'SOURCE_DISABLED', 'Source cannot be scanned')
-            active = db.execute("SELECT j.id,j.status FROM scan_runs r JOIN jobs j ON j.target_id=r.id "
-                "WHERE r.source_id=? AND j.target_type='source_preview' AND j.status IN ('queued','running') ORDER BY j.created_at,j.id LIMIT 1", (id,)).fetchone()
+            active = db.execute("SELECT j.id,j.status,j.target_type FROM scan_runs r JOIN jobs j ON j.target_id=r.id "
+                "WHERE r.source_id=? AND j.target_type IN ('source_preview','source_initial') AND j.status IN ('queued','running') ORDER BY j.created_at,j.id LIMIT 1", (id,)).fetchone()
             if active:
+                if active['target_type'] != 'source_preview':
+                    fail(409, 'SOURCE_SCAN_BUSY', 'Another source scan is active')
                 return {'job_id': active['id'], 'status': active['status']}
             probe = health(mounts, source['root_ref'])
             if probe['mount_status'] != 'ready':
@@ -142,6 +148,37 @@ def router(settings):
             db.execute("INSERT INTO scan_runs(id,source_id,mode,status,created_at) VALUES (?,?,'preview','queued',?)", (run_id, id, timestamp))
             job = queue.enqueue(JobSpec(kind='scan_preview', target_type='source_preview', target_id=run_id,
                 payload={}, idempotency_key='source-preview:'+run_id, timeout_seconds=120), db=db)
+            return {'job_id': job['id'], 'status': job['status']}
+
+    @result.post('/sources/{id}/scan', status_code=202)
+    def scan(id: str, body: ScanRequest, request: Request):
+        with transaction(settings, request) as db:
+            source = required(db, 'sources', id)
+            if body.mode == 'incremental':
+                fail(501, 'INCREMENTAL_SCAN_NOT_IMPLEMENTED', 'Incremental scanning is not implemented')
+            if source['kind'] != 'external' or source['status'] == 'disabled':
+                fail(409, 'SOURCE_DISABLED', 'Source cannot be scanned')
+            if source['initial_import_completed_at'] is not None:
+                completed = db.execute("SELECT j.id,j.status FROM scan_runs r JOIN jobs j ON j.target_id=r.id "
+                    "WHERE r.source_id=? AND j.target_type='source_initial' AND j.status='completed' ORDER BY j.created_at,j.id LIMIT 1",
+                    (id,)).fetchone()
+                if completed:
+                    return {'job_id': completed['id'], 'status': completed['status']}
+                fail(409, 'SOURCE_INITIAL_ALREADY_COMPLETED', 'Initial import was already completed')
+            active = db.execute("SELECT j.id,j.status,j.target_type FROM scan_runs r JOIN jobs j ON j.target_id=r.id "
+                "WHERE r.source_id=? AND j.target_type IN ('source_preview','source_initial') AND j.status IN ('queued','running') "
+                "ORDER BY j.created_at,j.id LIMIT 1", (id,)).fetchone()
+            if active:
+                if active['target_type'] != 'source_initial':
+                    fail(409, 'SOURCE_SCAN_BUSY', 'Another source scan is active')
+                return {'job_id': active['id'], 'status': active['status']}
+            probe = health(mounts, source['root_ref'])
+            if probe['mount_status'] != 'ready':
+                fail(422, probe['error_code'], 'A readable read-only mount is required')
+            run_id, timestamp = uuid.uuid4().hex, now()
+            db.execute("INSERT INTO scan_runs(id,source_id,mode,status,created_at) VALUES (?,?,'initial','queued',?)", (run_id,id,timestamp))
+            job = queue.enqueue(JobSpec(kind='scan', target_type='source_initial', target_id=run_id,
+                payload={}, idempotency_key='source-initial:'+run_id, timeout_seconds=300), db=db)
             return {'job_id': job['id'], 'status': job['status']}
 
     return result

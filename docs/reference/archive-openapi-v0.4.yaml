@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.13
+  version: 0.4.14
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1984,8 +1984,15 @@ paths:
       - Sources
       summary: 执行首次或增量扫描
       operationId: post_sources_id_scan
-      description: 首次按配置导入目录树，仅执行一次；后续新增进入 needs_review 且不会更新旧逻辑位置。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要
-        CSRF。
+      description: >-
+        T13实现mode=initial；incremental仍返回501 INCREMENTAL_SCAN_NOT_IMPLEMENTED。
+        首扫按来源配置tree/flat和初始整理状态登记，绝不移动/复制外部字节；tree在目标逻辑文件夹下复制相对目录（含空目录），flat全部放到初始目标。
+        同来源活动initial请求返回原Job，preview与initial互斥（409 SOURCE_SCAN_BUSY）。首次成功后重放返回原completed Job，不重新导入或覆盖后续人工整理。
+        遍历/流式哈希/MIME嗅探在写锁外完成，匿名临时元数据清单最多64MiB；最多100000访问项、64层、300秒、3次尝试。只读取候选扩展名文件，跳过不支持/非法/符号链接/特殊项。
+        发布在同一租约围栏事务中创建逻辑目录、SourceEntry、Document、外部Revision、事件、幂等parse任务，并完成Job/scan_run/首次导入标记；任何失败整体回滚。
+        与现有目录或规范名碰撞时SOURCE_FOLDER_CONFLICT，不静默合并；修复逻辑目录冲突后可显式新建首扫。相同哈希不同路径分别建档。
+        原件可用性仍保守unknown，登记哈希只代表观察到的字节，不保证旧字节可恢复；解析handler尚未实现，任务排队不代表解析成功。
+        Job.result结构见SourceInitialResult。使用Cookie会话时须携带X-CSRF-Token；Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -2001,6 +2008,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 mode:
                   type: string
@@ -2010,6 +2018,12 @@ paths:
               required:
               - mode
       responses:
+        '501':
+          description: Incremental scanning is not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '202':
           description: 扫描任务已提交
           content:
@@ -2874,6 +2888,27 @@ components:
       - source_id
       - relative_path
       - created_at
+    SourceInitialResult:
+      type: object
+      required: [source_id, mode, imported_files, imported_bytes, created_folders, ignored_files]
+      properties:
+        source_id:
+          type: string
+        mode:
+          type: string
+          const: initial
+        imported_files:
+          type: integer
+          minimum: 0
+        imported_bytes:
+          type: integer
+          minimum: 0
+        created_folders:
+          type: integer
+          minimum: 0
+        ignored_files:
+          type: integer
+          minimum: 0
     ScanPreview:
       type: object
       properties:

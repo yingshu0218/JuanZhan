@@ -102,3 +102,10 @@ Source/SourceEntry访问及扫描预览留T12，复用已存在的DDL，不把�
 队列事务同时更新scan_runs的status/started_at/finished_at/result_json/error_json及sources状态；重试清除结束标记/旧结果，保留首次started_at，最终完成与Job结果原子落库。
 preview不写source_entries/documents/file_revisions/folders，不更新initial_import_completed_at或last_successful_scan_at；离线仅读取库存，不改条目状态。
 条目查询按source_id及完整路径段筛选，relative_path_norm,id稳定排序，Unicode精确保留。
+
+## T13 首扫原子登记
+
+无新迁移。复用scan_runs(mode=initial)、jobs(kind=scan,target_type=source_initial,target_id=scan_runs.id)。完成事务同时写sources.initial_import_completed_at与last_successful_scan_at。
+SourceEntry保存source/space/document、精确相对路径、size/mtime_ns/sha256/身份hint、available及last_seen_scan_id；Revision storage_kind=external、source_entry_id与相对source_path_at_capture，不关联managed_object。
+先建Document再Entry/Revision并回填current_revision_id；version=1、初始triage来自Source，无自动按hash合并。document_created事件actor=source_scan，与parse幂等任务同事务。
+临时initial_folder_map只在当前连接/事务存在，回滚/退出即消失；永久目录与首扫完成标记一同发布。无新迁移、不修改历史DDL，错误不留下部分目录/条目/档案/解析任务。

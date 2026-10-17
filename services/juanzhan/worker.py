@@ -31,6 +31,17 @@ def _send(connection,message):
 
 def _handler(job,data_dir,connection,source_mounts=()):
     try:
+        if job['kind']=='scan' and job['target_type']=='source_initial':
+            from .source_initial import initial
+            from .source_paths import SourcePathError
+            settings = Settings(data_dir=Path(data_dir),converter_token='',source_mounts=source_mounts)
+            try:
+                initial(settings,job)
+                _send(connection, ('committed',))
+            except SourcePathError as exc:
+                _send(connection, ('failure',exc.code,'Initial source import could not complete safely',
+                    exc.code in ('SOURCE_OFFLINE','SOURCE_CHANGED','SOURCE_FILE_MISSING')))
+            return
         if job['kind']=='scan_preview' and job['target_type']=='source_preview':
             from .source_scans import preview
             from .source_paths import SourcePathError
