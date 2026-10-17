@@ -362,3 +362,18 @@ Archive OpenAPI0.4.17/48路径，Converter0.4.3/6路径；现有规格解析/引
 边界：正文/历史/候选公开GET、重解析入口仍T23，中文FTS和搜索T24/T25，结构化阅读T29、用户原件下载/预览及备份T32仍未完成。远端主动DELETE尽力执行，崩溃/请求仍活动时靠Converter执行期限+TTL兜底；历史失败不会因升级自动重排。
 
 补充数据库硬约束验收：不同档案的ParseRun/attempt或资产顺序关联在INSERT/UPDATE时被SQLite拒绝，不只依赖调用方判断；0007为独立增量迁移，0006应用后未改checksum。
+
+
+## T23 验收 · 2026-10-18
+
+全量`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：330 passed，145.25秒（比T22新增13项），无跳过/禁用，仅既有Starlette/httpx弃用提示。补齐parse_run_id空值/最大长度查询约束后，受影响content专项13项再次全部通过（25.66秒）。无依赖、迁移或前端源码变更。
+
+专项使用真实上传/文件/Archive SQLite/worker子进程/真实uvicorn TCP Converter/派生store：六格式三种正文GET、默认blocks及单项分页、历史顺序/当前标记、candidate_count与无远端任务引用；真实DOCX候选值/来源读取、人工确认字段在解析前后保留、显式采纳写来源、重解析保留字段、历史候选不能冒充当前候选。跨档案Run查询404，失败新Revision仍返回旧正文并stale；无成功缓存404、未完成Run409。派生文件实际篡改/删除时text503且不泄露路径，DB中的blocks仍可读取，不用重新解析原件掩盖损坏。
+
+全部新GET/POST未认证401，Cookie写操作缺CSRF403、Bearer可写，业务版本/Revision冲突409，未知字段/严格布尔/重复语言/语言与OCR开关冲突422；已有成功未force拒绝，其他活动任务拒绝，同request_id同选项复用、不同选项409，完成后重发也不创建额外Run。不同请求并发仅一项受理，另一项409。分页/格式/RunID边界拒绝，降低实际响应预算的故障测试验证SQLite先验页面预算及413，不静默截断。
+
+Docker实际构建与三组跨容器链路通过：smoke_formats.py --persist（六格式）、--persist --ocr（真实中英文PNG/JPEG/TIFF/扫描PDF）、--persist --external（真实内核只读来源HTTP配置/首扫）。脚本现在从客户端经正式HTTP读取三格式正文/历史/候选，再POST版本/request_id保护的重解析并重发同请求，真实worker完成后历史增加且旧Run保留。外部同大小字节变化拒绝，旧缓存仍可经公开content读取。附加第二Archive实例共享仅业务卷、源别名指向实际不存在目录，来源确实不可访问而非Mock离线标志；同一认证会话仍读到相同已保存正文，availability=source_offline、stale=true且无后端绝对路径。
+
+所有容器夹具独立随机管理员/数据卷/网络，退出只清理本次资源；正常.env/管理员/数据卷保留。正常Compose重建并通过smoke.py的Web/CSP/已编译资源、鉴权、能力及worker心跳。7条迁移保持，无新增安装步骤/凭证/环境配置变更；不重复前端浏览器套件。Archive OpenAPI0.4.18/49路径、Converter0.4.3/6路径的唯一键/引用与既有契约测试通过；YAML只重写相关路径和schema，原未修改定义语义保留。
+
+边界：本轮JSON API不直接渲染HTML、提供二进制下载或读取外部原件；源可用性unknown独立表达，不能当原件已验证。公开查询不是阅读UI，T29待接；中文FTS/搜索T24/T25、批量reprocess/set_metadata、原件下载/预览/备份T32和正式发布仍未交付。请求202只代表受理，模型/转换能力最终由后台检查；失败仍保留旧成功正文。

@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata, web, source_api, maintenance
+from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata, web, source_api, maintenance, content
 
 from .config import Settings
 from .database import connect, migrate
@@ -20,7 +20,7 @@ logger = logging.getLogger("uvicorn.error")
 
 
 def error(status, code, message, **extra):
-    headers = {"Cache-Control": "no-store"}
+    headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
     if status == 401:
         headers["WWW-Authenticate"] = "Bearer"
     return JSONResponse({"error": {"code": code, "message": message, **extra}}, status_code=status, headers=headers)
@@ -130,6 +130,7 @@ def create_app(kind, settings=None, *, converter_config=None):
         app.include_router(maintenance.router(settings))
         app.include_router(fields.router(settings))
         app.include_router(metadata.router(settings))
+        app.include_router(content.router(settings))
         app.include_router(jobs.router(settings))
         app.include_router(uploads.router(settings))
         app.include_router(batches.router(settings))

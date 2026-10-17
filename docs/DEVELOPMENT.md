@@ -505,3 +505,10 @@ T22无新依赖/模型/凭证，既有冻结安装、哈希wheelhouse和Compose�
 运行uv run --frozen python scripts/smoke_formats.py --persist验证六格式自动入库；加--ocr验证真实OCR持久化，加--external验证实际内核只读挂载、来源API首扫、真实worker转换入库及源内容变更拒绝。均带DOCKER_CONFIG=$PWD/.local/docker，使用独立卷/随机凭证，退出只清理夹具。原smoke_formats无--persist模式仍用于独立Converter，不自动启动worker。
 
 派生GC自动于解析尝试/永久清理时排延迟任务，可通过python -m juanzhan.maintenance gc --store derived手动排队；从首次发现无引用起至少24小时宽限，全部历史/回收引用均保护。保留data/derived完整字节及DB的一致备份，备份恢复演练仍T32。既有失败HANDLER_NOT_AVAILABLE任务升级不会自动重排，公开重解析入口随T23完成。
+
+
+## T23 更新 · 2026-10-18
+
+T23无依赖、环境变量或迁移新增，沿用冻结安装、现有镜像构建/Compose启动。pytest包含test_content.py；smoke_formats.py --persist现在同时验证三格式正文/分页历史/候选和公开幂等重解析，--ocr覆盖OCR结果，--external额外验证第二Archive实例没有来源可访问时仍返回相同缓存且source_offline/stale。所有夹具独立网络/随机凭证/卷，退出清理；正常卷不参与。
+
+调用POST /api/v1/documents/{id}/reprocess须附当前业务版本、当前Revision和客户端request_id（UUID可用）；成功缓存明确force=true，语言白名单及严格布尔，Cookie CSRF或Bearer。GET content默认blocks，text/markdown仍是JSON而非文件/HTML。公开内容不代表阅读界面或用户原件下载已完成；无新的环境配置步骤。

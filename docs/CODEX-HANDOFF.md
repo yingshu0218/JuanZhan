@@ -206,3 +206,8 @@ pytest全量279项通过；scripts/smoke_formats.py真实上传六格式→Archi
 ## T22 更新 · 2026-10-17
 
 当前接续点T22之后（优先于历史交接）：parsing.py/derived.py已接worker，0006迁移新增请求顺序/尝试/资产顺序/派生GC，0007补齐关联作用域约束，当前共7条迁移。下一T23公开正文、解析历史与候选读取/显式采纳/重解析入口，先读现行OpenAPI和内容规范，不把已实现入库当公开API已完成。状态与发布都按请求顺序和尝试数围栏；失败/不支持保留旧成功，GC保护全部历史引用。正常Compose启动自动迁移，无新依赖或凭证；原5迁移和.env/管理员/数据卷保留。用smoke_formats.py --persist、--persist --ocr、--persist --external验证；后者实际只读来源API首扫→自动解析，并验证源内容变更拒绝。不得重跑用户旧失败任务或把原件写回。
+
+
+## T23 更新 · 2026-10-18
+
+当前接续点T23之后（优先于历史交接）：content.py已实现正文/历史/候选分页与版本+Revision+request_id保护的reprocess；Archive OpenAPI0.4.18/49路径、7迁移，Converter0.4.3/6路径。下一T24锁定中文分词引擎/字典及许可，FTS单文档增量重建与tokenizer版本，不能把q示例过滤当全文检索。读写都取真实持久数据；不可在T29前添加假正文。reprocess已成功需force=true，不同活动请求409；同请求编号重发复用。来源离线正文缓存可读且stale，候选采纳仍需显式typed/versioned操作。测试content专项及smoke_formats --persist/--persist --ocr/--persist --external（含真正离线第二实例）。无安装/环境变量/迁移新增，保留.env/管理员/正常数据卷。

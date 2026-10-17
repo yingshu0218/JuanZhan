@@ -37,6 +37,7 @@ prefix='juanzhan-formats-smoke-'+uuid.uuid4().hex[:12]
 network=prefix+'-net'
 archive=prefix+'-archive'
 converter=prefix+'-converter'
+offline=prefix+'-offline'
 volume=prefix+'-data'
 token=secrets.token_urlsafe(32)
 password=secrets.token_urlsafe(32)
@@ -205,6 +206,31 @@ with connect(settings.database) as db:
 print('PASS: all original objects and Archive business parse state preserved; OCR mode='+str(OCR_MODE))
 '''
     print(docker('exec','-i',archive,'python','-',input=code))
+    if persist_mode:
+        status,listing,_=request(base,'/api/v1/documents?space_id='+space['id'],cookie=cookie)
+        assert status==200 and len(listing['items'])==len(fixtures)
+        for document in listing['items']:
+            root='/api/v1/documents/'+document['id']
+            for format in ('blocks','text','markdown'):
+                status,content,reply_headers=request(base,root+'/content?format='+format,cookie=cookie)
+                assert status==200 and content['body'] and content['parse_run_id']==document['current_parse_run_id']
+                assert reply_headers['Cache-Control']=='no-store' and reply_headers['X-Content-Type-Options']=='nosniff'
+            status,history,_=request(base,root+'/parse-runs?page_size=1',cookie=cookie)
+            assert status==200 and history['total']==1 and history['items'][0]['is_current']
+            status,candidates,_=request(base,root+'/candidates',cookie=cookie)
+            assert status==200 and all(c['adoptable'] for c in candidates['items'])
+        document=listing['items'][0];root='/api/v1/documents/'+document['id']
+        body=json.dumps({'expected_document_version':document['document_version'],'expected_revision_id':document['current_revision_id'],
+            'request_id':uuid.uuid4().hex,'force':True,'ocr':ocr_mode,'ocr_languages':'chi_sim,eng' if ocr_mode else ''}).encode()
+        status,first,_=request(base,root+'/reprocess',body=body,cookie=cookie,csrf=session['csrf_token'])
+        assert status==202,first
+        status,again,_=request(base,root+'/reprocess',body=body,cookie=cookie,csrf=session['csrf_token'])
+        assert status==202 and first==again
+        outcome=json.loads(docker('exec',archive,'python','-m','juanzhan.worker','--once'))
+        assert outcome['job_id']==first['job_id'] and outcome['status']=='completed'
+        _,history,_=request(base,root+'/parse-runs',cookie=cookie)
+        assert history['total']==2 and history['items'][0]['id']!=document['current_parse_run_id']
+        print('PASS: authenticated content/parse history/candidates API and idempotent explicit reprocess over real HTTP')
     if external_mode:
         # Host-side fault injection changes a read-only source after capture; Archive must reject it.
         path=sorted(Path(source_fixture.name).iterdir())[0];original=path.read_bytes()
@@ -228,11 +254,33 @@ print(json.dumps({'job_id':job['id'],'document_id':document,'current':current}))
             assert failed['error']['code']=='SOURCE_REVISION_CHANGED'
             _,shown,_=request(base,'/api/v1/documents/'+retry['document_id'],cookie=cookie)
             assert shown['current_parse_run_id']==retry['current'] and shown['content_stale']
+            _,cached,_=request(base,'/api/v1/documents/'+retry['document_id']+'/content',cookie=cookie)
+            assert cached['parse_run_id']==retry['current'] and cached['stale_for_current_revision'] and cached['body']
         finally:path.write_bytes(original)
         assert expected_hashes=={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(source_fixture.name).iterdir()}
         print('PASS: kernel read-only source import/persist; changed bytes rejected with old content retained; fixture restored')
+        # A second real Archive instance shares only the data volume; its source alias is offline.
+        healthy=next(d for d in listing['items'] if d['id']!=retry['document_id'])
+        cache_path='/api/v1/documents/'+healthy['id']+'/content'
+        _,before,_=request(base,cache_path,cookie=cookie)
+        assert not before['stale_for_current_revision']
+        docker('run','-d','--name',offline,'--network',network,'-p','127.0.0.1::8000',
+            '--mount',f'type=volume,source={volume},target=/data','-e','JUANZHAN_DATA_DIR=/data',
+            '-e','JUANZHAN_SOURCE_MOUNTS={"fixture":"/offline-fixture"}','juanzhan-foundation:dev')
+        offline_base='http://127.0.0.1:'+docker('port',offline,'8000/tcp').split(':')[-1]
+        for _ in range(60):
+            try:
+                if request(offline_base,'/healthz')[0]==200:break
+            except OSError:pass
+            time.sleep(.2)
+        else:raise AssertionError('Offline cache fixture did not start')
+        status,cached,_=request(offline_base,cache_path,cookie=cookie)
+        assert status==200 and cached['body']==before['body'] and cached['parse_run_id']==before['parse_run_id']
+        assert cached['availability_status']=='source_offline' and cached['stale_for_current_revision']
+        assert '/offline-fixture' not in json.dumps(cached)
+        print('PASS: source genuinely unavailable in a second Archive instance; authenticated cached content remains readable and stale')
 finally:
-    for name in (archive,converter):
+    for name in (offline,archive,converter):
         subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     if source_fixture:source_fixture.cleanup()
     for args in (('volume','rm',volume),('network','rm',network)):

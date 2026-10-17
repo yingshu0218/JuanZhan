@@ -61,3 +61,8 @@ OCR默认最多10实际识别页，超出OCR_PAGE_LIMIT；输入/渲染单页超
 ## T22 更新 · 2026-10-17
 
 T22已将Archive parse/ocr handler接入真实HTTP转换器：原件校验、独立尝试、规范结果与派生资产校验、短事务围栏发布及历史保护。规范完整JSON/文本/Markdown/缩略图持久在Archive data/derived，转换器只保留临时副本，始终没有业务库/来源卷权限。远端清理异常由墙钟+TTL兜底。公开读取与界面仍待T23/T29。
+
+
+## T23 更新 · 2026-10-18
+
+T23已开放Archive缓存正文/历史/候选和单档案reprocess；客户端不直接访问Converter/远端artifact_ref。读取不会重新打开原件或触发OCR；重解析经持久Job异步处理，OCR默认false，模型缺失由后台准确失败，不把202当识别成功。

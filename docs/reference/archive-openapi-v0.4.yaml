@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.17
+  version: 0.4.18
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1622,32 +1622,46 @@ paths:
       - Documents
       summary: 查看解析运行、候选元数据与失败原因
       operationId: get_documents_id_parse_runs
-      description: ''
+      description: 按持久请求顺序及尝试数倒序有界分页。候选值通过独立candidates查询，历史只含candidate_count。包括失败/丢弃尝试，无客户端路径、远端任务引用或凭证。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
       responses:
         '200':
           description: 运行列表
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ParseRun'
+                $ref: '#/components/schemas/ParseRunPage'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '413':
+          description: 页或响应超出16MiB预算，请缩小分页
   /documents/{id}/content:
     get:
       tags:
       - Documents
       summary: 按格式获取最近一次成功解析的正文
       operationId: get_documents_id_content
-      description: 当前 revision 失败或来源离线时仍可返回历史成功内容，但 stale_for_current_revision=true，必须在 UI 展示。
+      description: 只读已持久缓存，默认最近成功Run；可指定同档案历史成功Run，不读取或重新解析原件。旧Revision/旧Run、最近失败或明确离线/失联时stale_for_current_revision=true；原件availability独立返回。无成功缓存404，指定未成功Run409，缺失/损坏文本资产503。blocks分页；text/markdown返回JSON中的完整字符串，仅允许page=1，不返回活动HTML或文件路径。所有响应no-store/nosniff，16MiB响应预算超限413。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1659,6 +1673,27 @@ paths:
           - text
           - markdown
           - blocks
+          default: blocks
+      - name: parse_run_id
+        in: query
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
       responses:
         '200':
           description: 成功
@@ -1672,6 +1707,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '413':
+          description: 页或响应超出16MiB预算，请缩小分页
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          description: 派生内容缺失或完整性校验失败
   /documents/{id}/download:
     get:
       tags:
@@ -1698,13 +1739,59 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /documents/{id}/candidates:
+    get:
+      tags:
+      - Documents
+      summary: 分页查询解析候选及来源
+      operationId: get_documents_id_candidates
+      description: 默认当前成功正文；可指定所属档案的历史parse_run_id。无成功正文时默认返回空页。adoptable表示当前成功Run/当前Revision/未回收，不等于自动确认；显式采纳仍校验document_version、字段类型和空间。
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: parse_run_id
+        in: query
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: 候选页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidatePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '413':
+          description: 页或响应超出16MiB预算，请缩小分页
   /documents/{id}/reprocess:
     post:
       tags:
       - Documents
       summary: 重新解析文档（不修改人工元数据）
       operationId: post_documents_id_reprocess
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: 鉴权及Cookie CSRF，在同一写事务复核expected_document_version与expected_revision_id；回收拒绝。request_id绑定该档案、Revision及OCR/语言/预览选项，重发同请求复用原Job，异选项409。其他活动解析返回409；已有成功正文须force=true明确重跑。OCR默认关闭，语言仅eng/chi_sim且无重复；模型可用性由后台Converter最终确认。只排队，不覆盖人工字段/旧成功正文或增加业务版本；重试按Job固定预算。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1720,9 +1807,36 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
-                ocr: *id002
-                force: *id002
+                expected_document_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9223372036854775806
+                expected_revision_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                request_id:
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]{1,128}$
+                ocr:
+                  type: boolean
+                  default: false
+                force:
+                  type: boolean
+                  default: false
+                ocr_languages:
+                  type: string
+                  maxLength: 255
+                  default: ''
+                generate_preview:
+                  type: boolean
+                  default: true
+              required:
+              - expected_document_version
+              - expected_revision_id
+              - request_id
       responses:
         '202':
           description: 已提交解析任务
@@ -2658,11 +2772,84 @@ components:
       - created_at
       - binary_available
       - can_restore_binary
+    ParseRunPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParseRun'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      required:
+      - items
+      - page
+      - page_size
+      - total
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        value: {}
+        confidence:
+          type:
+          - number
+          - 'null'
+        provenance:
+          type: object
+        parse_run_id:
+          type: string
+        revision_id:
+          type: string
+        adoptable:
+          type: boolean
+      required:
+      - id
+      - key
+      - value
+      - confidence
+      - provenance
+      - parse_run_id
+      - revision_id
+      - adoptable
+    CandidatePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        parse_run_id:
+          type:
+          - string
+          - 'null'
+      required:
+      - items
+      - page
+      - page_size
+      - total
     ParseRun:
       type: object
       properties:
-        id: *id001
-        revision_id: *id001
+        id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
+        revision_id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
         status:
           type: string
           enum:
@@ -2677,8 +2864,10 @@ components:
           type: string
         parser_version:
           type: string
-        ocr_used: *id002
-        text_available: *id002
+        ocr_used:
+          type: boolean
+        text_available:
+          type: boolean
         language:
           type:
           - string
@@ -2687,29 +2876,37 @@ components:
           type:
           - integer
           - 'null'
-        candidates:
-          type: array
-          items:
-            type: object
-            properties:
-              id: *id001
-              key:
-                type: string
-              value: *id005
-              confidence:
-                type:
-                - number
-                - 'null'
-              provenance: *id005
-            required:
-            - id
-            - key
-            - value
         warnings:
           type: array
           items:
             type: string
-        created_at: *id006
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type:
+          - string
+          - 'null'
+        completed_at:
+          type:
+          - string
+          - 'null'
+        job_id:
+          type:
+          - string
+          - 'null'
+        attempt:
+          type:
+          - integer
+          - 'null'
+        error:
+          type:
+          - object
+          - 'null'
+        candidate_count:
+          type: integer
+        is_current:
+          type: boolean
       required:
       - id
       - revision_id
@@ -2765,16 +2962,23 @@ components:
     ContentResponse:
       type: object
       properties:
-        document_id: *id001
-        content_revision_id: *id001
-        parse_run_id: *id001
+        document_id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
+        content_revision_id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
+        parse_run_id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
         format:
           type: string
           enum:
           - text
           - markdown
           - blocks
-        stale_for_current_revision: *id002
+        stale_for_current_revision:
+          type: boolean
         body:
           oneOf:
           - type: string
@@ -2785,6 +2989,31 @@ components:
           type: array
           items:
             type: string
+        page:
+          type: integer
+          description: 仅blocks格式
+        page_size:
+          type: integer
+          description: 仅blocks格式
+        total:
+          type: integer
+          description: 仅blocks格式
+        current_revision_id:
+          type:
+          - string
+          - 'null'
+        processing_status:
+          type:
+          - string
+          - 'null'
+        availability_status:
+          type:
+          - string
+          - 'null'
+        text_available:
+          type: boolean
+        ocr_used:
+          type: boolean
       required:
       - document_id
       - content_revision_id

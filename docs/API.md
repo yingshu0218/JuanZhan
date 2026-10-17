@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T22 扩展版本 0.4.17），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T23 扩展版本 0.4.18），base `/api/v1`，49 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T21版本0.4.3），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -259,3 +259,15 @@ T21新增Converter能力：PDF/PNG/JPEG/TIFF按需OCR与受限PNG缩略图；cap
 Archive OpenAPI0.4.17保持48个路径模板；只明确已有Document.content_stale及真实处理状态，未声称所有基线路由都已实现。上传返回的job_id现在可经真实worker解析入库，Job.completed仍需看result.status（completed/unsupported/discarded）。不支持输入也保留原件；discarded表示已失效请求，不能用来宣称当前正文已更新。失败/有限重试通过既有Jobs协议返回，不提供客户端任意转换器URL或路径。
 
 Document状态按持久请求顺序及尝试序号计算，旧任务较晚完成不覆盖较新状态；同Revision最近解析失败/不支持且有旧成功缓存时content_stale=true，跨Revision缓存也为true。原件availability独立于解析状态。公开content/parse-runs/reparse/候选查询留T23，T22不开放派生文件下载路径。
+
+
+## T23 内容与候选契约 · 0.4.18
+
+- GET /documents/{id}/content：默认format=blocks；page>=1、page_size<=100，返回body/total/page/page_size。text/markdown为JSON中的完整UTF-8字符串，只接受page=1；不返回原始活动HTML或客户端文件路径。默认当前成功Run，parse_run_id可选同档案历史成功Run。响应有content_revision_id、current_revision_id、parse_run_id、stale_for_current_revision、processing_status、availability_status、text_available、ocr_used及warnings。
+- GET parse-runs：由原未实现的数组契约明确为items/page/page_size/total分页对象；按持久请求顺序、attempt、时间/ID倒序，包含安全失败原因、candidate_count、is_current、job_id及尝试信息，不内嵌候选值或远端资产引用。
+- GET candidates（新增第49条路径）：默认当前成功Run，可指定同档案历史Run；空缓存返回空页。每项含id/key/value/confidence/provenance/parse_run_id/revision_id/adoptable。adoptable仅代表当前成功Run+当前Revision+未回收；采纳仍是独立POST，需字段ID、expected_document_version并按类型/空间验证。读取不确认字段。
+- POST reprocess：JSON必填expected_document_version、expected_revision_id、request_id（建议客户端UUID）；ocr/force默认false，generate_preview默认true，ocr_languages仅eng/chi_sim、逗号分隔不重复。当前Revision最近解析已完成且缓存仍为当前时force=false返回ALREADY_PARSED；不同活动请求返回PARSE_ALREADY_RUNNING，不隐式取消旧任务。已受理同request_id同Revision/选项重发复用原Job（状态可已终结），异选项409；重发前仍复核业务版本/当前Revision/回收状态。重新解析不改人工字段或增加document_version。
+
+旧Revision/旧Run、当前Revision最近失败及明确离线/失联时返回stale；unknown可用性独立表达，不能当原件已验证。无成功缓存404，指定未完成Run409，跨档案Run404；派生文本缺失/损坏503，格式/分页/语言非法422。页及响应总预算16MiB，超限413，查询在SQLite先检查字节量；全部鉴权、no-store/nosniff，Cookie写操作CSRF并在事务内重新鉴权。历史/候选默认20项、最多100项；blocks默认100。历史读取包含回收档案，但禁止对回收档案重解析/采纳。
+
+原始原件下载、二进制预览与派生资产下载路由仍待T32；批量reprocess/set_metadata继续501，不将单档案入口误称批量已实现。

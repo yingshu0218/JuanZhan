@@ -151,3 +151,10 @@ parsing.begin在租约事务中创建独立ParseRun与attempt映射，parse_requ
 派生store位于data/derived，复用ManagedStore的no-follow、普通文件、限额、fsync、原子无覆盖和内容地址key；锁独立于原件store。先落字节，再在同一JobQueue.complete事务中插入块/候选/资产顺序并切current_parse_run_id，人工业务字段不变。共享store锁跨落盘到注册，GC独占store后再取DB写锁。中断允许留孤儿，绝不回滚时删除可能被并发引用的字节。parse_asset_order保留相同图像帧的逻辑顺序，derived_assets复用物理对象。
 
 失败/租约过期/父worker超时钩子关闭当前尝试，不清空旧正文。过期Revision、回收档案或非最新请求结果discarded，任务与丢弃原因一起提交；状态查询也按请求代次/尝试排序。每次有限重试使用新ParseRun，不跨丢失tmpfs承诺exactly-once。远端任务ID持久留证，完成时主动DELETE；异常/被杀留下的任务依赖Converter墙钟上限+TTL兜底，不谎称跨容器主动取消。
+
+
+## T23 缓存读取与显式重解析
+
+content.py以SQLite只读快照查询当前成功指针/历史/候选，分别返回有界分页对象；history不嵌套所有候选，避免历史×候选放大。读取前用SQLite length(CAST(... AS BLOB))聚合所选页预算，序列化前复核16MiB总响应。blocks来自持久结构/真实locator；text/markdown经安全派生store核对描述符及实际字节后返回JSON字符串，不运行原件解析或HTML。
+
+来源当前健康只用于availability/stale投影，正文仍读本地缓存；缺失源不会消灭旧内容。重解析在鉴权写事务复核document_version/Revision与回收状态，以档案+request_id生成内部幂等键；同请求复用、不并行排同Revision的不同活动请求。force用于明确重跑已有成功，不绕过活动任务冲突或版本/租约围栏。只新增持久Job，不先清空正文或人工字段；后续仍由T22负责原件/hash/资源验证与晋升。候选采纳沿用T18，而不自动映射同名字段。

@@ -144,3 +144,8 @@ parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)
 完成事务同时写parse_runs、content_blocks（结构/真实locator/置信度）、extracted_metadata（值/来源/locator）、derived_assets/顺序及成功指针，Job也同时completed；跨表失败全部回滚。规范完整JSON作为派生产物保存，包含OCR语言与所有降级警告。失败或unsupported不插成功正文/不切指针，旧成功全部历史保留。没有新增FTS写入，搜索仍T24。旧5条迁移不改。
 
 0007对parse_attempts与parse_asset_order增加INSERT/UPDATE作用域约束，拒绝跨Document/Revision关联尝试或跨ParseRun关联资产；已应用0006保持不变。当前共7条迁移，升级与新装执行同一序列。
+
+
+## T23 无新增迁移
+
+继续使用7条不可变迁移。正文/候选/历史读取既有ContentBlock、extracted_metadata、ParseRun及派生资产；无临时SQLite替代业务真相。reprocess请求通过既有jobs.idempotency_key/request_hash、parse_requests/attempt记录，同一写事务排队并捕获当前Revision；不新增动态路径、外部写回或业务字段自动覆盖。完整分页页字节预算在SQLite内计算后读取，业务版本只在人工操作/显式采纳变化时递增。
