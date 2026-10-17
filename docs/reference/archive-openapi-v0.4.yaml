@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.18
+  version: 0.4.19
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -924,7 +924,7 @@ paths:
       description: >-
         每空间最多1000个字段（含停用）；key唯一且创建后key/type/space不可修改，不提供硬删除。
         constraints按字段类型验证规则，紧凑JSON限16KiB/8层嵌套/有限数值；规则词汇见FieldDefinition.constraints。
-        searchable/filterable只保存配置，不代表检索已实现。Cookie写入须CSRF，Bearer无需CSRF。
+        searchable控制异步全文索引，filterable控制类型化结构化筛选。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -1048,7 +1048,7 @@ paths:
       - Documents
       summary: 档案列表（含普通筛选）
       operationId: get_documents
-      description: 默认排除回收站。trash=only列出回收站，include包含全部；q非空当前返回501等待全文搜索。分页稳定以id次级排序。
+      description: 默认排除回收站，q非空真实FTS字面检索并增加search_index范围计数，q省略保持普通列表。sort省略且q非空默认相关性降序，否则导入时间降序；id次级排序。当前本地管理员可跨空间查询，space_id可限定。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -1059,6 +1059,7 @@ paths:
         in: query
         schema:
           type: string
+          maxLength: 512
       - name: folder_id
         in: query
         schema:
@@ -1079,15 +1080,27 @@ paths:
         in: query
         schema:
           type: string
-          enum: [imported_at, "-imported_at", title, "-title", document_date, "-document_date", size_bytes, "-size_bytes"]
-          default: "-imported_at"
+          enum:
+          - imported_at
+          - -imported_at
+          - title
+          - -title
+          - document_date
+          - -document_date
+          - size_bytes
+          - -size_bytes
+          - relevance
+          - -relevance
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/PageSize'
       - name: trash
         in: query
         schema:
           type: string
-          enum: [exclude, only, include]
+          enum:
+          - exclude
+          - only
+          - include
           default: exclude
       - name: is_favorite
         in: query
@@ -1096,8 +1109,6 @@ paths:
       responses:
         '422':
           $ref: '#/components/responses/Validation'
-        '501':
-          description: 全文搜索未实现，不用部分标题匹配伪装完整搜索
         '200':
           description: 成功
           content:
@@ -1110,6 +1121,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '413':
+          description: 搜索响应/执行预算超限
+        '503':
+          description: 搜索响应/执行预算超限
   /documents/upload:
     post:
       tags:
@@ -1188,7 +1203,8 @@ paths:
       - Search
       summary: 结构化多条件搜索
       operationId: post_documents_search
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: 鉴权，Cookie需CSRF，Bearer无需。请求流1MiB、SQLite执行3秒、响应16MiB预算，超限失败无部分结果。过滤/计数/分页同一SQLite快照，实时来源观测不承诺文件系统原子快照。所有排序以id稳定收尾，relevance
+        desc表示最相关优先。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -1202,7 +1218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentPage'
+                $ref: '#/components/schemas/SearchPage'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1213,6 +1229,10 @@ paths:
           $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
+        '413':
+          description: 搜索请求/响应/执行或状态观察预算超限
+        '503':
+          description: 搜索请求/响应/执行或状态观察预算超限
       parameters:
       - name: X-CSRF-Token
         in: header
@@ -2361,7 +2381,7 @@ paths:
       - System
       summary: 首页计数、来源与处理状态统计
       operationId: get_system_summary
-      description: ''
+      description: 真实聚合，可选space_id。档案计数排除回收站；offline_sources为持久扫描状态。限定空间时failed_jobs仅目标为该空间档案或来源的任务，全局含全部失败任务。
       x-roadmap-phase: MVP
       responses:
         '200':
@@ -2371,12 +2391,18 @@ paths:
               schema:
                 type: object
                 properties:
-                  documents_total: *id004
-                  inbox_total: *id004
-                  managed_total: *id004
-                  external_total: *id004
-                  failed_jobs: *id004
-                  offline_sources: *id004
+                  documents_total:
+                    type: integer
+                  inbox_total:
+                    type: integer
+                  managed_total:
+                    type: integer
+                  external_total:
+                    type: integer
+                  failed_jobs:
+                    type: integer
+                  offline_sources:
+                    type: integer
                 required:
                 - documents_total
                 - inbox_total
@@ -2390,6 +2416,11 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
 components:
   securitySchemes:
     bearerAuth:
@@ -2643,8 +2674,12 @@ components:
     Document:
       type: object
       properties:
-        id: *id001
-        space_id: *id001
+        id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
+        space_id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
         folder_id:
           type:
           - string
@@ -2663,14 +2698,18 @@ components:
           - 'null'
         tag_ids:
           type: array
-          items: *id001
+          items:
+            type: string
+            description: 不透明 ID，调用方不得假设自增或文件路径格式
         triage_status:
           type: string
           enum:
           - needs_review
           - filed
-        is_favorite: *id002
-        document_version: *id004
+        is_favorite:
+          type: boolean
+        document_version:
+          type: integer
         current_revision_id:
           type:
           - string
@@ -2709,11 +2748,15 @@ components:
         content_stale:
           type: boolean
           description: 有成功缓存且来自旧Revision，或当前Revision最近解析失败/不支持时为true；不清空旧成功内容。状态按解析请求顺序与尝试数确定，不由较晚返回的旧任务覆盖。
-        imported_at: *id006
+        imported_at:
+          type: string
+          format: date-time
         deleted_at:
           type:
           - string
           - 'null'
+        search_index:
+          $ref: '#/components/schemas/SearchIndexState'
       required:
       - id
       - space_id
@@ -2731,9 +2774,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Document'
-        page: *id004
-        page_size: *id004
-        total: *id004
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        search_index:
+          $ref: '#/components/schemas/SearchIndexSummary'
       required:
       - items
       - page
@@ -3213,96 +3261,119 @@ components:
       - estimated_bytes
       - ignored_files
     SearchRequest:
-      type: object
+      additionalProperties: false
       properties:
-        space_id: *id001
+        space_id:
+          maxLength: 255
+          minLength: 1
+          type: string
         text:
+          default: null
+          maxLength: 512
           type: string
+          nullable: true
         folder:
-          type: object
-          properties:
-            id: *id001
-            include_descendants: *id002
+          default: null
+          $ref: '#/components/schemas/SearchFolder'
+          nullable: true
         document_type_ids:
-          type: array
-          items: *id001
-        tags:
-          type: object
-          properties:
-            ids:
-              type: array
-              items: *id001
-            match:
-              type: string
-              enum:
-              - any
-              - all
-        metadata:
-          type: array
           items:
-            type: object
-            properties:
-              key:
-                type: string
-              operator:
-                type: string
-                enum:
-                - eq
-                - in
-                - contains
-                - gte
-                - lte
-                - between
-                - is_null
-              value: *id005
-            required:
-            - key
-            - operator
-        source_id: *id001
-        source_kind:
+            maxLength: 255
+            minLength: 1
+            type: string
+          maxItems: 100
+          type: array
+        tags:
+          default: null
+          $ref: '#/components/schemas/SearchTags'
+          nullable: true
+        metadata:
+          items:
+            $ref: '#/components/schemas/SearchMetadata'
+          maxItems: 32
+          type: array
+        source_id:
+          default: null
+          maxLength: 255
+          minLength: 1
           type: string
+          nullable: true
+        source_kind:
+          default: null
           enum:
           - managed
           - external
-        triage_status:
           type: string
+          nullable: true
+        triage_status:
+          default: null
           enum:
           - needs_review
           - filed
+          type: string
+          nullable: true
         availability_status:
+          default: null
+          enum:
+          - available
+          - missing
+          - suspected_missing
+          - source_offline
+          - unknown
+          - needs_match
           type: string
+          nullable: true
         processing_status:
+          default: null
+          enum:
+          - not_started
+          - queued
+          - running
+          - completed
+          - failed
+          - unsupported
+          - discarded
           type: string
+          nullable: true
+        is_favorite:
+          default: null
+          type: boolean
+          nullable: true
+        trash:
+          default: exclude
+          enum:
+          - exclude
+          - only
+          - include
+          type: string
+        document_date_from:
+          default: null
+          type: string
+          nullable: true
+        document_date_to:
+          default: null
+          type: string
+          nullable: true
         sort:
-          type: array
           items:
-            type: object
-            properties:
-              field:
-                type: string
-                enum:
-                - relevance
-                - imported_at
-                - document_date
-                - title
-                - size_bytes
-              order:
-                type: string
-                enum:
-                - asc
-                - desc
-            required:
-            - field
-            - order
+            $ref: '#/components/schemas/SearchSort'
+          maxItems: 5
+          type: array
         page:
-          type: integer
+          default: 1
+          maximum: 2147483647
           minimum: 1
+          type: integer
         page_size:
-          type: integer
-          minimum: 1
+          default: 30
           maximum: 100
+          minimum: 1
+          type: integer
       required:
       - space_id
+      type: object
+      description: 所有条件AND。text为空/省略只作结构化过滤，非空使用字面词元AND，无FTS运算符。Decimal用至多4小数的字符串，boolean严格。is_null无value；between两项、in
+        1～100项；范围仅数值/日期，contains仅text/long_text且为区分大小写字面子串。空类型列表不限类型。状态观察最多5000档案并受查询预算约束。
     BatchRequest:
       type: object
       additionalProperties: false
@@ -3551,6 +3622,169 @@ components:
       - revision_id
       - job_id
       - upload_status
+    SearchFolder:
+      additionalProperties: false
+      properties:
+        id:
+          maxLength: 255
+          minLength: 1
+          type: string
+        include_descendants:
+          default: false
+          type: boolean
+      required:
+      - id
+      type: object
+    SearchMetadata:
+      additionalProperties: false
+      properties:
+        key:
+          maxLength: 255
+          minLength: 1
+          type: string
+        operator:
+          enum:
+          - eq
+          - in
+          - contains
+          - gte
+          - lte
+          - between
+          - is_null
+          type: string
+        value: {}
+      required:
+      - key
+      - operator
+      type: object
+      description: is_null不可携带value；其他operator必须携带非null且符合字段类型的value。
+    SearchSort:
+      additionalProperties: false
+      properties:
+        field:
+          enum:
+          - relevance
+          - imported_at
+          - document_date
+          - title
+          - size_bytes
+          type: string
+        order:
+          default: asc
+          enum:
+          - asc
+          - desc
+          type: string
+      required:
+      - field
+      type: object
+    SearchTags:
+      additionalProperties: false
+      properties:
+        ids:
+          items:
+            maxLength: 255
+            minLength: 1
+            type: string
+          maxItems: 100
+          minItems: 1
+          type: array
+        match:
+          default: any
+          enum:
+          - any
+          - all
+          type: string
+      required:
+      - ids
+      type: object
+    SearchIndexSummary:
+      type: object
+      description: text匹配之前、其他过滤之后的范围计数，missing与failed可重叠不可相加。incomplete包含索引缺失/滞后/失败、无成功正文、旧Revision正文、后台解析中/最近失败，不承诺语义完整。
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        missing:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+        failed:
+          type: integer
+          minimum: 0
+        without_content:
+          type: integer
+          minimum: 0
+        limited_content:
+          type: integer
+          minimum: 0
+        stale_content:
+          type: integer
+          minimum: 0
+        processing:
+          type: integer
+          minimum: 0
+        failed_processing:
+          type: integer
+          minimum: 0
+        incomplete:
+          type: boolean
+        tokenizer_version:
+          type: string
+      required:
+      - total
+      - missing
+      - pending
+      - failed
+      - without_content
+      - limited_content
+      - stale_content
+      - processing
+      - failed_processing
+      - incomplete
+      - tokenizer_version
+    SearchIndexState:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - current
+          - pending
+          - missing
+          - failed
+        indexed_at:
+          type: string
+          nullable: true
+        content_incomplete:
+          type: boolean
+      required:
+      - status
+      - indexed_at
+      - content_incomplete
+    SearchPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        search_index:
+          $ref: '#/components/schemas/SearchIndexSummary'
+      required:
+      - items
+      - page
+      - page_size
+      - total
+      - search_index
   responses:
     Unauthorized:
       description: 未登录或 Token 无效

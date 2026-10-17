@@ -156,3 +156,8 @@ parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)
 当前共8条迁移，既有7条校验和不变。search_dirty(document_id主键及级联FK,generation,scheduled_generation,last_error)为持久脏队列；document_search_state增加generation。升级只标记已有档案待索引，不重放旧解析失败。documents的业务版本/正文指针/回收状态、标签关联/名称、类型名称、可搜索字段值与字段启停触发代次变化；永久清理删除FTS行，级联触发器先检查档案存在。
 
 复用既有document_search FTS5及document_search_state。正文取current_parse_run_id最近成功缓存，字段仅active且searchable；索引包括标题/描述/日期/标签/类型/当前原始文件名。发布同时更新hash、tokenizer_version、ParseRun及代次；hash相同仍推进代次。脏队列不是公共检索结果，T25需空间/回收过滤及新鲜度投影。
+
+
+## T25 无新增迁移
+
+继续8条不可变迁移；SELECT真实FTS与业务表，不引入搜索缓存库或新增来源写入。integer/decimal/date/boolean/text比较使用既有ix_metadata_* typed列索引；Decimal固定4位缩放、日期ISO，is_null为没有metadata_values行。当前业务条件/计数/分页同一SQLite读快照，索引状态比较search_dirty.generation与document_search_state.generation/tokenizer_version，不以Job completed冒充新鲜。FTS正文可能来自旧Revision，结果保持content_stale及原件可用性独立。

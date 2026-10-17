@@ -86,7 +86,7 @@ def test_stable_pagination_filters_and_rejected_search(api):
     assert client.get('/api/v1/documents',params={'space_id':'missing'}).status_code==404
     for query in ({'page_size':101},{'page':0},{'sort':'title;drop table documents'},{'trash':'wrong'}):
         assert client.get('/api/v1/documents',params=query).status_code==422
-    assert client.get('/api/v1/documents',params={'q':'not implemented'}).status_code==501
+    assert client.get('/api/v1/documents',params={'q':'not implemented'}).json()['total']==0
 
 
 def test_scope_validation_tag_deltas_and_atomic_conflict(api):

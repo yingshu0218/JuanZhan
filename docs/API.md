@@ -276,3 +276,16 @@ Document状态按持久请求顺序及尝试序号计算，旧任务较晚完成
 ## T24 接口范围
 
 本轮只增加内部FTS索引、持久调度与管理员CLI，不增加HTTP路径或修改OpenAPI版本。Archive0.4.18/49路径、Converter0.4.3/6路径不变；公开列表q搜索仍501，T25再提供检索/过滤/新鲜度契约。内部MATCH测试不能当作公开搜索交付。
+
+
+## T25 现行检索契约 · 2026-10-18（覆盖早期501说明）
+
+Archive OpenAPI0.4.19，仍49路径；Converter0.4.3/6路径不变。GET /documents?q=非空已真实FTS检索，q最长512字符/256词元，词元AND、繁简/全半角归一；不支持FTS运算符。q省略保留原普通列表，q提供时返回额外search_index；默认非空q按相关性降序，无q按imported_at降序，可显式±relevance（需非空q）或原排序键。
+
+POST /documents/search已实现，鉴权且Cookie须CSRF。space_id必填；text、folder{id,include_descendants}、document_type_ids、tags{ids,match:any|all}、metadata[{key,operator,value}]、source_id/source_kind、triage_status、availability_status、processing_status、is_favorite、trash、document_date_from/to、sort[{field,order}]、page/page_size。所有条件AND，类型列表OR，目录后代递归；跨空间引用422。只接受明确字段，不忽略未知输入；空text作纯结构化过滤，空类型列表不限类型。
+
+metadata使用active/filterable字段当前值。eq/in支持七类型，contains仅text/long_text字面区分大小写，gte/lte/between仅integer/decimal/date且闭区间；is_null无value，表示无记录。Decimal只接最多4位小数的字符串，整数不接bool/float，boolean不接0/1，日期严格有效YYYY-MM-DD。in 1～100值，between恰两值且有序；值不需满足字段当前录入规则，因为历史值仍可检索。最末id ASC使固定快照分页稳定，跨请求编辑仍可移动页边界。
+
+响应items为真实Document并增加search_index{status,indexed_at,content_incomplete}；顶层search_index{total,missing,pending,failed,without_content,limited_content,stale_content,processing,failed_processing,incomplete,tokenizer_version}统计text匹配前的其他筛选范围，计数可重叠，不是命中数。旧索引失败/滞后继续可查，不保证包含新内容；empty items且incomplete=true不能当确定无结果。availability/processing筛选使用请求内真实投影观察，最多5000候选，超过503 SEARCH_STATUS_LIMIT；不是旧来源状态冒充在线核验。
+
+POST流最大1MiB、最多32元数据条件/100标签或类型、5排序/每页100；查询SQLite预算3秒、响应16MiB，返回413 SEARCH_REQUEST_LIMIT/SEARCH_RESPONSE_LIMIT或503 SEARCH_TIMEOUT/SEARCH_STATUS_LIMIT，无部分结果。成功与错误nosniff/no-store。GET /system/summary可选space_id，返回非回收档案/inbox/managed/external计数、失败任务及持久offline来源数；限定空间失败任务按目标档案/来源归属统计，全局含全部失败任务。

@@ -10,6 +10,7 @@ import secrets
 import subprocess
 import urllib.error
 import urllib.request
+import urllib.parse
 import uuid
 import time
 import tempfile
@@ -260,6 +261,16 @@ with connect(Settings.from_env().database) as db:
 print('PASS: real FTS5 Chinese two-character/traditional normalization and mixed English/numeric tokens; one row per current successful document')
 '''
         print(docker('exec','-i',archive,'python','-',input=code))
+        query='檔案' if ocr_mode else '真实'
+        status,found,search_headers=request(base,'/api/v1/documents?'+urllib.parse.urlencode({'space_id':space['id'],'q':query}),cookie=cookie)
+        assert status==200 and found['total']>0 and not found['search_index']['incomplete'],found
+        assert all(item['search_index']['status']=='current' for item in found['items'])
+        status,advanced,_=request(base,'/api/v1/documents/search',body=json.dumps({'space_id':space['id'],'text':query,
+            'source_kind':'external' if external_mode else 'managed','sort':[{'field':'relevance','order':'desc'}]}).encode(),cookie=cookie,csrf=session['csrf_token'])
+        assert status==200 and advanced['total']==found['total'],advanced
+        status,summary,_=request(base,'/api/v1/system/summary?'+urllib.parse.urlencode({'space_id':space['id']}),cookie=cookie)
+        assert status==200 and summary['documents_total']==len(fixtures),summary
+        print('PASS: authenticated public GET/POST Chinese FTS search, relevance, index completeness and real scoped summary')
         assert index_jobs('rebuild')==len(fixtures)
         document=listing['items'][0]
         # Existing HTTP helper uses POST for bodies; PATCH is explicit here.
@@ -278,6 +289,8 @@ with connect(Settings.from_env().database) as db:
 print('PASS: explicit rebuild is idempotent and a real HTTP title change is incrementally indexed')
 '''
         print(docker('exec','-i',archive,'python','-',input=code))
+        status,found,_=request(base,'/api/v1/documents?'+urllib.parse.urlencode({'space_id':space['id'],'q':'星河'}),cookie=cookie)
+        assert status==200 and [item['id'] for item in found['items']]==[document['id']],found
         if '--daemon' in sys.argv:
             root='/api/v1/documents/'+document['id']
             _,current,_=request(base,root,cookie=cookie)
@@ -359,6 +372,13 @@ with connect(Settings.from_env().database) as db:
 print('PASS: persisted FTS rows remain available with the source genuinely offline')
 '''
             print(docker('exec','-i',offline,'python','-',input=code))
+        if '--index' in sys.argv:
+            status,result,_=request(offline_base,'/api/v1/documents/search',body=json.dumps({'space_id':space['id'],
+                'text':'真实','availability_status':'source_offline'}).encode(),cookie=cookie,csrf=session['csrf_token'])
+            assert status==200 and result['total']>0,result
+            assert all(item['availability_status']=='source_offline' for item in result['items'])
+            print('PASS: authenticated public FTS search and live source-offline filter work without the original source')
+
 finally:
     for name in (index_worker,offline,archive,converter):
         subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)

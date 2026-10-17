@@ -120,13 +120,13 @@ def router(settings):
     def documents(request: Request,space_id: ID | None=None,folder_id: ID | None=None,
                   document_type_id: ID | None=None,triage_status: Literal['needs_review','filed'] | None=None,
                   source_kind: Literal['managed','external'] | None=None,is_favorite: bool | None=None,
-                  trash: Literal['exclude','only','include']='exclude',sort: str='-imported_at',
+                  trash: Literal['exclude','only','include']='exclude',sort: str | None=None,
                   page: int=Query(1,ge=1,le=2147483647),page_size: int=Query(30,ge=1,le=100),
-                  q: str | None=Query(None,max_length=1000)):
-        if q:fail(501,'SEARCH_NOT_IMPLEMENTED','Full text search is not implemented')
-        order={'imported_at':'d.imported_at','title':'d.title','document_date':'d.document_date','size_bytes':'r.size_bytes'}
+                  q: str | None=Query(None,max_length=512)):
+        sort=sort or ('-relevance' if q else '-imported_at')
+        order={'relevance':'relevance','imported_at':'d.imported_at','title':'d.title','document_date':'d.document_date','size_bytes':'r.size_bytes'}
         key=sort.lstrip('-')
-        if key not in order or sort not in (key,'-'+key):fail(422,'INVALID_SORT','Unsupported sort key')
+        if key not in order or sort not in (key,'-'+key) or (key=='relevance' and not q):fail(422,'INVALID_SORT','Unsupported sort key')
         with transaction(settings) as db:
             if space_id is not None:required(db,'spaces',space_id)
             for table,id in (('folders',folder_id),('document_types',document_type_id)):
@@ -140,6 +140,9 @@ def router(settings):
             if trash!='include':where.append('d.deleted_at IS '+('NOT NULL' if trash=='only' else 'NULL'))
             clause=' AND '.join(where) or '1'
             base=' FROM documents d LEFT JOIN file_revisions r ON r.id=d.current_revision_id WHERE '+clause
+            if q is not None:
+                from .search import query,Sort
+                return query(db,request,mounts,where or ['1'],parameters,q,[Sort(field=key,order='desc' if sort.startswith('-') else 'asc')],page,page_size)
             total=db.execute('SELECT count(*)'+base,parameters).fetchone()[0]
             ids=db.execute('SELECT d.id'+base+' ORDER BY '+order[key]+(' DESC' if sort.startswith('-') else ' ASC')+',d.id ASC LIMIT ? OFFSET ?',
                            (*parameters,page_size,(page-1)*page_size)).fetchall()

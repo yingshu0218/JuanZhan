@@ -100,6 +100,9 @@ def create_app(kind, settings=None, *, converter_config=None):
                 except HTTPException as exc:
                     return error(exc.status_code, exc.detail['code'], exc.detail['message'])
         response = await call_next(request)
+        if kind == "archive" and (request.url.path in ("/api/v1/documents/search","/api/v1/system/summary") or (request.url.path=="/api/v1/documents" and "q" in request.query_params)):
+            response.headers["Cache-Control"]="no-store"
+            response.headers["X-Content-Type-Options"]="nosniff"
         if kind == "converter":
             response.headers["Cache-Control"] = "no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"
@@ -134,6 +137,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         app.include_router(jobs.router(settings))
         app.include_router(uploads.router(settings))
         app.include_router(batches.router(settings))
+        from . import search
+        app.include_router(search.router(settings))
         app.include_router(document_api.router(settings))
 
     if kind == "converter":

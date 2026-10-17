@@ -46,7 +46,7 @@ def test_real_chinese_short_words_traditional_mixed_ascii_and_fts_operators(pipe
         assert hits(settings,query,space)=={doc['document_id']},query
     assert not hits(settings,'不存在')
     assert not hits(settings,'OR * NOT')  # Literal lexical tokens, never active FTS syntax.
-    assert client.get('/api/v1/documents',params={'space_id':space,'q':'档案'}).status_code==501
+    assert client.get('/api/v1/documents',params={'space_id':space,'q':'档案'}).json()['total']==1
     state=rows(settings,'SELECT * FROM document_search_state')[0]
     assert state['tokenizer_version']==VERSION and state['parse_run_id']
 

@@ -529,3 +529,10 @@ python -m juanzhan.indexing rebuild --all
 rebuild需要明确单档案或全量选择，只标脏并排有限批次；普通持续worker继续排剩余。--once不自动发现脏记录，需先queue。生产worker交替处理普通/索引队列，活动索引上限100。每文档输入8MiB、50万词元/16MiB输出；子进程512MiB地址空间/60 CPU秒、Job120墙钟秒，超限last_error且保留旧索引，不无限重试；修复后显式rebuild。版本变动重新生成索引，运行不下载/接受自定义词典路径。
 
 smoke_formats.py --persist --index --daemon --external验证六格式、自动调度及离线缓存；--persist --index --ocr验证真实OCR索引。所有夹具隔离，正常卷不参与。无公开搜索API变化，q仍501。
+
+
+## T25 更新 · 2026-10-18
+
+无新依赖/环境变量/凭证/迁移，沿用冻结依赖和既有Compose镜像构建/启动流程。search.py直接消费T24索引；持续worker需运行以自动推进脏代次，API不会同步排队/解析来掩盖索引缺失。GET /documents?q=与POST /documents/search已实现，详见API/ADR-040；系统摘要同样已接真实数据。
+
+专项：uv run --frozen pytest -q tests/test_search.py。容器：smoke_formats.py --persist --index --daemon --external及--persist --index --ocr现在同时经鉴权HTTP验证简单/高级中文搜索、相关性/索引摘要/首页聚合及离线过滤。全部夹具隔离正常卷；新版本不重放旧失败任务。查询预算3秒SQLite/状态观察5000档案，POST 1MiB及响应16MiB；超限请收窄筛选/分页，不改安全限额绕过验证。无前端变更，搜索界面仍T30。

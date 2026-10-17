@@ -395,3 +395,19 @@ uv run --frozen python scripts/smoke_formats.py --persist --index --ocr
 所有夹具使用独立网络/卷/随机凭证且已清理；不接触正常管理员/数据。未改前端，未重复浏览器套件；没有大语料性能或最终产品完成承诺。OpenAPI保持Archive0.4.18/49路径、Converter0.4.3/6路径。
 
 正常Compose保留.env/管理员/数据卷，以新镜像up --wait --no-build成功；smoke.py验证Web/CSP/编译资源、Archive就绪、Converter鉴权/六格式能力和worker心跳，三个容器healthy。实际数据库8条迁移、foreign_key_check为0；正常库当前0档案，索引内容证明来自上述隔离实物夹具。可复用start_skill已更新为不硬编码迁移数量并加入FTS验收/维护流程，安装脚本和网络/凭证保持；草稿保存不等于发布或新任务恢复已验证。
+
+## T25 验证 · 2026-10-18
+
+全量uv run --frozen pytest -q：389 passed，198.97秒，无跳过/禁用，仅既有Starlette/httpx弃用警告。其后补齐旧正文失败/相关性排序及扫描PDF未请求OCR三个边界，最终test_search.py专项48 passed（26.22秒），含最后的limited_content/逐项content_incomplete字段和实时状态观察一致性改动；不把新增专项重复计为全量已跑392项。
+
+专项经真实鉴权HTTP/SQLite/托管字节/Converter TCP与worker子进程：繁简中文/英文数字正文检索，GET/POST一致、字面FTS运算符不执行；联合元数据、目录后代、类型范围、标签any/all、固定快照稳定分页、relevance双向及默认排序。七类型eq/in、精确Decimal闭区间/整数最大值/有效日期、false与缺值区别、contains的%_字面匹配；浮点Decimal/精度溢出/布尔混类型/无效日期/倒置区间/不支持运算符422。实际EXPLAIN QUERY PLAN确认decimal/integer/date使用既有类型索引。
+
+新编辑未索引时旧命中标pending；终止索引失败旧命中标failed；零命中仍有范围missing/processing/incomplete。新Revision真实解析失败保留旧正文可搜且content_stale、stale_content和failed_processing为真；真实扫描PDF未请求OCR时虽completed/current仍limited_content/content_incomplete。当前空间、回收默认排除/显式only、非filterable/停用/未知字段与跨空间引用拒绝。鉴权401、Cookie缺CSRF403、Bearer查询通过；首页summary真实聚合/空间/回收计数与no-store验证。
+
+实际降低请求/响应预算返回413，真实SQL进度预算超限503，降低实时状态观察上限返回SEARCH_STATUS_LIMIT，不静默返回部分结果。输入长度、操作数列表、排序白名单/重复排序、严格布尔与分页、未知键均拒绝；SQLite/路径/输入值不泄露。请求流1MiB、响应16MiB及先验页面字节预算，查询3秒SQLite进度预算；状态观察最多5000档案，需要先收窄筛选。没有大库性能承诺或外部文件系统原子快照保证。
+
+OpenAPI0.4.19/49路径及Converter0.4.3/6路径通过唯一YAML键和全部本地引用验证；原有未涉及schema/path语义比较保持，field-definitions仅说明searchable/filterable生效。8条迁移不改，无新应用依赖/模型/凭证/环境变量。生产Web未改，未重复浏览器套件；下一T29阅读与T30搜索界面，不能据API测试声称完整产品完成。
+
+最终镜像真实Docker构建及两组容器验收退出0：smoke_formats.py --persist --index --daemon --external与--persist --index --ocr。均经公开鉴权GET/POST查中文正文/相关性、范围索引完整性和真实summary；HTTP标题编辑后的搜索结果正确。六格式只读来源首扫、自动解析、持续worker脏队列及重建无重复保留，外部同大小变字节拒绝后仍可读旧缓存。第二Archive完全无来源挂载，经正式POST FTS+availability_status=source_offline仍搜到旧正文，未用Mock离线标志。
+
+正常Compose保留.env/管理员/卷，以新镜像up --wait --no-build成功；smoke.py验证Web/CSP/编译资源、Archive就绪、Converter鉴权/六格式能力及worker心跳，三个容器healthy。实际正常库8迁移、foreign_key_check=0、0档案；正文检索证据来自隔离实物夹具，夹具均已清理。安装/启动流程未改变，无需更新已有环境草稿，也未声称发布或新任务恢复完成。
