@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog, jobs, uploads, document_api, batches
+from . import auth, catalog, jobs, uploads, document_api, batches, fields
 
 from .config import Settings
 from .database import connect, migrate
@@ -109,6 +109,7 @@ def create_app(kind, settings=None):
     if kind == "archive":
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))
+        app.include_router(fields.router(settings))
         app.include_router(jobs.router(settings))
         app.include_router(uploads.router(settings))
         app.include_router(batches.router(settings))

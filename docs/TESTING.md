@@ -157,3 +157,14 @@ OpenAPI0.4.7：44路径，重复键与全部本地引用验证通过。
 重建镜像后`python scripts/smoke_auth.py`通过：真实HTTP提交选择快照，容器重启后worker执行，成功与冲突逐项结果正确，
 重复撤销请求复用任务，撤销恢复收藏且不覆盖另一档案并发标题编辑；既有上传/目录/存储/鉴权检查继续通过。
 Compose升级及`python scripts/smoke.py`通过，API/worker/Converter健康。未验证大规模批量吞吐或生产UI。
+
+## T17 验证 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：144通过，保留一项Starlette/httpx既有弃用警告。
+新增18项用例覆盖七类型/默认值/排序/空间过滤、重启持久化、严格输入与CSRF、不可改key/type/space、停用不释放key，
+真实并发重名/总量竞争、约束深度/大小/非有限值拒绝、现存停用模板保留与新增绑定拒绝、移除模板/切类型保留历史值及FK。
+OpenAPI0.4.8：44路径，重复键与全部本地引用验证通过。
+
+重建镜像后`python scripts/smoke_auth.py`通过：隔离容器真实HTTP创建/重复/更新/停用字段与模板必填绑定，
+跨容器重启保留配置/停用状态/模板，既有上传/批量/撤销/存储/认证验证继续通过。
+Compose升级与`python scripts/smoke.py`通过，API/worker/Converter健康。未宣称字段值/规则求值、全文索引或生产UI已完成。

@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T10 扩展版本 0.4.7），base `/api/v1`，44 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T17 扩展版本 0.4.8），base `/api/v1`，44 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -144,3 +144,16 @@ reprocess/set_metadata返回501。每项版本过期、跨空间、引用缺失�
 
 POST /jobs/{id}/undo无请求体，202返回幂等撤销job；只处理原成功变更，不支持再次撤销撤销任务。
 执行时必须仍为原操作后的版本，且恢复引用/归档规则有效；冲突逐项失败并保留新编辑。Cookie写入须CSRF。
+
+## T17 字段定义与模板维护已实现
+
+GET /field-definitions（可按space_id过滤，包含停用）与POST /field-definitions、PATCH /field-definitions/{id}已实现。
+创建必填space_id/key/label/type，默认constraints={}、searchable=false、filterable=false、is_active=true。
+key为小写英文字母起始的[a-z0-9_]，最长255且同空间唯一；label去首尾空白/NFC、非空/无控制字符、最长255。
+PATCH仅接受label/constraints/searchable/filterable/is_active，至少一个字段，不接受null或额外属性，布尔不做字符串/数字转换。
+key/type/space不可修改，无硬删除。每空间最多1000个定义（含停用）；约束配置紧凑JSON16KiB、最大8层、禁止NaN/Infinity。
+constraints整体替换，{}清空；规则词汇/选项形状和字段值验证留T18。searchable/filterable只保存配置。
+
+模板fields同空间/去重，禁止新增停用字段绑定；已有绑定可保留/调整required_for_filing/display_order或移除。
+停用和模板变更不删除历史metadata_values、不自动切档案整理状态或修改document_version；后续归档仍按现行模板验证。
+未新增元数据值读写/候选采纳API；归档遇未实现复杂约束仍501。Cookie写入须CSRF，Bearer无需CSRF。

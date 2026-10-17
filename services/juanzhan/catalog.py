@@ -163,8 +163,11 @@ def replace_fields(db, type_id, space_id, fields):
     ids = [field.field_definition_id for field in fields]
     if len(set(ids)) != len(ids):
         fail(422, 'DUPLICATE_FIELD', 'Field definitions must not repeat')
+    existing = {r[0] for r in db.execute('SELECT field_definition_id FROM document_type_fields WHERE document_type_id=?', (type_id,))}
     for id in ids:
-        same_space(db, 'field_definitions', id, space_id)
+        field = same_space(db, 'field_definitions', id, space_id)
+        if not field['is_active'] and id not in existing:
+            fail(422, 'INACTIVE_FIELD', 'Cannot add a disabled field to a template')
     db.execute('DELETE FROM document_type_fields WHERE document_type_id=?', (type_id,))
     db.executemany('INSERT INTO document_type_fields VALUES (?,?,?,?,?)',
                    [(space_id,type_id,f.field_definition_id,int(f.required_for_filing),f.display_order)

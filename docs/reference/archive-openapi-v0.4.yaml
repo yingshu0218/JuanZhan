@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.7
+  version: 0.4.8
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -701,6 +701,7 @@ paths:
                   minLength: 1
                   maxLength: 255
                 fields: &id003
+                  description: 字段必须同空间且不重复；禁止新增停用字段绑定，现存引用可保留/调整/移除，不删除metadata_values。
                   type: array
                   maxItems: 1000
                   items:
@@ -801,7 +802,7 @@ paths:
       - TypesAndFields
       summary: 列出自定义字段定义
       operationId: get_field_definitions
-      description: ''
+      description: 包含停用字段；按space_id/key/id稳定排序，space_id不存在返回404。
       x-roadmap-phase: MVP
       parameters:
       - name: space_id
@@ -828,7 +829,10 @@ paths:
       - TypesAndFields
       summary: 创建自定义字段定义
       operationId: post_field_definitions
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: >-
+        每空间最多1000个字段（含停用）；key唯一且创建后key/type/space不可修改，不提供硬删除。
+        constraints是待T18求值的原样JSON配置，当前只校验对象/16KiB UTF-8/最大8层嵌套/有限数值；不代表已能验证字段值。
+        searchable/filterable只保存配置，不代表检索已实现。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -836,12 +840,17 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 space_id: *id001
                 key:
                   type: string
+                  pattern: ^[a-z][a-z0-9_]*$
+                  maxLength: 255
                 label:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 type: &id007
                   type: string
                   enum:
@@ -892,7 +901,10 @@ paths:
       - TypesAndFields
       summary: 更新字段显示/约束；不允许修改字段 key/type
       operationId: patch_field_definitions_id
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: >-
+        只更新显式属性，至少一项且不接受null/额外属性。constraints整体替换，{}清空；其格式/资源界限同创建。
+        停用保留历史值和现存模板引用，新模板不得绑定停用字段；已有模板可保留、调整必填/顺序或移除引用。
+        不自动改变档案版本/整理状态或重写历史值；完整字段值/归档约束在T18实施。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -908,9 +920,13 @@ paths:
           application/json:
             schema:
               type: object
+              minProperties: 1
+              additionalProperties: false
               properties:
                 label:
                   type: string
+                  minLength: 1
+                  maxLength: 255
                 constraints:
                   type: object
                   additionalProperties: true
@@ -2289,14 +2305,18 @@ components:
       - is_active
     FieldDefinition:
       type: object
+      additionalProperties: false
       properties:
         id: *id001
         space_id: *id001
         key:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
+          maxLength: 255
         label:
           type: string
+          minLength: 1
+          maxLength: 255
         type: *id007
         constraints:
           type: object
@@ -2310,6 +2330,9 @@ components:
       - key
       - label
       - type
+      - constraints
+      - searchable
+      - filterable
       - is_active
     MetadataEntry:
       type: object

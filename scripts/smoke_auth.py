@@ -112,6 +112,17 @@ try:
     assert status == 201
     status, catalog_type, _ = request('/api/v1/document-types', 'POST', {'space_id':space_id,'key':'contract','label':'Contract'}, csrf)
     assert status == 201
+    field_body={'space_id':space_id,'key':'contract_amount','label':'Amount','type':'decimal',
+                'constraints':{'min':'2.00','max':'10.00'},'searchable':True,'filterable':True}
+    assert request('/api/v1/field-definitions','POST',field_body)[0]==403
+    status,field,_=request('/api/v1/field-definitions','POST',field_body,csrf)
+    assert status==201 and field['constraints']==field_body['constraints']
+    assert request('/api/v1/field-definitions','POST',field_body,csrf)[0]==409
+    assert request('/api/v1/field-definitions/'+field['id'],'PATCH',{'type':'text'},csrf)[0]==422
+    binding={'field_definition_id':field['id'],'required_for_filing':True,'display_order':1}
+    assert request('/api/v1/document-types/'+catalog_type['id'],'PATCH',{'fields':[binding]},csrf)[0]==200
+    assert request('/api/v1/field-definitions/'+field['id'],'PATCH',{'label':'Contract amount','is_active':False},csrf)[0]==200
+    assert request('/api/v1/document-types','POST',{'space_id':space_id,'key':'blocked','label':'Blocked','fields':[binding]},csrf)[0]==422
     status,uploaded=upload_original(space_id)
     assert status==201 and uploaded['upload_status']=='saved'
     status,duplicate=upload_original(space_id)
@@ -215,6 +226,12 @@ with connect('/data/database/archive.sqlite3') as db:
 
 """)
     assert request('/api/v1/auth/tokens')[0] == 200
+    persisted_fields=request('/api/v1/field-definitions?space_id='+space_id)[1]
+    assert len(persisted_fields)==1 and persisted_fields[0]['id']==field['id']
+    assert persisted_fields[0]['label']=='Contract amount' and not persisted_fields[0]['is_active']
+    assert persisted_fields[0]['constraints']==field_body['constraints']
+    assert request('/api/v1/document-types?space_id='+space_id)[1][0]['fields']==[binding]
+    assert request('/api/v1/document-types/'+catalog_type['id'],'PATCH',{'fields':[binding]},csrf)[0]==200
     job_id = docker('exec','-i',name,'python','-',input=r"""
 from pathlib import Path
 import os
@@ -273,7 +290,7 @@ print(job['id'])
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo, field definitions/template disable/persistence')
 finally:
     if started:
         docker('rm', '-f', name)
