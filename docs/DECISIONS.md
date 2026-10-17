@@ -205,3 +205,11 @@ Sources按空间隔离实例，切换导航保留来源/前缀/分页与最近�
 parse_run_id在spool内唯一并绑定输入hash及选项，同请求复用、冲突拒绝；不接自动无限重试。重启同spool将running失败、queued继续，容器tmpfs重建则ID可失效，调用者必须将原件和协调事实留在Archive。清理只允许终态，TTL不杀活跃任务；清理的目录unlink可重做以恢复DB提交前后中断。发布中断留running时，单runner下一次数据库可用后置CONVERTER_PUBLISH_FAILED，再推进后续任务，不重复执行未确认副作用。
 资产ref随机32hex映射，路径不由客户端或文件名拼接；发布校验规范结果/身份/产物hash与大小，下载受鉴权和期限保护。Archive客户端禁代理继承/重定向，有界JSON与重复键/非有限值拒绝，结果验证Revision/ParseRun身份；资产私有暂存校验后才返回给持久化层。网络失败不自动重发写请求。
 Compose worker复用既有Converter服务Token和内部URL，不新增用户秘密。Archive业务库/源卷不向Converter开放；ParseRun/正文/候选/资产落盘与当前成功指针留T22，上传解析任务现仍明确未实现，不包装成UI正文交付。
+
+## ADR-035 · 2026-10-17 · T20 纯Python六格式与安全降级
+
+实施选择：pypdf6.21.1处理PDF文本层，markdown-it-py4.2.0处理CommonMark/GFM表格，defusedxml0.7.1与标准库ZIP/XML处理DOCX/EPUB，HTMLParser提取HTML；mdurl0.1.2为间接依赖。按实际包许可核对BSD-3-Clause/MIT/PSF v2，保留随包许可并锁定分发哈希，不引入LibreOffice/浏览器/系统PDF工具作为运行依赖。纯Python减少镜像/平台耦合，但不宣称已实测全部平台或任意复杂排版。
+T19受限子进程继续兜底，新增页数/ZIP条目/累计膨胀读取/成员大小/压缩比保护，拒绝特殊路径/重复/加密/符号链接及DTD/实体。PDF解码流在取到内容后核对额度，库分配前的风险仍由进程CPU/地址空间/墙钟限制；测试发现ContentStream可为空字典但含数据，故用is not None而非真值判断，确保上限实际生效。
+只产生plain_text/从块重新生成的安全Markdown，不返回原始活动HTML、源链接/图片或执行脚本；HTML不计算外部CSS，显式隐藏节点过滤不能冒充浏览器视觉判断。二进制签名优先，MD/HTML语义用已识别文本的MIME提示。TXT只支持确定的UTF-8或BOM UTF-16/32，不猜测单字节编码。
+定位只采真实证据：PDF页码；EPUB spine/href且无伪页数；DOCX/HTML实际标题路径或unknown；MD源行字符跨度，长片段映射不可靠则unknown；TXT解码码点。候选仅原始properties/meta/manifest且置信度null，不侵入人工业务值或归档逻辑。源对象和Archive解析状态均不随独立转换改变，T22才做正式业务提交。
+六格式实物和恶意样本通过真实HTTP/子进程/SQLite/文件及容器验证；扫描PDF空文本警告不等于OCR，下一切片T21。复杂表格/阅读顺序/布局降级须有说明，不将本轮视为最终产品验收。

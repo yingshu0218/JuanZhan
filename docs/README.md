@@ -9,6 +9,7 @@
 | [数据库](DATABASE.md) | 实体关系与迁移约束 |
 | [API](API.md) | 两套 HTTP 契约、调用顺序与缺口 |
 | [转换器](CONVERTER.md) | 六格式、OCR 与标准输出 |
+| [解析依赖许可](THIRD-PARTY.md) | T20版本、许可及再分发入口 |
 | [UI/UX](UI-UX.md) | 结构化内容优先交互与原型差距 |
 | [决策记录](DECISIONS.md) | 已确认、基线、建议和待定分开 |
 | [开发任务](TASKS.md) | 按依赖实施，逐项验收 |

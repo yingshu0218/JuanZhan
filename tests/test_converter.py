@@ -82,7 +82,7 @@ def test_real_text_result_download_cleanup_and_archive_separation(app,config):
         assert not (config.root.parent/'archive').exists()
 
 
-@pytest.mark.parametrize('content,mime',[(b'%PDF-1.7\nnot parsed','application/pdf'),(b'<html><script>bad()</script>body</html>','text/html'),(b'\x00binary','application/octet-stream')])
+@pytest.mark.parametrize('content,mime',[(b'\x00binary','application/octet-stream')])
 def test_unsupported_is_a_real_result_not_claimed_conversion(app,content,mime):
     with TestClient(app) as client:
         id=submit(client,content).json()['job_id']
@@ -178,7 +178,8 @@ def real_server(app):
 def test_archive_client_real_socket_chunked_upload_verify_and_cleanup(app):
     with real_server(app) as base:
         client=ConverterClient(base,'private-converter-token')
-        assert client.capabilities()['supported_input_types']==['text/plain']
+        from juanzhan.conversion_formats import SUPPORTED
+        assert client.capabilities()['supported_input_types']==SUPPORTED
         content='真实客户端原件\n'.encode()
         options=Options(file_revision_id='r',parse_run_id='p',generate_preview=False)
         first=client.submit(BytesIO(content),options)

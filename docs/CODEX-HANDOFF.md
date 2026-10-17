@@ -189,3 +189,10 @@ T19独立转换协议和最小UTF-8 TXT已实现。接续T20真实六格式基�
 Converter临时spool是独立SQLite+文件、默认/tmp/juanzhan-converter，在Compose128MiB tmpfs内；非Archive迁移/持久业务库。单uvicorn进程持排他锁、单runner、每任务子进程一次；已完成未清理任务也占容量2。清理失败可重试；默认TTL3600秒，活跃任务不被TTL删除。Docker重建tmpfs后任务可能404，原件仍在Archive；同spool重启仅queued继续，running失败不擅自重复。
 ConverterClient.from_env读取Compose worker的既有Token及CONVERTER_URL，不把上游未验证产物交给调用者；T22才接管parse handler/ParseRun/DerivedAsset/ContentBlock与围栏提交，现有上传parse仍HANDLER_NOT_AVAILABLE。T19不修改人工字段/当前成功解析，也不提供Web正文或下载入口。
 验证：pytest全量253项；scripts/smoke_converter.py独立容器/网络/数据卷真实上传→客户端→Converter→字节验证/清理，正常实例不动。脚本不要求新凭证或依赖；正常Compose升级/新冒烟见TESTING。
+
+## 当前接续点 · T20 后（优先于上文历史交接）
+
+T19/T20独立转换协议与六格式基础解析已完成，接续T21按需OCR/受限预览，不重复搭服务或把基础格式当全部保真。解析代码conversion_formats/conversion_html由受限conversion_child调用，产物生成与协议/临时Store分离，真实文件夹具在tests/format_samples.py。
+依赖通过uv.lock/requirements.lock及wheelhouse哈希离线构建：pypdf6.21.1/markdown-it-py4.2.0/defusedxml0.7.1/mdurl0.1.2，许可与范围见THIRD-PARTY。新增资源默认200页、1024 ZIP成员、16MiB膨胀/累计读取、8MiB单成员/PDF解码流、200压缩比，保留T19 CPU/地址空间/墙钟保护；严格XML拒绝DTD/实体，不读取远程资源。
+Converter OpenAPI0.4.2/6路径，Archive0.4.16/48路径及5次迁移不变。客户端保持规范/身份/hash核验。T20仅在独立服务输出，尚不创建业务ParseRun/DerivedAsset/ContentBlock，不切current_parse_run_id；T22才能接parse handler、重试/围栏与旧成功正文保留。HTML不返回可执行原始HTML，Markdown由安全块生成，T32仍需负责最终预览/下载安全。
+pytest全量279项通过；scripts/smoke_formats.py真实上传六格式→Archive客户端→Converter→结果/资产/清理，SQLite和原件不变，运行需uv run以便生成pypdf真实样本。T19 smoke_converter保留并更新能力/unsupported二进制期望；浏览器9项证据仍属T28，本轮UI未改。

@@ -132,3 +132,8 @@ Sources负责当前空间来源/库存/排除读取与任务回执，SourceWizar
 conversion_api负责受限multipart/任务读取/流式受控产物；conversion_store拥有私有临时SQLite和文件、排他进程锁/单runner/容量/TTL；conversion_child执行有资源限制的最小TXT解析；conversion_models验证规范结构。子进程仅获必要PATH/LANG/固定包路径，不继承服务Token，限CPU/地址空间/文件大小/描述符和墙钟，stdout/stderr不泄露原文。
 converter_client是Archive内部纯HTTP客户端，二进制流上传/有限轮询、严格结果/身份/有界JSON、临时下载校验后开放；拒绝代理环境继承及重定向，不接客户端服务URL。Compose仅给worker既有Token及内部URL，Converter仍没有Archive数据库/managed/external卷。当前parse handler及正式持久化不接入，留T22实现幂等/版本/租约围栏/旧成功正文保留。
 临时任务单次执行，幂等作用域为当前spool生命周期。崩溃running失败不重放，queued同spool可恢复；容器tmpfs丢失可返回404，由Archive未来按持久任务预算协调，不宣称远端exactly-once。
+
+## T20 六格式适配
+
+conversion_formats提供共用Output预算、SafeZip、确定性文本解码及DOCX/PDF/MD/EPUB适配，conversion_html只提取安全文本结构，conversion_child分发并生成带hash的plain_text/Markdown。解析始终在资源受限子进程中，主进程对结果/身份/所有产物逐个校验，非跟随打开并先检查普通文件，避免产物路径/特殊文件越界。
+新增纯Python依赖与锁定许可见THIRD-PARTY，无系统工具/模型运行依赖；PDF页数/内容流与ZIP成员/膨胀/单成员/比率由服务配置公布，源码和模型保持真实定位。HTML/Markdown不运行浏览器或下载资源，不发布原始活动HTML。T22的正式派生store和事务管线仍未实现。

@@ -315,3 +315,16 @@ T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容�
 `DOCKER_CONFIG=$PWD/.local/docker docker compose build archive`及`docker compose up -d --wait --no-build`通过，最终三个容器healthy；新`smoke.py`通过Web/CSP/资源、鉴权、真实TXT能力/非法multipart边界及worker心跳。额外一次性容器以默认128MiB tmpfs/256MiB子进程地址空间，处理恰好4MiB含emoji的真实UTF-8文件，完成规范结果/产物hash验证及清理；不承诺大规模性能。无新依赖、业务迁移、前端改动；本轮未重复浏览器套件，9项浏览器结果仍属T28。Converter OpenAPI0.4.1/6路径及Archive0.4.16/48路径唯一键/本地引用检查通过，已应用5次迁移未变。
 
 边界：只证明最小UTF-8 TXT及独立传输协议，不是六格式/OCR/预览或产品正文交付。单进程同spool重启已验证；Docker tmpfs重建丢失任务是允许边界，本轮未执行该故障场景，不能宣称远端ID跨容器重启持久。Archive parse handler、ParseRun/DerivedAsset/ContentBlock事务入库与历史正文保留仍在T22；上传解析任务仍明确未实现，不因Converter可用伪报业务成功。下个任务T20。
+
+## T20 验收 · 2026-10-17
+
+最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：279 passed，81.02秒，仅既有Starlette/httpx弃用提示。新增28项六格式测试，T19中PDF/HTML的旧unsupported断言被真实格式成功/失败用例替代（净增26项）；未把测试改成伪解析JSON或关闭资源保护。
+真实二进制文件通过受限子进程、私有SQLite、鉴权HTTP和规范模型验证：DOCX标题/样式列表/显式表头/表格/实际属性，MD CommonMark和表格，HTML隐藏/活动区域过滤与实际meta，TXT UTF-8/BOM UTF-16/32及精确字符范围，EPUB按spine顺序/前缀XHTML/书目属性且无伪页数，PDF真实页码、属性、空文本OCR提示和密码失败。每种格式核验plain_text与Markdown资产大小/hash及清理，置信度null。DOCX false表头和numId=0不伪造表头/列表。
+安全覆盖具有实际DOCX包身份的越界/反斜线路径、ZIP膨胀/压缩比/成员额度、符号链接/重复成员、XML实体/DTD；EPUB章节远程/越界引用拒绝，HTML本地HTTP资源探针收到0请求；PDF页数和Flate解码内容流额度生效，活动Markdown不输出原HTML/脚本且生成语法被转义。真实中文PDF的Unicode映射由pypdf及本机独立`pdftotext /tmp/juanzhan-t20-cjk.pdf -`均读出“中文资料”；pdftotext不是生产依赖。
+初始回归发现TXT段落正则的$在末尾换行前匹配导致定位拆段，改用严格EOF；Markdown里不被识别为链接的URL属于普通文本，验收改为检查生成Markdown不形成活动链接，不无故删除原文字面值。代码检查发现pypdf ContentStream可为空字典但仍含解码数据，改为is not None并加入真实Flate流额度回归。上述修正及DOCX布尔语义均经最终全量验证。
+
+`DOCKER_CONFIG=$PWD/.local/docker UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen python scripts/smoke_formats.py`通过：独立Archive/Converter容器、网络/数据卷，六种实物文件真实上传并在Archive登记；Archive内部客户端跨HTTP提交/轮询/取规范blocks与定位/候选、下载两种产物核验并DELETE，6份原件hash/标题/current_parse_run_id不变，parse_runs仍0且FK正常。样本生成器只生成文件格式本身，不生成解析输出；SQLite/文件/HTTP链路均为实际实现。夹具退出后清理，不触碰正常数据卷/管理员。
+原`scripts/smoke_converter.py`回归通过，能力更新为六格式，unsupported改用真正未知二进制；未继续把已支持PDF/HTML当unsupported。`uv add`锁定新依赖，随后哈希校验wheelhouse下载、Docker离线安装/构建成功，正常Compose三个容器升级healthy；`smoke.py`通过Web/CSP/资源、鉴权、六格式能力/非法multipart及worker心跳。依赖与许可见THIRD-PARTY，无系统工具/模型新依赖。
+Converter OpenAPI0.4.2/6路径、Archive0.4.16/48路径唯一键/本地引用检查通过，5个已应用SQL迁移未改。前端未变，本轮不重复9项T28浏览器验收；安装/启动仍使用原冻结依赖+wheelhouse+Compose通用步骤，无新凭证需求。
+
+边界：基础文本/语义结构已验收，不承诺DOCX复杂布局/浮动图像/页眉页脚/脚注、PDF多栏/表格顺序、HTML外部CSS可见性或所有旧EPUB兼容；降级警告及严格编码/XML范围见CONVERTER。扫描PDF无文本不等于OCR完成，OCR/受限原件预览仍T21；业务ParseRun/派生物持久化和旧成功正文仍T22。没有测试或宣称10万文件/大文档性能、跨平台发布或最终产品完成。

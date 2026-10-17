@@ -3,7 +3,7 @@
 ## 权威文件
 
 - 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T15 扩展版本 0.4.16），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
-- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T19版本0.4.1），6 个 path 模板，独立服务根路径。
+- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T20版本0.4.2），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
 
@@ -244,3 +244,8 @@ GET /sources/{id}/exclusions、POST /sources/{id}/exclude-entry、DELETE /source
 
 Converter OpenAPI0.4.1六路径已实现，任务提交202；身份只接受Archive生成的安全ID和multipart二进制，额外字段/重复字段拒绝。parse_run_id在本spool有效期内按输入hash+选项幂等，冲突409；容量429/超大小413/接收超时408/OCR不可用422。协议完成不等于支持格式：规范ParseResult.status可能unsupported。
 状态/result/asset均鉴权，结果未完成409，不存在/过期404。终态DELETE清理，活动409。artifacts强制随机ref、sha256和size_bytes；客户端还校验schema/Revision/ParseRun身份及下载字节，不跟随重定向。详见CONVERTER与ADR-034。Archive业务HTTP契约和迁移不变，parse handler接入留T22。
+
+## T20 六格式结果与能力
+
+Converter0.4.2保持六路径/ParseResult1.0，capabilities公布六种MIME和新增页数/ZIP资源限额；declared_mime仅补充已识别文本的MD/HTML语义提示，二进制签名优先。结果含规范块、实际属性候选、plain_text/安全Markdown，所有资产继续强制ref/大小/hash验证。
+扫描PDF可协议完成且text_available=false并警告OCR_REQUIRED，加密文件失败；EPUB无物理页码。输出上限/归一化/未知定位和格式保真范围见CONVERTER。无Archive路由或SQL变更，业务正文/候选持久化仍待T22/T23。

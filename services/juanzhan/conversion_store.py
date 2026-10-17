@@ -38,13 +38,21 @@ class ConverterConfig:
     memory_bytes: int = 256 * 1024 * 1024
     max_blocks: int = 10000
     receive_seconds: float = 60.0
+    max_pages: int = 200
+    max_archive_entries: int = 1024
+    max_archive_bytes: int = 16 * 1024 * 1024
+    max_archive_member_bytes: int = 8 * 1024 * 1024
+    max_compression_ratio: int = 200
 
     def __post_init__(self):
         if not (1 <= self.max_file_bytes <= 64*1024*1024 and
                 1024 <= self.max_output_bytes <= 64*1024*1024 and 1 <= self.max_jobs <= 100 and
                 0 < self.ttl_seconds <= 86400 and 0 < self.wall_seconds <= 300 and
                 1 <= self.cpu_seconds <= 300 and 64*1024*1024 <= self.memory_bytes <= 2*1024**3 and
-                1 <= self.max_blocks <= 10000 and 0 < self.receive_seconds <= 300):
+                1 <= self.max_blocks <= 10000 and 0 < self.receive_seconds <= 300 and
+                1 <= self.max_pages <= 1000 and 1 <= self.max_archive_entries <= 10000 and
+                1024 <= self.max_archive_member_bytes <= self.max_archive_bytes <= 64*1024*1024 and
+                1 <= self.max_compression_ratio <= 1000):
             raise ValueError('Invalid converter resource limits')
 
     @classmethod
@@ -279,7 +287,10 @@ class ConverterStore:
                         raise ValueError('Identity mismatch')
                     total = 0
                     for asset in result['artifacts']:
-                        with (directory / asset['artifact_ref']).open('rb') as file:
+                        fd = os.open(directory / asset['artifact_ref'], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+                        with os.fdopen(fd, 'rb') as file:
+                            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                                raise ValueError('Nonregular artifact')
                             data = file.read(self.config.max_output_bytes+1)
                         total += len(data)
                         if total > self.config.max_output_bytes or len(data) != asset['size_bytes'] or hashlib.sha256(data).hexdigest() != asset['sha256']:

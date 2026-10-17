@@ -32,3 +32,14 @@ OCR 默认关闭，按文档/任务启用并受服务能力和语言白名单约
 受控产物是随机32位小写hex引用，经private DB映射到任务文件；下载attachment/nosniff/no-store。客户端下载先写私有暂存，核验长度及sha256后才返回文件流供后续持久化，不接URL/绝对路径。主动DELETE只允许终态，活动返回409；TTL默认自接收起3600秒，终态才清理，容量满429。
 临时SQLite不是Archive业务数据库，也不承诺容器重建持久性。相同parse_run_id绑定输入sha256及全部选项，重复返回原job_id，冲突409；DELETE/TTL/重建tmpfs后映射不保留。同spool服务重启恢复queued，running标CONVERTER_RESTARTED；发布/存储异常恢复后，单runner将遗留running标CONVERTER_PUBLISH_FAILED，不无限阻塞队列。Archive必须保留原件并按有限预算重新协调，不能把临时Job当永久事实。
 当前Archive仅有内部客户端，尚未把parse任务接入本服务或持久化ParseRun/块/资产；这些属于T22。六格式转换T20、OCR T21、内容/候选API T23及界面T29仍待开发。
+
+## T20 当前实现 · 协议0.4.2
+
+能力包括六种输入MIME。UTF-8文本可通过declared_mime指定Markdown/HTML子类型（仅字节看不出可靠语义）；二进制签名优先。TXT除UTF-8/BOM外支持带BOM UTF-16/32，不盲猜GBK/单字节编码；字符定位是解码且移除BOM后的Unicode码点范围。Markdown为CommonMark+表格，源码定位取实际行范围对应的字符跨度；长的规范化片段无法准确映射时unknown。
+DOCX读取word/document.xml及styles/core属性，在有界ZIP内复制实际标题/段落/样式继承列表/表格；不解压目录、不执行宏/字段或跟随关系外链。真实标题路径可用则section，否则unknown；不推测页数。浮动图像不提取，合并/嵌套表格可平铺；脚注/页眉页脚/修订与未知正文元素等按代码能力警告，不承诺排版保真。
+HTML用HTMLParser提取文本、标题、列表、简单表格和真实meta属性；丢弃script/style/iframe/object/svg/math/template等活动区域及显式hidden/aria-hidden/内联隐藏节点，不加载CSS/图片/链接。没有浏览器布局或外部CSS计算，因此只保证文本提取，不承诺完整视觉可见性。原始HTML不作为产物返回。Markdown内原始活动HTML同样不输出，可识别链接只保留文本标签，不生成源资源链接；普通URL字面值仍可作为纯文本保存。
+EPUB验证mimetype/container/OPF，按spine而非ZIP/manifest顺序读取XHTML/HTML，解析真实书目候选；章节locator保留spine_index/href及真实标题路径，page_count永远null。XHTML前缀命名空间被安全规范化供文本解析；严格拒绝DTD/实体及用于读取的外部/越界章节引用，其他资源不加载；不保证兼容依赖DTD实体的旧EPUB/复杂脚本书籍。非HTML spine项略过并警告。
+PDF通过pypdf提取文本层、页码和实际Title/Author；不调用JavaScript、OCR或外部资源。所有页受200页默认上限，解码内容流8MiB上限，CPU/地址空间/墙钟兜底；多栏和表格阅读顺序明确未验证。无文本层可completed但text_available=false，有NO_TEXT_LAYER_OCR_REQUIRED；加密/密码文件明确失败，不伪造已识别文字。
+六格式均输出plain_text和由块重新生成的Markdown，完整表格结构以JSON为准，Markdown布局可能降级；Markdown中的HTML/特殊语法转义，不保留源文件主动资源。元数据仅来自实际属性/meta/manifest，均候选/confidence=null，不写人工业务值，不猜正文作者/日期/语言。
+默认ZIP成员1024、膨胀总量及累计读取16MiB、单成员8MiB、压缩比200，拒绝重复/加密/符号链接/非规范路径或非stored/deflate成员；保留4MiB输入、16MiB产物总量/JSON、10000块及T19子进程限制。PDF解码可能先触发子进程内存/时限保护，不能承诺任意复杂4MiB文件都可转换。
+OCR、原件预览及业务正文入库未实现，仍按T21/T22接续。结果completed只表明当前基础转换完成，不等于Archive已切换成功正文。

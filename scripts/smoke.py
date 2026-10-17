@@ -26,7 +26,8 @@ else:
 headers={'Authorization':'Bearer '+os.environ['CONVERTER_SERVICE_TOKEN']}
 with urllib.request.urlopen(urllib.request.Request(base+'/v1/capabilities', headers=headers), timeout=5) as r:
     cap=json.load(r)
-    assert cap['schema_versions']==['1.0'] and cap['supported_input_types']==['text/plain'] and not cap['ocr_available']
+    from juanzhan.conversion_formats import SUPPORTED
+    assert cap['schema_versions']==['1.0'] and cap['supported_input_types']==SUPPORTED and not cap['ocr_available']
 try:
     urllib.request.urlopen(urllib.request.Request(base+'/v1/jobs', data=b'', headers=headers), timeout=5)
 except urllib.error.HTTPError as e:
@@ -34,7 +35,7 @@ except urllib.error.HTTPError as e:
 else:
     raise AssertionError('Invalid multipart job accepted')
 '''], check=True)
-print('PASS: Archive readiness; Converter authentication, UTF-8 text capabilities and multipart boundary')
+print('PASS: Archive readiness; Converter authentication, six-format capabilities and multipart boundary')
 
 subprocess.run(['docker','compose','exec','-T','archive-worker','python','-m','juanzhan.worker','--healthcheck'],check=True)
 print('PASS: Archive worker heartbeat health')

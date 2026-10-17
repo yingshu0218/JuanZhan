@@ -87,7 +87,8 @@ def test_converter_boundary(settings,tmp_path):
         headers = {'Authorization': 'Bearer ' + settings.converter_token}
         capabilities = client.get('/v1/capabilities', headers=headers).json()
         assert capabilities['schema_versions'] == ['1.0']
-        assert capabilities['supported_input_types'] == ['text/plain']
+        from juanzhan.conversion_formats import SUPPORTED
+        assert capabilities['supported_input_types'] == SUPPORTED
         assert capabilities['ocr_available'] is False
         response = client.post('/v1/jobs', headers=headers, json={'path': '/etc/passwd'})
         assert response.status_code == 400

@@ -18,16 +18,20 @@ def router(store):
     routes = APIRouter(prefix='/v1')
     receiving = asyncio.Semaphore(1)
     config = store.config
+    from .conversion_formats import SUPPORTED
 
     @routes.get('/capabilities')
     def capabilities():
-        return {'schema_versions': ['1.0'], 'supported_input_types': ['text/plain'],
+        return {'schema_versions': ['1.0'], 'supported_input_types': SUPPORTED,
                 'ocr_available': False, 'max_file_bytes': config.max_file_bytes,
-                'max_pages': 0, 'preview_available': False, 'ocr_languages': [],
+                'max_pages': config.max_pages, 'preview_available': False, 'ocr_languages': [],
                 'max_output_bytes': config.max_output_bytes, 'max_blocks': config.max_blocks,
                 'max_jobs': config.max_jobs, 'ttl_seconds': config.ttl_seconds,
                 'wall_seconds': config.wall_seconds, 'cpu_seconds': config.cpu_seconds,
-                'memory_bytes': config.memory_bytes}
+                'memory_bytes': config.memory_bytes,
+                'max_archive_entries': config.max_archive_entries, 'max_archive_bytes': config.max_archive_bytes,
+                'max_archive_member_bytes': config.max_archive_member_bytes,
+                'max_compression_ratio': config.max_compression_ratio}
 
     @routes.post('/jobs', status_code=202)
     async def submit(request: Request):

@@ -1,9 +1,8 @@
 openapi: 3.1.0
 info:
   title: Archive Document Converter (independent service)
-  version: 0.4.1
-  description: 不接 LLM 的独立文档转换与 OCR 服务。该 API 只负责解析/转换与返回受控派生资产，不得写 Archive 的业务数据库。默认只在 Docker 内网开放，鉴权使用服务 Bearer Token。 T19已实现受限任务传输及UTF-8
-    TXT；OCR/预览/其他格式未实现。
+  version: 0.4.2
+  description: 不接LLM的独立文档转换服务。T20实现DOCX/PDF文本层/Markdown/HTML/TXT/EPUB基础解析；OCR、原件预览及Archive持久化未接入。只在内部网络使用服务Bearer Token，不访问Archive业务数据库或来源卷。
 servers:
 - url: /
   description: 转换器独立容器的 HTTP 根路径
@@ -70,6 +69,7 @@ paths:
                 declared_mime:
                   type: string
                   maxLength: 255
+                  description: 文本子类型无法仅凭字节可靠区分：对已识别文本/BOM接受text/markdown或text/html提示；PDF/ZIP等二进制签名优先，不接文件扩展路径。
                 ocr_enabled:
                   type: boolean
                   default: false
@@ -187,7 +187,8 @@ paths:
   /v1/jobs/{job_id}/result:
     get:
       summary: 取得统一解析 JSON
-      description: status != completed 时返回 409；大资产不可直接内嵌到 JSON，应通过 artifact_ref 下载。
+      description: status != completed 时返回 409；大资产不可直接内嵌到 JSON，应通过 artifact_ref 下载。 六格式基础输出包含规范blocks、plain_text/安全Markdown资产和实际属性候选。PDF真实页码，EPUB
+        spine/href，DOCX/HTML真实标题路径或unknown，Markdown源行字符范围，TXT BOM去除后的Unicode码点。缺失置信度为null。扫描PDF可completed且text_available=false并有NO_TEXT_LAYER_OCR_REQUIRED，不伪造OCR成功。
       parameters:
       - name: job_id
         in: path
@@ -536,13 +537,14 @@ components:
           type: array
           items:
             type: string
+          description: 基础解析：text/plain,text/markdown,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,application/epub+zip；以实际capabilities为准。
         ocr_available:
           type: boolean
         max_file_bytes:
           type: integer
         max_pages:
           type: integer
-          description: 当前0：没有启用任何分页格式，不宣称PDF能力
+          description: PDF页数上限，默认200；DOCX/HTML/Markdown/TXT/EPUB不推测物理页数。
         preview_available:
           type: boolean
           description: 当前false
@@ -572,6 +574,22 @@ components:
         memory_bytes:
           type: integer
           description: 子进程RLIMIT_AS地址空间限制，不等于容器RSS额度
+        max_archive_entries:
+          type: integer
+          minimum: 1
+          description: ZIP成员数上限，默认1024
+        max_archive_bytes:
+          type: integer
+          minimum: 1
+          description: ZIP声明膨胀总量及累计读取预算，默认16MiB
+        max_archive_member_bytes:
+          type: integer
+          minimum: 1
+          description: 单个ZIP成员及PDF解码内容流上限，默认8MiB
+        max_compression_ratio:
+          type: integer
+          minimum: 1
+          description: ZIP成员压缩比上限，默认200
     Locator:
       type: object
       required:

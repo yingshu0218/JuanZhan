@@ -7,6 +7,9 @@ dependencies = [
     "uvicorn>=0.34,<1",
     "python-multipart>=0.0.20,<1",
     "regex>=2024.11,<2027",
+    "pypdf>=6,<7",
+    "markdown-it-py>=4,<5",
+    "defusedxml>=0.7.1,<0.8",
 ]
 
 [dependency-groups]

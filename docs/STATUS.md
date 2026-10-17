@@ -7,7 +7,7 @@
 | 提取元数据展示 | 原型演示可用 | 标题/作者空值/语言/日期/关键词/来源/候选确认 |
 | 默认结构化详情 + 关联原件 | 生产外壳已实现 | 真实业务字段/状态优先；正文与原件预览待接入，关联信息可查看 |
 | 真实档案 API/认证/数据库持久化 | 基础部分已实现 | 已有认证、分类、上传、档案列表/详情/整理与回收站、批量逻辑操作及受版本保护的撤销、字段定义与值/候选维护 |
-| 真正 DOCX/PDF/MD/HTML/TXT/EPUB 转换 | T19最小UTF-8 TXT已接通 | 六格式解析、OCR及Archive持久化/展示尚未完成 |
+| 真正 DOCX/PDF/MD/HTML/TXT/EPUB 转换 | T20基础解析已接通 | OCR及Archive正文持久化/展示仍未完成；复杂布局有降级边界 |
 | OCR/后台扫描/中文全文检索 | 预扫描/首扫/手动增量已实现 | 自动调度、OCR与检索待开发；原型搜索为示例过滤 |
 | Docker Compose/备份恢复/生产部署 | Compose 已实现 | API/worker/Converter 可运行；备份恢复和正式生产部署待完成 |
 | Codex 项目知识库 | 本次交付 | 根目录 AGENTS/README、docs 及原始成果 |
@@ -203,3 +203,10 @@ hash+size在旧库存和新观测均唯一时改路径重关联，保持Document
 为证明真实链路，新增最小UTF-8 TXT解析：Unicode码点有界文本段及字符定位、plain_text产物和sha256/大小，不猜语言/页数/候选。能力仅text/plain；其他格式返回规范unsupported，无假结果；OCR请求明确拒绝，默认预览选项给不可用警告。T20六格式仍未完成。
 新增Archive内部ConverterClient：multipart流、有限轮询、规范结果/身份验证、拒绝重定向与代理继承、受控引用和大小/hash核验后才暴露下载流；不自动重发写请求。Compose worker复用现有服务Token和内部URL。尚不接parse handler/ParseRun/DerivedAsset/块入库，上传后的解析任务仍明确未实现，T22接续。
 Converter契约升级0.4.1/6路径，Archive仍0.4.16/48路径/5次迁移，无新增依赖或业务迁移。253项Python测试及隔离真实Archive上传→Converter网络转换/结果/产物/清理验收通过，具体见TESTING。下一切片T20，T16、T20～T25、T29～T34尚待开发。
+
+## T20 开发进展 · 2026-10-17
+
+独立Converter已支持DOCX、PDF文本层、Markdown、HTML、TXT、EPUB六格式基础解析，统一blocks/metadata_candidates与plain_text/安全规范化Markdown产物。DOCX标题/段落/样式继承列表/表格及真实文档属性；Markdown标题/列表/GFM表格/代码文本；HTML去除活动内容、隐藏节点和资源加载；EPUB严格包路径与spine顺序及书目属性；TXT确定性UTF-8与BOM UTF-16/32，保留字符范围。
+PDF只用实际文本层和页码，阅读顺序/表格不作保真承诺；扫描页text_available=false并提示OCR_REQUIRED，密码文件拒绝。DOCX/HTML用真实标题路径或unknown，EPUB章节定位且page_count=null，不伪造页数；置信度null，不猜语言/业务字段。
+新增锁定pypdf6.21.1、markdown-it-py4.2.0、defusedxml0.7.1（mdurl0.1.2间接依赖），许可见THIRD-PARTY。ZIP成员/膨胀/压缩比、XML实体/DTD、HTML深度、PDF页数/解码流、总块/输出/CPU/地址空间/墙钟均受限；资产发布增加普通文件/no-follow校验。Converter契约0.4.2/6路径，Archive契约/5次迁移不变。
+279项Python测试通过，独立真实Archive上传→跨容器六格式转换/结果/产物校验/清理通过，原件与业务解析状态未变；详见TESTING。下一切片T21 OCR/受限预览。Archive parse handler及ParseRun/正文持久化/历史保留尚待T22，界面正文/候选API与搜索仍待后续，不宣称产品完整。

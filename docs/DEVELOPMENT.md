@@ -478,3 +478,10 @@ JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium DOCKER_CONFIG="$PWD/.local/docker" npm 
 默认临时目录/tmp/juanzhan-converter；可通过CONVERTER_ROOT、CONVERTER_MAX_FILE_BYTES、CONVERTER_MAX_OUTPUT_BYTES、CONVERTER_MAX_JOBS、CONVERTER_TTL_SECONDS、CONVERTER_WALL_SECONDS、CONVERTER_CPU_SECONDS、CONVERTER_MEMORY_BYTES、CONVERTER_MAX_BLOCKS、CONVERTER_RECEIVE_SECONDS调整受验证上限。提高容量/输入/输出额度时须同步安排临时卷预算，默认参数针对当前128MiB tmpfs；RLIMIT_AS是子进程地址空间。默认4MiB/16MiB、2任务、TTL3600秒、30秒墙钟/10秒CPU/256MiB地址空间/10000块/60秒接收。
 在根目录运行`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`；构建Archive镜像后运行`DOCKER_CONFIG="$PWD/.local/docker" python scripts/smoke_converter.py`。后者自动创建独立Archive/Converter容器、网络及卷，用随机临时凭证通过真实上传、SQLite、HTTP转换/规范结果/字节校验和DELETE验证，最后仅清理本次夹具。正常管理员、卷与.env保持。
 ConverterClient可通过from_env创建，仅用于服务内部；使用submit→wait→result(预期Revision/ParseRun)→artifact校验流→delete。未完成/失败不应切换业务成功指针；T22负责正式持久化与重试预算。不要把Converter临时SQLite纳入Archive业务迁移或声称重建tmpfs可保留远端Job。
+
+## T20 六格式依赖与验收
+
+新增纯Python依赖，沿用既有冻结安装与哈希wheelhouse流程，不增加系统服务/模型：先`UV_CACHE_DIR=/workspace/.uv-cache uv sync --frozen`，再`python -m pip download --require-hashes --only-binary=:all: --no-deps -r requirements.lock -d wheelhouse`刷新容器依赖，然后原Compose构建/启动/冒烟。当前机器已实际安装、下载并离线构建验证；无需新增凭证或环境变量。新环境沿用相同通用安装/启动命令，保留既有.env和数据卷。
+六格式网络验收在根目录执行`DOCKER_CONFIG="$PWD/.local/docker" UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen python scripts/smoke_formats.py`；脚本通过已安装pypdf生成真实PDF和实际DOCX/EPUB/文本文件，独立容器/网络/卷真实HTTP上传后，从Archive内部客户端调用Converter，校验结果、两种资产及原件/业务状态。测试资源仅夹具，退出即清理。
+可选CONVERTER_MAX_PAGES、CONVERTER_MAX_ARCHIVE_ENTRIES、CONVERTER_MAX_ARCHIVE_BYTES、CONVERTER_MAX_ARCHIVE_MEMBER_BYTES、CONVERTER_MAX_COMPRESSION_RATIO分别默认200/1024/16MiB/8MiB/200；仍受T19输入/输出/块数/CPU/地址空间/墙钟保护，提高上限必须同时评估tmpfs与容器资源。没有引入系统pdftotext运行依赖；本轮仅用本机已有命令独立核对中文PDF样本。
+Archive自动parse/业务正文仍待T22，因此现有上传界面不会因本轮能力扩充自动展示正文；勿改前端为伪成功。

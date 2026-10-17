@@ -99,7 +99,8 @@ for _ in range(60):
         break
     except ConverterClientError:time.sleep(.1)
 else:raise AssertionError('Converter unavailable')
-assert caps['supported_input_types']==['text/plain'] and not caps['ocr_available']
+from juanzhan.conversion_formats import SUPPORTED
+assert caps['supported_input_types']==SUPPORTED and not caps['ocr_available']
 with connect(settings.database) as db:
     row=db.execute('SELECT r.id,r.sha256,o.storage_key,d.id,d.title,d.current_parse_run_id FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id JOIN documents d ON d.id=r.document_id').fetchone()
     assert db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
@@ -121,7 +122,7 @@ try:client.job(job['job_id'])
 except ConverterClientError as error:assert error.status==404
 else:raise AssertionError('Deleted task remains accessible')
 unsupported_options=Options(file_revision_id='unsupported',parse_run_id=uuid.uuid4().hex)
-unsupported=client.submit(BytesIO(b'%PDF-1.7\\nunsupported'),unsupported_options)
+unsupported=client.submit(BytesIO(b'\\x00binary unsupported'),unsupported_options)
 assert client.wait(unsupported['job_id'])['status']=='completed'
 result=client.result(unsupported['job_id'],file_revision_id='unsupported',parse_run_id=unsupported_options.parse_run_id)
 assert result['status']=='unsupported' and result['blocks']==result['artifacts']==[]
