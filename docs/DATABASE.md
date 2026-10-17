@@ -60,3 +60,10 @@ T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本
 未新增或改写迁移。公开档案编辑/整理与目录子树删除复用document_version和document_events；
 子树操作在BEGIN IMMEDIATE中验证Source引用、更新档案并审计，再按深度删除目录。失败整体回滚。
 软删除/恢复、目录删除不删除Revision或managed_objects，也不触碰外部原件。
+
+## T10 批量审计与撤销
+
+无新迁移；复用jobs(kind=batch)固定payload、result_json和document_events.batch_job_id。
+每项SAVEPOINT内写逻辑字段、版本与前后审计，业务失败回滚该项；最终结果与整个任务完成在同一围栏事务提交。
+撤销查询原成功事件，用after.document_version比较当前版本，恢复引用重新验证；新审计关联撤销任务。
+原件与Revision无副作用，失败/崩溃不留下部分任务提交；错误只含稳定代码，不持久化原始异常路径。

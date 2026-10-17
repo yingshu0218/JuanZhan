@@ -154,14 +154,16 @@ class JobQueue:
                        (done,total,stamp(self.clock()),id))
 
     def complete(self,id,token,result,*,effect=None):
-        """Commit database effect and job completion together. Effect must use this db."""
-        result_json = encoded(result)
+        """Commit database effect and job completion together. Effect must use this db; a callable result runs here and returns the result JSON."""
+        result_json = None if callable(result) else encoded(result)
         with self.write() as db:
             if row(db,id)['status']=='completed':
                 return False
             job = self._owned(db,id,token)
             if effect is not None:
                 effect(db,job)
+            if callable(result):
+                result_json = encoded(result(db,job))
             self._owned(db,id,token)  # Long callbacks must not outlive the lease.
             db.execute("UPDATE jobs SET status='completed',result_json=?,error_json=NULL,retryable=0,"
                        'lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,updated_at=?, '

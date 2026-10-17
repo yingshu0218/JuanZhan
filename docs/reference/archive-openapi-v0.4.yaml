@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.6
+  version: 0.4.7
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1619,8 +1619,12 @@ paths:
       - Documents
       summary: 批量操作（每档案独立成功或失败）
       operationId: post_documents_batch
-      description: document_ids 必须是服务端已确定的快照 ID 列表；批量修改不因过滤条件动态变化而扩张集合。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer
-        不需要 CSRF。
+      description: >-
+        document_ids和expected_versions为固定选择快照，不重新执行动态筛选；explicit表示显式选择，snapshot表示调用者已枚举的完整选择集。
+        当前每批1至100项且序列化任务不超过64KiB，全部通过持久任务异步执行。
+        每项独立检查空间、版本和目标引用，失败项回滚而不撤销其他成功项，无变化标skipped。
+        reprocess和set_metadata等待其业务实现，提交返回501。结果通过GET /jobs/{id}的result读取BatchResult。
+        Cookie写操作须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -1635,6 +1639,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsyncJob'
+        '501':
+          description: 批量操作尚未实现
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2022,6 +2032,38 @@ paths:
           $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
+  /jobs/{id}/undo:
+    post:
+      tags: [Jobs]
+      summary: 撤销已完成批量任务的成功变更
+      operationId: post_jobs_id_undo
+      description: >-
+        无请求体。只接受已完成的正向document_batch，按原成功审计创建固定撤销集合；跳过项与失败项不进入撤销。
+        相同原任务重复调用返回同一个撤销job。只在档案版本仍等于原任务执行后版本时恢复逻辑状态并递增版本；
+        后续编辑、失效引用或归档约束使相应项失败，不覆盖新编辑。撤销任务不可再次撤销。
+        Cookie写操作须CSRF，Bearer无需CSRF；通过GET /jobs/{id}读取逐项结果。
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        '202':
+          description: 撤销任务已提交或已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /system/summary:
     get:
       tags:
@@ -2764,10 +2806,14 @@ components:
       - space_id
     BatchRequest:
       type: object
+      additionalProperties: false
       properties:
         space_id: *id001
         document_ids:
           type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
           items: *id001
         selection_mode:
           type: string
@@ -2775,8 +2821,12 @@ components:
           - explicit
           - snapshot
         expected_versions:
+          description: 必须恰好包含全部选择ID；版本在任务执行时逐项校验
           type: object
-          additionalProperties: *id004
+          additionalProperties:
+            type: integer
+            minimum: 1
+            maximum: 9223372036854775806
         operation:
           type: string
           enum:
@@ -2790,21 +2840,32 @@ components:
           - reprocess
           - set_metadata
         payload:
+          description: >-
+            严格匹配operation。move_folder为{folder_id: ID或null}，add_tags/remove_tags为{tag_ids: ID数组}，
+            set_type为{document_type_id: ID或null}，set_triage为{triage_status: needs_review或filed}，
+            set_favorite为{is_favorite: 布尔}，trash为{}；不允许额外字段。
           type: object
           additionalProperties: true
       required:
       - space_id
       - document_ids
       - selection_mode
+      - expected_versions
       - operation
       - payload
     BatchResult:
       type: object
       properties:
         job_id: *id001
-        succeeded: *id004
-        skipped: *id004
-        failed: *id004
+        succeeded:
+          type: integer
+          minimum: 0
+        skipped:
+          type: integer
+          minimum: 0
+        failed:
+          type: integer
+          minimum: 0
         items:
           type: array
           items:
@@ -2817,6 +2878,10 @@ components:
                 - succeeded
                 - skipped
                 - failed
+              document_version:
+                type: integer
+                minimum: 1
+                description: 成功或跳过项的执行后版本
               error_code:
                 type: string
             required:

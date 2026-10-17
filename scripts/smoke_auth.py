@@ -171,6 +171,12 @@ JobQueue(Settings.from_env()).enqueue(JobSpec(kind='gc',target_type='managed_sta
     idempotency_key='container-staging-gc'))
 
 """)
+    batch_status,batch,_=request('/api/v1/documents/batch','POST',{
+        'space_id':space_id,'document_ids':[uploaded['document_id'],separate['document_id']],
+        'selection_mode':'snapshot','expected_versions':{uploaded['document_id']:5,separate['document_id']:4},
+        'operation':'set_favorite','payload':{'is_favorite':False}},csrf)
+    assert batch_status==202
+    assert request(separate_path,'PATCH',{'expected_document_version':4,'title':'Concurrent change'},csrf)[0]==200
     docker('restart', name)
     # Docker may allocate a new ephemeral host port on restart.
     port = docker('port', name, '8000/tcp').split(':')[-1]
@@ -228,6 +234,19 @@ print(job['id'])
     status, completed, _ = request('/api/v1/jobs/'+job_id)
     assert status==200 and completed['result']=={'removed_staging_files':1} and completed['attempts']==1
     assert 'lease_token' not in completed and 'payload_json' not in completed
+    outcome=json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
+    assert outcome=={'job_id':batch['job_id'],'status':'completed'}
+    batch_result=request('/api/v1/jobs/'+batch['job_id'])[1]['result']
+    assert batch_result['succeeded']==1 and batch_result['failed']==1
+    assert batch_result['items'][1]['error_code']=='VERSION_CONFLICT'
+    assert request(document_path)[1]['is_favorite'] is False
+    undo_status,undo,_=request('/api/v1/jobs/'+batch['job_id']+'/undo','POST',csrf=csrf)
+    assert undo_status==202
+    assert request('/api/v1/jobs/'+batch['job_id']+'/undo','POST',csrf=csrf)[1]['job_id']==undo['job_id']
+    assert json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))=={'job_id':undo['job_id'],'status':'completed'}
+    assert request(document_path)[1]['is_favorite'] is True
+    assert request(document_path)[1]['document_version']==7
+    assert request(separate_path)[1]['title']=='Concurrent change'
     assert request('/api/v1/jobs/'+job_id+'/retry','POST')[0]==403
     assert request('/api/v1/jobs/'+job_id+'/retry','POST',csrf=csrf)[0]==409
     retry_id=docker('exec','-i',name,'python','-',input=r"""
@@ -254,7 +273,7 @@ print(job['id'])
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo')
 finally:
     if started:
         docker('rm', '-f', name)

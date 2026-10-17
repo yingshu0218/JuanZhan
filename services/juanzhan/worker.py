@@ -23,6 +23,12 @@ logger = logging.getLogger('juanzhan.worker')
 
 def _handler(job,data_dir,connection):
     try:
+        if job['kind']=='batch' and job['target_type'] in ('document_batch','document_batch_undo'):
+            from .batches import execute
+            settings = Settings(data_dir=Path(data_dir),converter_token='')
+            JobQueue(settings).complete(job['id'],job['lease_token'],execute)
+            connection.send(('committed',))
+            return
         if job['kind']!='gc' or job['target_type']!='managed_staging':
             connection.send(('failure','HANDLER_NOT_AVAILABLE','Job handler is not implemented',False))
             return
@@ -107,7 +113,9 @@ class Worker:
                     outcome = ('failure','WORKER_CHILD_EXITED','Handler process exited without a result',True)
                     break
             self.terminate(process)
-            if outcome[0]=='success':
+            if outcome[0]=='committed':
+                pass  # Handler committed fenced database effects and completion together.
+            elif outcome[0]=='success':
                 self.queue.complete(job['id'],job['lease_token'],outcome[1])
             else:
                 self.queue.failure(job['id'],job['lease_token'],outcome[1],outcome[2],retryable=outcome[3])

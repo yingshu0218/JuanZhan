@@ -146,3 +146,14 @@ OpenAPI 0.4.6的YAML重复键和全部本地引用验证通过，43个path模板
 重建镜像后运行`python scripts/smoke_auth.py`：隔离容器真实HTTP上传后编辑/冲突/整理/回收恢复、
 子树回收/恢复、原件及数据库重启持久化通过。随后Compose升级与`python scripts/smoke.py`通过，API/worker/Converter健康。
 尚无生产界面验证；未声明转换、OCR、下载、全文检索或完整类型约束已完成。
+
+## T10 验证 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：126通过，保留一项Starlette/httpx既有弃用警告。
+14项新增用例覆盖固定集合不扩张、严格payload/完整版本映射/限额/CSRF、跨空间与引用、类型/整理、标签增删/no-op，
+逐项冲突和注入审计失败回滚、真实spawn worker、重复完成幂等、租约前后失效整次回滚、撤销引用缺失与后续编辑保护。
+OpenAPI0.4.7：44路径，重复键与全部本地引用验证通过。
+
+重建镜像后`python scripts/smoke_auth.py`通过：真实HTTP提交选择快照，容器重启后worker执行，成功与冲突逐项结果正确，
+重复撤销请求复用任务，撤销恢复收藏且不覆盖另一档案并发标题编辑；既有上传/目录/存储/鉴权检查继续通过。
+Compose升级及`python scripts/smoke.py`通过，API/worker/Converter健康。未验证大规模批量吞吐或生产UI。
