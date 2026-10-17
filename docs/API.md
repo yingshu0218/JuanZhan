@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T13 扩展版本 0.4.14），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T14 扩展版本 0.4.15），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -216,3 +216,13 @@ Job.result为SourceInitialResult：source_id/mode=initial/imported_files/importe
 读取/分块hash/sniff在写锁外；变化SOURCE_CHANGED可有限重试。匿名元数据清单64MiB，超限SOURCE_MANIFEST_LIMIT；访问100000项/64层沿用SOURCE_PREVIEW_LIMIT；initial超时300秒、最多3次尝试。超限或冲突均整体失败，无截断成功。
 发布事务同时写目录、条目、外部Revision、档案/事件/parse Job及扫描结果/两个来源完成时间；异常或过期租约回滚全部。已有遗留条目且无完成标记SOURCE_INITIAL_STATE_CONFLICT，不覆盖。
 导入不复制/移动外部原件，哈希仅记录观察时事实，不构成历史字节快照。原件当前可用性仍unknown；parse排队不表示已转换。增量、排除与来源UI后续交付。
+
+## T14 增量扫描契约
+
+POST /sources/{id}/scan支持{mode:"incremental"}，首扫未完成409 SOURCE_INITIAL_REQUIRED。与preview/initial互斥409 SOURCE_SCAN_BUSY；同模式活动请求合并，完成后再次POST为独立增量。OpenAPI0.4.15/48路径。
+新文件needs_review+new_file_target_folder_id，绝不创建物理镜像目录；旧路径每次hash，内容变化追加Revision和parse任务，保留人工字段/分类/旧成功解析。大小/mtime相同不等于字节未变。
+hash+size在旧库存/当前观测中各唯一才重关联，保留稳定Document/Entry及历史路径；多个同hash或inode复用风险均needs_match。新歧义路径以document_id=null条目记录，显式人工匹配接口尚未交付。
+SourceIncrementalResult含scanned_files/scanned_bytes/ignored_files/imported_files/updated_files/reassociated_files/recovered_files/unchanged_files及三个当前状态总数needs_match/suspected_missing/missing。更新与恢复计数可能重叠，不能相加冒充文件总数。
+完整在线扫描的两个独立completed增量才确认missing；失败/离线/超限不推进缺失且清除未完成凭据，已有Entry状态不变；重现恢复available。preview不推进确认。last_successful_scan_at随成功增量更新，首次完成时间不改。
+私有根身份不匹配SOURCE_ROOT_CHANGED失败，不扫描错误只读空根；旧库基线缺失且无可信锚点SOURCE_ROOT_UNVERIFIED，不能静默接受整库失联。该摘要不出现在HTTP响应。
+状态/路径/Revision系统变化也递增document_version，过期编辑/撤销仍应刷新重选；人工字段不被扫描覆盖。当前无字节读取保证，外部原件availability保守unknown；离线投影可为source_offline而库存保留。

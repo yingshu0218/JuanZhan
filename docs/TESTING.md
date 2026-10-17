@@ -262,3 +262,13 @@ Archive镜像构建及正常Compose升级通过，三个容器健康；`python s
 
 T13最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：216 passed，40.84秒，仅既有弃用提示。最终smoke_initial还验证宿主在文件被安全遍历器打开时改变字节，迭代继续前明确SOURCE_CHANGED，未接受过期观察；随后还原测试原件并确认hash。
 `DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compose build archive`与`docker compose up -d --wait --no-build`通过，三容器健康；`python scripts/smoke.py`验证Web/CSP/资源、API/Converter边界与worker心跳。OpenAPI0.4.14/48路径唯一键与本地引用检查通过。
+
+## T14 验收 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：228 passed，46.45秒，仅既有Starlette/httpx弃用提示。新增11条增量用例及1条旧库升级用例；迁移数量断言同步为4，前三checksum与旧来源配置/完成时间保留，重复迁移及FK检查通过。
+增量用例覆盖相同size/mtime但hash变化、人工值与旧解析保留、新文件needs_review/目标且无新目录、同inode/不同inode唯一hash重关联、重复hash即使inode相同也不匹配、两次缺失/恢复、失败清证据、根变化/无锚点拒绝、旧库可信锚点升级、过期租约整体回滚、真实挂载离线的Document投影与库存独立。
+`python scripts/smoke_incremental.py`通过真实只读bind/HTTP/worker/SQLite：同大小/mtime内容更新，保留人工标题/目录/标签/收藏/已确认字段及旧ParseRun；唯一rename保ID，重复hash待匹配且不建重复Document；两次失联、恢复、不可挂载worker根失败后重新确认，以及另一只读空根SOURCE_ROOT_CHANGED不改库存。无外部写回或managed原件副本，重启结果保留。
+`python scripts/smoke_initial.py`回归通过首扫tree/flat/冲突/重放/1000文件原子发布，新增根摘要未破坏首扫，当前资源基线3.504秒（本开发机并发验证，非性能承诺）。新迁移正常Compose升级三容器健康。
+前端未改，未重复浏览器套件；自动调度、人工匹配写接口、排除规则/取消索引、来源UI、真实转换/检索/预览仍未验收。
+
+T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容器重启后执行新的增量仍接受原根基线，保持待匹配/已确认missing与人工版本；最后补充同来源缺失凭据校验后，11条增量针对性测试再次通过。`docker compose build archive`及`up -d --wait --no-build`通过，`python scripts/smoke.py`通过Web/CSP/资源、API/Converter能力边界和worker心跳。OpenAPI0.4.15/48路径唯一键与引用校验通过，无新依赖或云启动步骤。

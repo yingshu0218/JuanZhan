@@ -183,3 +183,8 @@ class SourceMounts:
             return a == b or a.startswith(b.rstrip('/') + '/') or b.startswith(a.rstrip('/') + '/')
         return ((left[0] == right[0] and (left[1] == right[1] or nested(left[2], right[2])))
                 or nested(left[3], right[3]))
+
+    def digest(self, alias):
+        import hashlib
+        # Namespace-independent private comparison; never expose physical paths.
+        return hashlib.sha256(json.dumps(self.identity(alias)[:3], ensure_ascii=False).encode()).hexdigest()

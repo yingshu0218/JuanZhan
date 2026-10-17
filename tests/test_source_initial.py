@@ -50,7 +50,7 @@ def test_real_empty_initial_coalescing_csrf_and_replay_after_restart(api):
     settings,client,headers,space=api
     source=create(client,headers,space).json()['id']
     assert scan(client,{},source).status_code==403
-    assert scan(client,headers,source,'incremental').status_code==501
+    assert scan(client,headers,source,'incremental').status_code==409
     preview=submit(client,headers,source).json()['job_id']
     assert scan(client,headers,source).json()['error']['code']=='SOURCE_SCAN_BUSY'
     assert Worker(settings).run_once()['status']=='completed'

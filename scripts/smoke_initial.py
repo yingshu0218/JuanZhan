@@ -120,7 +120,7 @@ with tempfile.TemporaryDirectory(prefix='juanzhan-initial-fixture-') as temporar
         tree_target=folder('Tree target')
         tree=source('tree','tree','needs_review',tree_target)
         assert request(tree+'/scan',{'mode':'initial'},with_csrf=False)[0]==403
-        assert request(tree+'/scan',{'mode':'incremental'})[0]==501
+        assert request(tree+'/scan',{'mode':'incremental'})[0]==409
         queued=request(tree+'/scan',{'mode':'initial'})[1]
         assert request(tree+'/scan',{'mode':'initial'})[1]['job_id']==queued['job_id']
         assert request(tree+'/preview-scan',{})[0]==409

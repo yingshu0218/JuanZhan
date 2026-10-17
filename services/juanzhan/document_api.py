@@ -13,6 +13,7 @@ from .document_events import record_event, utc_now
 from .document_records import snapshot, expected
 from .documents import Registration, Version, VersionChange
 from .metadata_values import filing
+from .source_paths import SourceMounts, SourcePathError
 
 
 class DocumentPatch(BaseModel):
@@ -54,7 +55,7 @@ class Triage(VersionChange):
     triage_status: Literal['needs_review','filed']
 
 
-def availability(db,revision,store):
+def availability(db,revision,store,mounts=None):
     if revision is None:return 'missing',None
     if revision['storage_kind']=='managed':
         obj=db.execute('SELECT storage_key,sha256,size_bytes FROM managed_objects WHERE id=?',
@@ -64,17 +65,23 @@ def availability(db,revision,store):
         return store.probe(obj['storage_key']),None
     entry=db.execute('SELECT * FROM source_entries WHERE id=?',(revision['source_entry_id'],)).fetchone()
     if entry is None:return 'missing',None
-    source=db.execute('SELECT status FROM sources WHERE id=?',(entry['source_id'],)).fetchone()
-    if source is None or source['status'] in ('offline','error','disabled'):return 'source_offline',entry['source_id']
+    source=db.execute('SELECT status,root_ref FROM sources WHERE id=?',(entry['source_id'],)).fetchone()
+    if source is None or source['status']=='disabled':return 'source_offline',entry['source_id']
+    if mounts is None and source['status']=='offline':return 'source_offline',entry['source_id']
+    if mounts is not None:
+        try:
+            with mounts.root(source['root_ref']):pass
+        except SourcePathError as exc:
+            return ('source_offline' if exc.code=='SOURCE_OFFLINE' or source['status']=='offline' else 'unknown'),entry['source_id']
     if entry['status']!='available':return entry['status'],entry['source_id']
-    # T11/T14 must verify the configured read-only mount before bytes can be promised.
+    # A scan records observations; downloads still need current-byte verification.
     return 'unknown',entry['source_id']
 
 
-def project(db,id,store):
+def project(db,id,store,mounts=None):
     result=snapshot(db,id)
     revision=db.execute('SELECT * FROM file_revisions WHERE id=?',(result['current_revision_id'],)).fetchone()
-    result['availability_status'],result['source_id']=availability(db,revision,store)
+    result['availability_status'],result['source_id']=availability(db,revision,store,mounts)
     result['origin_kind']=revision['storage_kind'] if revision else 'managed'
     current=db.execute('SELECT revision_id,status FROM parse_runs WHERE id=?',(result['current_parse_run_id'],)).fetchone()
     result['content_stale']=bool(current and current['revision_id']!=result['current_revision_id'])
@@ -99,9 +106,10 @@ def project(db,id,store):
 
 
 def router(settings):
+    mounts=SourceMounts(settings.source_mounts)
     routes=APIRouter(prefix='/api/v1/documents')
     def view(request,id):
-        with transaction(settings) as db:return project(db,id,request.app.state.storage)
+        with transaction(settings) as db:return project(db,id,request.app.state.storage,mounts)
 
     @routes.get('')
     def documents(request: Request,space_id: ID | None=None,folder_id: ID | None=None,
@@ -130,7 +138,7 @@ def router(settings):
             total=db.execute('SELECT count(*)'+base,parameters).fetchone()[0]
             ids=db.execute('SELECT d.id'+base+' ORDER BY '+order[key]+(' DESC' if sort.startswith('-') else ' ASC')+',d.id ASC LIMIT ? OFFSET ?',
                            (*parameters,page_size,(page-1)*page_size)).fetchall()
-            return {'items':[project(db,row[0],request.app.state.storage) for row in ids],
+            return {'items':[project(db,row[0],request.app.state.storage,mounts) for row in ids],
                     'page':page,'page_size':page_size,'total':total}
 
     @routes.get('/{id}')
@@ -194,7 +202,7 @@ def router(settings):
             rows=db.execute('SELECT * FROM file_revisions WHERE document_id=? ORDER BY revision_no DESC',(id,)).fetchall()
             result=[]
             for row in rows:
-                available,_=availability(db,row,request.app.state.storage)
+                available,_=availability(db,row,request.app.state.storage,mounts)
                 item={key:row[key] for key in ('id','revision_no','storage_kind','original_filename','mime_type','sha256','size_bytes','created_at')}
                 item['binary_available']=available=='available'
                 item['can_restore_binary']=row['storage_kind']=='managed' and available=='available'

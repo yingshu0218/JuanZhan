@@ -33,44 +33,53 @@ def initial(settings, job):
         raise SourcePathError('SOURCE_INITIAL_ALREADY_COMPLETED')
     counts = {'source_id': source['id'], 'mode': 'initial', 'imported_files': 0, 'created_folders': 0,
               'ignored_files': 0, 'imported_bytes': 0}
-    mounts = SourceMounts(settings.source_mounts)
-    # Anonymous local metadata spool: bounded memory, mode 0600, removed even on kill.
-    # No original byte is copied into Archive storage.
     with tempfile.TemporaryFile(mode='w+t', encoding='utf-8', dir=settings.data_dir) as manifest:
-        size = 0
-        with closing(inventory(mounts, source['root_ref'], counts)) as records:
-            for kind, path, stream, info in records:
-                item = {'kind': kind, 'path': path}
-                if kind == 'file':
-                    checksum = hashlib.sha256()
-                    received = 0
-                    while chunk := stream.read(min(65536, info.st_size-received+1)):
-                        received += len(chunk)
-                        if received > info.st_size:
-                            raise SourcePathError('SOURCE_CHANGED')
-                        checksum.update(chunk)
-                    if received != info.st_size:
-                        raise SourcePathError('SOURCE_CHANGED')
-                    mime = sniff(stream, os.path.basename(path))
-                    try:
-                        modified = datetime.fromtimestamp(info.st_mtime, timezone.utc).isoformat().replace('+00:00', 'Z')
-                    except (ValueError, OverflowError, OSError):
-                        modified = None
-                    item.update(sha256=checksum.hexdigest(), size_bytes=received, mime_type=mime,
-                                mtime_ns=info.st_mtime_ns, file_modified_at=modified,
-                                identity_hint=f'{info.st_dev}:{info.st_ino}')
-                    counts['imported_files'] += 1
-                    counts['imported_bytes'] += received
-                elif source['initial_import_policy'] == 'flat':
-                    continue
-                line = json.dumps(item, ensure_ascii=False, separators=(',', ':'))+'\n'
-                size += len(line.encode('utf-8'))
-                if size > MAX_MANIFEST_BYTES:
-                    raise SourcePathError('SOURCE_MANIFEST_LIMIT')
-                manifest.write(line)
+        source['_root_digest'] = prepare(settings,source,manifest,counts,
+            include_dirs=source['initial_import_policy']=='tree')
         manifest.seek(0)
         JobQueue(settings).complete(job['id'], job['lease_token'],
             lambda db, owned: publish(db, owned, source, manifest, counts, settings))
+
+
+def prepare(settings, source, manifest, counts, *, include_dirs=False,
+            file_counter='imported_files', bytes_counter='imported_bytes'):
+    """Shared bounded observation spool; all original bytes stay on the source."""
+    mounts = SourceMounts(settings.source_mounts)
+    root_digest = mounts.digest(source['root_ref'])
+    size = 0
+    with closing(inventory(mounts, source['root_ref'], counts)) as records:
+        for kind, path, stream, info in records:
+            item = {'kind': kind, 'path': path}
+            if kind == 'file':
+                checksum = hashlib.sha256()
+                received = 0
+                while chunk := stream.read(min(65536, info.st_size-received+1)):
+                    received += len(chunk)
+                    if received > info.st_size:
+                        raise SourcePathError('SOURCE_CHANGED')
+                    checksum.update(chunk)
+                if received != info.st_size:
+                    raise SourcePathError('SOURCE_CHANGED')
+                mime = sniff(stream, os.path.basename(path))
+                try:
+                    modified = datetime.fromtimestamp(info.st_mtime, timezone.utc).isoformat().replace('+00:00', 'Z')
+                except (ValueError, OverflowError, OSError):
+                    modified = None
+                item.update(sha256=checksum.hexdigest(), size_bytes=received, mime_type=mime,
+                            mtime_ns=info.st_mtime_ns, file_modified_at=modified,
+                            identity_hint=f'{info.st_dev}:{info.st_ino}')
+                counts[file_counter] += 1
+                counts[bytes_counter] += received
+            elif not include_dirs:
+                continue
+            line = json.dumps(item, ensure_ascii=False, separators=(',', ':'))+'\n'
+            size += len(line.encode('utf-8'))
+            if size > MAX_MANIFEST_BYTES:
+                raise SourcePathError('SOURCE_MANIFEST_LIMIT')
+            manifest.write(line)
+    if mounts.digest(source['root_ref']) != root_digest:
+        raise SourcePathError('SOURCE_ROOT_CHANGED')
+    return root_digest
 
 
 def publish(db, job, observed, manifest, counts, settings):
@@ -113,24 +122,34 @@ def publish(db, job, observed, manifest, counts, settings):
             db.execute('INSERT INTO initial_folder_map VALUES (?,?)', (path, child_id))
             counts['created_folders'] += 1
             continue
-        document_id, entry_id, revision_id = (uuid.uuid4().hex for _ in range(3))
-        db.execute('INSERT INTO documents(id,space_id,folder_id,title,triage_status,imported_at,created_at,updated_at) '
-                   'VALUES (?,?,?,?,?,?,?,?)',
-                   (document_id, source['space_id'], folder_id, unicodedata.normalize('NFC', name),
-                    source['initial_triage_status'], timestamp, timestamp, timestamp))
-        db.execute('INSERT INTO source_entries(id,source_id,space_id,document_id,relative_path_norm,relative_path_display,'
-                   'file_identity_hint,size_bytes,mtime_ns,sha256,status,last_seen_scan_id,created_at,updated_at) '
-                   "VALUES (?,?,?,?,?,?,?,?,?,?,'available',?,?,?)",
-                   (entry_id, source['id'], source['space_id'], document_id, path, path, item['identity_hint'],
-                    item['size_bytes'], item['mtime_ns'], item['sha256'], job['target_id'], timestamp, timestamp))
-        db.execute('INSERT INTO file_revisions(id,document_id,revision_no,storage_kind,source_entry_id,source_path_at_capture,'
-                   'sha256,size_bytes,original_filename,mime_type,file_modified_at,created_at) '
-                   "VALUES (?,?,1,'external',?,?,?,?,?,?,?,?)",
-                   (revision_id, document_id, entry_id, path, item['sha256'], item['size_bytes'], name,
-                    item['mime_type'], item['file_modified_at'], timestamp))
-        db.execute('UPDATE documents SET current_revision_id=? WHERE id=?', (revision_id, document_id))
-        record_event(db, document_id, 'document_created', None, snapshot(db, document_id),
-                     timestamp=timestamp, actor='source_scan')
-        JobQueue(settings).enqueue(JobSpec(kind='parse', target_type='document', target_id=document_id,
-            idempotency_key='parse:'+revision_id, payload={'revision_id': revision_id}), db=db)
+        register_external(db,job,source,item,folder_id,source['initial_triage_status'],settings,timestamp)
+    root_digest = observed.get('_root_digest') or SourceMounts(settings.source_mounts).digest(source['root_ref'])
+    db.execute('INSERT INTO source_root_baselines VALUES (?,?)', (source['id'],root_digest))
     return counts
+
+
+
+def register_external(db, job, source, item, folder_id, triage, settings, timestamp):
+    path = item['path']
+    name = path.rsplit('/',1)[-1]
+    document_id, entry_id, revision_id = (uuid.uuid4().hex for _ in range(3))
+    db.execute('INSERT INTO documents(id,space_id,folder_id,title,triage_status,imported_at,created_at,updated_at) '
+               'VALUES (?,?,?,?,?,?,?,?)',
+               (document_id, source['space_id'], folder_id, unicodedata.normalize('NFC', name),
+                triage, timestamp, timestamp, timestamp))
+    db.execute('INSERT INTO source_entries(id,source_id,space_id,document_id,relative_path_norm,relative_path_display,'
+               'file_identity_hint,size_bytes,mtime_ns,sha256,status,last_seen_scan_id,created_at,updated_at) '
+               "VALUES (?,?,?,?,?,?,?,?,?,?,'available',?,?,?)",
+               (entry_id, source['id'], source['space_id'], document_id, path, path, item['identity_hint'],
+                item['size_bytes'], item['mtime_ns'], item['sha256'], job['target_id'], timestamp, timestamp))
+    db.execute('INSERT INTO file_revisions(id,document_id,revision_no,storage_kind,source_entry_id,source_path_at_capture,'
+               'sha256,size_bytes,original_filename,mime_type,file_modified_at,created_at) '
+               "VALUES (?,?,1,'external',?,?,?,?,?,?,?,?)",
+               (revision_id, document_id, entry_id, path, item['sha256'], item['size_bytes'], name,
+                item['mime_type'], item['file_modified_at'], timestamp))
+    db.execute('UPDATE documents SET current_revision_id=? WHERE id=?', (revision_id, document_id))
+    record_event(db, document_id, 'document_created', None, snapshot(db, document_id),
+                 timestamp=timestamp, actor='source_scan')
+    JobQueue(settings).enqueue(JobSpec(kind='parse', target_type='document', target_id=document_id,
+        idempotency_key='parse:'+revision_id, payload={'revision_id': revision_id}), db=db)
+    return document_id, entry_id

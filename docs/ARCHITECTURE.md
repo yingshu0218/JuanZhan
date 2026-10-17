@@ -107,3 +107,10 @@ source_scans.inventory供预扫描与首扫复用，描述符逐段访问/只读
 source_initial将元数据流式写入匿名TemporaryFile，不缓存完整列表或复制原件；准备成功后，子handler在受租约保护的JobQueue.complete回调中原子publish，parent只接收committed确认。
 publish以临时SQLite映射表将相对目录映射到逻辑Folder，注册外部SourceEntry/Revision与稳定Document，排幂等parse并写审计；Job/scan_runs/来源完成标记同事务。所有失败回滚，匿名清单由进程/内核清理。
 长期数据库不保存持续目录映射；first完成后重放原任务，后续增量不得重建物理层级。无新服务/依赖/迁移，Converter未获外部卷访问。
+
+## T14 增量与缺失确认
+
+source_initial.prepare为首扫/增量提供相同只读hash清单；source_incremental使用临时SQLite观测表与旧库存表按路径/hash分类，在JobQueue.complete围栏事务内发布。
+新增文件复用register_external；内容更新只追加外部Revision及parse Job，移动只更新Entry真实路径，逻辑目录/人工值不变。needs_match允许新Entry尚无Document，避免歧义自动合并。
+持久root_digest拒绝错误/替换挂载，missing证据绑定来源和独立completed增量。JobQueue失败状态同步同时清除未完成凭据，原Entry状态不动；完成事务更新成功扫描时间，不更新首次完成时间。
+Document列表/详情/版本投影即时探测已授权挂载，不把扫描错误等同于解析失败，也不把正常外部文件冒充可下载字节。服务/依赖数不变，无前端改动。

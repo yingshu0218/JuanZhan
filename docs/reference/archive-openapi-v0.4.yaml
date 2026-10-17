@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.14
+  version: 0.4.15
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1985,14 +1985,18 @@ paths:
       summary: 执行首次或增量扫描
       operationId: post_sources_id_scan
       description: >-
-        T13实现mode=initial；incremental仍返回501 INCREMENTAL_SCAN_NOT_IMPLEMENTED。
+        支持mode=initial和incremental；incremental要求已完成首扫，否则409 SOURCE_INITIAL_REQUIRED。
         首扫按来源配置tree/flat和初始整理状态登记，绝不移动/复制外部字节；tree在目标逻辑文件夹下复制相对目录（含空目录），flat全部放到初始目标。
         同来源活动initial请求返回原Job，preview与initial互斥（409 SOURCE_SCAN_BUSY）。首次成功后重放返回原completed Job，不重新导入或覆盖后续人工整理。
         遍历/流式哈希/MIME嗅探在写锁外完成，匿名临时元数据清单最多64MiB；最多100000访问项、64层、300秒、3次尝试。只读取候选扩展名文件，跳过不支持/非法/符号链接/特殊项。
         发布在同一租约围栏事务中创建逻辑目录、SourceEntry、Document、外部Revision、事件、幂等parse任务，并完成Job/scan_run/首次导入标记；任何失败整体回滚。
         与现有目录或规范名碰撞时SOURCE_FOLDER_CONFLICT，不静默合并；修复逻辑目录冲突后可显式新建首扫。相同哈希不同路径分别建档。
         原件可用性仍保守unknown，登记哈希只代表观察到的字节，不保证旧字节可恢复；解析handler尚未实现，任务排队不代表解析成功。
-        Job.result结构见SourceInitialResult。使用Cookie会话时须携带X-CSRF-Token；Bearer无需CSRF。
+        增量不重建目录；新增文件进入new_file_target_folder_id且始终needs_review。已知路径每次重算SHA-256，大小/mtime相同也检测内容变化；追加外部Revision并保留人工分类/字段/旧成功解析。
+        改路径仅在旧来源全部条目与当前观测中hash+size均唯一时自动重关联；重复hash即使inode提示相同也不自动匹配，标needs_match，新路径以document_id=null的条目保留，显式匹配接口尚未实现。
+        完整在线增量中第一次缺失为suspected_missing，第二个独立成功扫描才为missing；失败/离线不更改条目并清除未完成的缺失确认凭据，重现则恢复available。
+        挂载根身份摘要不匹配SOURCE_ROOT_CHANGED失败；旧版本无摘要仅可通过精确路径/hash/大小/inode提示锚点或原本空库存建立基线，否则SOURCE_ROOT_UNVERIFIED，不能批量判失联。
+        所有增量变更/状态/事件/任务与Job结果同事务提交，重试或过期租约不重复生效。Job.result结构分别见SourceInitialResult与SourceIncrementalResult。使用Cookie会话时须携带X-CSRF-Token；Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -2018,12 +2022,6 @@ paths:
               required:
               - mode
       responses:
-        '501':
-          description: Incremental scanning is not implemented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '202':
           description: 扫描任务已提交
           content:
@@ -2888,6 +2886,49 @@ components:
       - source_id
       - relative_path
       - created_at
+    SourceIncrementalResult:
+      type: object
+      required: [source_id, mode, scanned_files, scanned_bytes, ignored_files, imported_files, updated_files, reassociated_files, recovered_files, unchanged_files, needs_match, suspected_missing, missing]
+      description: imported/updated/reassociated/recovered/unchanged是本轮计数；后三项是当前来源的条目状态总数。一次变更可能同时计入恢复/更新，不能简单相加当作文件总数。
+      properties:
+        source_id:
+          type: string
+        mode:
+          type: string
+          const: incremental
+        scanned_files:
+          type: integer
+          minimum: 0
+        scanned_bytes:
+          type: integer
+          minimum: 0
+        ignored_files:
+          type: integer
+          minimum: 0
+        imported_files:
+          type: integer
+          minimum: 0
+        updated_files:
+          type: integer
+          minimum: 0
+        reassociated_files:
+          type: integer
+          minimum: 0
+        recovered_files:
+          type: integer
+          minimum: 0
+        unchanged_files:
+          type: integer
+          minimum: 0
+        needs_match:
+          type: integer
+          minimum: 0
+        suspected_missing:
+          type: integer
+          minimum: 0
+        missing:
+          type: integer
+          minimum: 0
     SourceInitialResult:
       type: object
       required: [source_id, mode, imported_files, imported_bytes, created_folders, ignored_files]

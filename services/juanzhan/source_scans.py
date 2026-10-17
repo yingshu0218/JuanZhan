@@ -12,7 +12,7 @@ MAX_DEPTH = 64
 
 
 def job_state(db, job, status, timestamp, *, result=None, error=None):
-    modes = {('scan_preview', 'source_preview'): 'preview', ('scan', 'source_initial'): 'initial'}
+    modes = {('scan_preview', 'source_preview'): 'preview', ('scan', 'source_initial'): 'initial', ('scan', 'source_incremental'): 'incremental'}
     mode = modes.get((job['kind'], job['target_type']))
     if mode is None:
         return
@@ -27,6 +27,10 @@ def job_state(db, job, status, timestamp, *, result=None, error=None):
     code = json.loads(error)['code'] if error else None
     health = 'ready' if status == 'completed' else ('offline' if code == 'SOURCE_OFFLINE' else ('error' if terminal else 'scanning'))
     db.execute("UPDATE sources SET status=?,updated_at=? WHERE id=? AND status!='disabled'", (health, timestamp, run[0]))
+    if mode == 'incremental' and status == 'completed':
+        db.execute('UPDATE sources SET last_successful_scan_at=? WHERE id=?', (timestamp,run[0]))
+    if mode in ('initial','incremental') and error is not None:
+        db.execute('DELETE FROM source_missing_observations WHERE source_entry_id IN (SELECT id FROM source_entries WHERE source_id=?)', (run[0],))
     if mode == 'initial' and status == 'completed':
         db.execute('UPDATE sources SET initial_import_completed_at=?,last_successful_scan_at=? WHERE id=?',
                    (timestamp, timestamp, run[0]))

@@ -109,3 +109,11 @@ preview不写source_entries/documents/file_revisions/folders，不更新initial_
 SourceEntry保存source/space/document、精确相对路径、size/mtime_ns/sha256/身份hint、available及last_seen_scan_id；Revision storage_kind=external、source_entry_id与相对source_path_at_capture，不关联managed_object。
 先建Document再Entry/Revision并回填current_revision_id；version=1、初始triage来自Source，无自动按hash合并。document_created事件actor=source_scan，与parse幂等任务同事务。
 临时initial_folder_map只在当前连接/事务存在，回滚/退出即消失；永久目录与首扫完成标记一同发布。无新迁移、不修改历史DDL，错误不留下部分目录/条目/档案/解析任务。
+
+## T14 增量迁移0004
+
+新增source_root_baselines(source_id PK/FK,root_digest长度64)与source_missing_observations(source_entry_id PK/FK,scan_run_id FK)，均级联清理引用，不存绝对路径；前三已应用迁移不改。
+首扫原子保存私有根digest；增量根身份一致才允许更新，旧库必须可信锚点后建基线，缺失时不得直接将全部条目标missing。
+增量在同一事务登记新Entry/Document/Revision、更新既有Entry与新增Revision、保留current_parse_run_id、写source_updated和解析Job，文档版本随系统事实变化递增。
+缺失证据必须来自同来源、不同的completed incremental；失败清证据但不改Entry状态，返回文件清证据并available。成功增量只更新last_successful_scan_at。
+歧义新Entry document_id可null（原DDL已允许），status=needs_match；既有Document不合并/删除。源路径变化不重写历史Revision的source_path_at_capture。

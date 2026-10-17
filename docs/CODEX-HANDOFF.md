@@ -148,3 +148,16 @@ tree在initial_target_folder_id下创建所有安全相对目录（含空目录�
 解析仅排持久任务，真实handler仍未实现；原件availability维持unknown，不把登记成功画成已转换/可预览。来源UI仍留T28，安装/云配置步骤不变，无新迁移或依赖。
 
 T13验收：216项Python通过，scripts/smoke_initial.py与smoke_sources.py真实容器验收通过，正常Compose三容器健康；OpenAPI0.4.14/48paths。T14必须延续这些契约与原件零写入边界。
+
+## 当前接续点 · T14 后（优先于上文历史交接）
+
+T01～T14、T17/T18、T26/T27完成。下一切片T15排除/取消索引、回收清理与托管GC，外部字节零写入/删除。来源UI留T28，人工匹配写接口、自动扫描调度尚未实现。
+新增0004_source_observations.sql（已应用，不得改动）：source_root_baselines保存私有root_digest，source_missing_observations保存entry→scan_run确认凭据；升级保留前三迁移checksum和旧来源事实。
+source_initial.prepare复用安全遍历/全量hash与匿名元数据清单；首扫保存根摘要。source_incremental准备后在围栏事务用临时SQLite观测/旧库存表分类发布，内存不缓存全部条目，300秒/3次、100000访问项/64层/64MiB清单边界不变。
+同来源preview/initial/incremental活动互斥，同模式活动请求复用Job；incremental必须已完成首扫，成功后新请求产生独立扫描。Job.target_type=source_incremental，target_id=scan_runs.id；last_successful_scan_at更新，initial_import_completed_at不改。
+既有路径全量hash比较当前Revision，改变则追加新外部Revision、版本/审计/parse Job，保留current_parse_run_id及所有人工字段/分类/删除标记；统计unchanged不增Document版本。改路径不重写历史source_path_at_capture。
+只有旧来源全部条目与新观测中hash+size均唯一才自动改路径，inode仅作提示，重复hash永不据此自动匹配。歧义旧条目和新无document_id条目均needs_match，后续扫描保持待人工处理，不擅自建重复档案。
+未观测到的既有Entry需两个独立completed增量才missing；失败会清除确认凭据但不改Entry。preview不推进确认；重现清凭据并恢复available。状态/路径/Revision变化递增文档版本并写source_updated，未覆盖人工内容。
+根摘要比较dev/inode/物理根（只存hash，不外露）。不同只读空挂载SOURCE_ROOT_CHANGED；旧库无摘要，只有精确路径+hash+size+inode锚点或原库存为空可建立，否则SOURCE_ROOT_UNVERIFIED，不能判整库missing。已有摘要变化不自动重置，需恢复/核实部署根。
+Document投影实时检查挂载，来源离线独立于条目状态和解析；正常外部字节仍unknown，不承诺当前可下载或历史字节恢复。228项Python及真实容器回归见TESTING；OpenAPI0.4.15/48paths。
+安装/启动命令无变化，启动自动应用新迁移；不新增用户挂载/凭据或发布云配置草稿。

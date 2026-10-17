@@ -442,3 +442,13 @@ tree将相对目录（含空目录）创建到初始目标下，flat所有候选
 成功后反复initial只返回原completed任务，不导入新文件、不覆盖人工改名/分类/版本。新增文件与失联确认留T14；当前incremental为501。解析任务真实排队，但handler尚未实现，原件状态unknown不代表可预览/下载。
 原件不复制/移动/删除，managed对象为零；匿名清单退出/kill后消失，任何发布异常/租约丢失全部回滚。原件被宿主机更改时指纹检查拒绝当前观察，不承诺跨文件原子快照或历史字节保存。
 镜像构建后运行`python scripts/smoke_initial.py`验证真实tree/flat、冲突恢复、重放/重启、hash/审计/解析任务不变量和1千文件原子发布；该脚本仅使用一次性测试挂载/卷/随机管理员，不接触正常管理员或用户来源。
+
+## T14 增量与升级
+
+重建Archive镜像并启动，迁移器自动应用0004新增根摘要/缺失凭据表；不修改旧迁移，不重置正常管理员或数据卷。安装/Compose/云启动命令不变。
+首扫完成后POST /sources/{id}/scan {"mode":"incremental"}，轮询Job；活动同模式复用，preview/initial/incremental互斥。新增文件进入needs_review和配置的后续目标，不创建新逻辑层级。
+每轮全量hash，大小/mtime保持也能发现字节变化；新Revision保留人工字段/分类/旧解析，rename仅在hash+size双方唯一时重关联。重复hash标needs_match，可能出现无Document的新路径条目，显式匹配界面/写接口尚未实现。
+两个独立成功在线增量确认missing；离线/失败不修改Entry且重置未完成确认凭据。恢复文件回到available；首扫完成时间不改，成功扫描时间更新。普通外部字节仍unknown，不代表支持预览/下载。
+根digest改变（包括换成另一个空只读根）会SOURCE_ROOT_CHANGED，需恢复或核实原部署根，不提供自动重置。旧T13来源无摘要时以同路径/hash/size/inode锚点建立；若文件全部已变/已失踪而无锚点，则SOURCE_ROOT_UNVERIFIED，不能自动判全库缺失。跨机器/文件系统恢复需后续受审计的重新验证流程，不绕过保护。
+预算沿用300秒/3次/100000访问项/64层/64MiB匿名元数据。尚无自动调度、排除规则/取消索引（T15）、来源UI（T28）和真实转换器，不把API手动增量描述成自动扫描。
+镜像构建后`python scripts/smoke_incremental.py`验证真实RO挂载/HTTP/worker/SQLite、离线及错误空根、重启后继续扫描；只操作一次性测试目录/卷/随机管理员，不接触用户来源。
