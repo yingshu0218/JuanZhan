@@ -31,6 +31,19 @@ def _send(connection,message):
 
 def _handler(job,data_dir,connection,source_mounts=()):
     try:
+        if job['target_type'] in ('source_exclude','document_purge','managed_objects') and job['kind'] in ('batch','purge','gc'):
+            from .maintenance import exclude,purge,run_gc
+            from fastapi import HTTPException
+            settings=Settings(data_dir=Path(data_dir),converter_token='')
+            try:
+                if job['target_type']=='managed_objects':run_gc(settings,job)
+                else:
+                    callback=exclude if job['target_type']=='source_exclude' else lambda db,owned:purge(db,owned,settings)
+                    JobQueue(settings).complete(job['id'],job['lease_token'],callback)
+                _send(connection, ('committed',))
+            except HTTPException as exc:
+                _send(connection, ('failure',exc.detail['code'],'Maintenance request is no longer applicable',False))
+            return
         if job['kind']=='scan' and job['target_type'] in ('source_initial','source_incremental'):
             from .source_initial import initial
             from .source_paths import SourcePathError

@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T14 扩展版本 0.4.15），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T15 扩展版本 0.4.16），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -226,3 +226,11 @@ SourceIncrementalResult含scanned_files/scanned_bytes/ignored_files/imported_fil
 完整在线扫描的两个独立completed增量才确认missing；失败/离线/超限不推进缺失且清除未完成凭据，已有Entry状态不变；重现恢复available。preview不推进确认。last_successful_scan_at随成功增量更新，首次完成时间不改。
 私有根身份不匹配SOURCE_ROOT_CHANGED失败，不扫描错误只读空根；旧库基线缺失且无可信锚点SOURCE_ROOT_UNVERIFIED，不能静默接受整库失联。该摘要不出现在HTTP响应。
 状态/路径/Revision系统变化也递增document_version，过期编辑/撤销仍应刷新重选；人工字段不被扫描覆盖。当前无字节读取保证，外部原件availability保守unknown；离线投影可为source_offline而库存保留。
+
+## T15 排除与清理接口
+
+GET /sources/{id}/exclusions、POST /sources/{id}/exclude-entry、DELETE /sources/{id}/exclusions/{exclusion_id}、POST /documents/{id}/purge已实现，契约0.4.16/48路径，写请求仍鉴权/CSRF。
+取消索引body为source_entry_id、reason（最多1000字符）、expected_document_version（有关联Doc时必填）。返回202 Job；活动请求复用首个快照，非即时修改新请求内容。成功原子写精确文件路径排除规则并逻辑回收Doc；不删Entry/原文件。
+待处理屏障立即阻止扫描该文件；失败终态释放，有限重试期间保留。排除epoch改变时扫描提交SOURCE_CHANGED重试。规则仅精确路径，不glob、不按hash屏蔽其他副本；移除不自动恢复回收站，但允许重新观察/清理后重新建档。
+永久清理body必须confirm_document_id和expected_document_version，ID不一致422，非Trash/旧版本409；执行时再校验，恢复后的旧任务不能删除新状态。完成清系统记录，外部路径留排除规则；最小receipt支持同ID/版本返回原completed Job，外部字节永不删除。
+托管文件不随purge立即物理删；Job.result含gc_job_id，GC延迟至少24小时且核查全部历史/回收引用。GC只由内部持久任务/本地管理员CLI触发，无客户端路径或缩短保留期选项。派生物理文件GC尚未开放。

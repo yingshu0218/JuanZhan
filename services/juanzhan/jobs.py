@@ -106,6 +106,8 @@ class JobQueue:
                    'lease_owner=NULL,lease_expires_at=NULL,updated_at=? WHERE id=?',
                    ('queued' if again else 'failed',encoded({'code':code,'message':message,'retryable':retryable}),
                     int(retryable),now+delay,stamp(now),job['id']))
+        from .exclusions import failed
+        failed(db,job,not again)
         from .source_scans import job_state
         job_state(db,job,'queued' if again else 'failed',stamp(now),error=encoded({'code':code,'message':message,'retryable':retryable}))
 

@@ -10,6 +10,7 @@ from .document_events import record_event, utc_now
 from .document_records import snapshot
 from .jobs import JobQueue, JobSpec
 from .source_initial import prepare, register_external
+from .exclusions import verify, blocked
 from .source_paths import SourceMounts, SourcePathError
 
 
@@ -84,6 +85,7 @@ def seen(db, job, entry, item, settings, timestamp, counts):
 
 def publish(db, job, observed, manifest, counts, settings):
     db.row_factory=sqlite3.Row
+    verify(db,observed)
     source=db.execute('SELECT * FROM sources WHERE id=?',(observed['id'],)).fetchone()
     if (source is None or source['status']=='disabled' or not source['initial_import_completed_at'] or
         any(source[k]!=observed[k] for k in ('space_id','root_ref','new_file_target_folder_id'))):
@@ -97,18 +99,18 @@ def publish(db, job, observed, manifest, counts, settings):
     if target is not None:same_space(db,'folders',target,source['space_id'])
     db.execute('CREATE TEMP TABLE observed_files(path TEXT PRIMARY KEY,sha TEXT,size INTEGER,hint TEXT,data TEXT,entry_id TEXT,ambiguous INTEGER DEFAULT 0)')
     db.execute('CREATE INDEX observed_hash ON observed_files(sha,size)')
-    db.execute('CREATE TEMP TABLE previous_entries AS SELECT *,0 AS ambiguous FROM source_entries WHERE source_id=?',(source['id'],))
+    db.execute('CREATE TEMP TABLE previous_entries AS SELECT e.*,0 AS ambiguous FROM source_entries e WHERE e.source_id=? AND NOT EXISTS(SELECT 1 FROM source_exclusions x WHERE x.source_id=e.source_id AND x.relative_path_norm=e.relative_path_norm) AND NOT EXISTS(SELECT 1 FROM source_exclusion_intents x WHERE x.source_id=e.source_id AND x.relative_path_norm=e.relative_path_norm)',(source['id'],))
     db.execute('CREATE UNIQUE INDEX previous_path ON previous_entries(relative_path_norm)')
     db.execute('CREATE INDEX previous_hash ON previous_entries(sha256,size_bytes)')
     for line in manifest:
         item=json.loads(line)
-        if item['kind']!='file':continue
+        if item['kind']!='file' or blocked(db,source['id'],item['path']):continue
         old=db.execute('SELECT id FROM previous_entries WHERE relative_path_norm=?',(item['path'],)).fetchone()
         db.execute('INSERT INTO observed_files(path,sha,size,hint,data,entry_id) VALUES (?,?,?,?,?,?)',
                    (item['path'],item['sha256'],item['size_bytes'],item['identity_hint'],line,old[0] if old else None))
     if baseline is None:
         # Legacy T13 upgrade: one exact path + hash + inode anchor, or genuinely empty inventory.
-        total=db.execute('SELECT count(*) FROM previous_entries').fetchone()[0]
+        total=db.execute('SELECT count(*) FROM source_entries WHERE source_id=?',(source['id'],)).fetchone()[0]
         anchor=db.execute('SELECT 1 FROM previous_entries e JOIN observed_files o ON o.path=e.relative_path_norm '
                           'WHERE e.document_id IS NOT NULL AND o.sha=e.sha256 AND o.size=e.size_bytes AND o.hint=e.file_identity_hint LIMIT 1').fetchone()
         if total and not anchor:raise SourcePathError('SOURCE_ROOT_UNVERIFIED')

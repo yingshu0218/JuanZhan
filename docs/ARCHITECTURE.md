@@ -114,3 +114,10 @@ source_initial.prepare为首扫/增量提供相同只读hash清单；source_incr
 新增文件复用register_external；内容更新只追加外部Revision及parse Job，移动只更新Entry真实路径，逻辑目录/人工值不变。needs_match允许新Entry尚无Document，避免歧义自动合并。
 持久root_digest拒绝错误/替换挂载，missing证据绑定来源和独立completed增量。JobQueue失败状态同步同时清除未完成凭据，原Entry状态不动；完成事务更新成功扫描时间，不更新首次完成时间。
 Document列表/详情/版本投影即时探测已授权挂载，不把扫描错误等同于解析失败，也不把正常外部文件冒充可下载字节。服务/依赖数不变，无前端改动。
+
+## T15 排除、永久清理与managed GC
+
+exclusions.py集中精确路径规则/待处理屏障/epoch，inventory在文件打开前过滤；prepare持读取快照并传递epoch，publish校验后过滤观测与旧Entry，保持缺失证据语义。
+maintenance.py提供接口、围栏exclude/purge处理、GC与本地排队CLI。清理任务不调用任何外部文件写入/删除函数；外部来源永久清理会先写排除规则再删除系统引用。
+GC仅遍历managed/sha256合法键，以store独占锁+数据库写锁检查全部Revision引用后unlink/fsync；注册/追加持shared锁直到DB提交，统一store→SQLite锁序。候选持久化使24小时延迟/孤儿恢复可跨重启。
+无新服务/依赖；派生字节GC待其安全存储协议，当前原件外部卷不受清理器访问。

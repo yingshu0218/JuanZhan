@@ -40,7 +40,7 @@ def fingerprint(info):
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
-def inventory(mounts, alias, counts, *, max_entries=MAX_ENTRIES, max_depth=MAX_DEPTH):
+def inventory(mounts, alias, counts, *, max_entries=MAX_ENTRIES, max_depth=MAX_DEPTH, excluded=None):
     """Yield directory records and temporarily open regular candidates, bounded by depth.
 
     Consumers must exhaust or explicitly close the generator. Files remain open only
@@ -79,6 +79,9 @@ def inventory(mounts, alias, counts, *, max_entries=MAX_ENTRIES, max_depth=MAX_D
                     finally:
                         os.close(child)
                 elif stat.S_ISREG(info.st_mode):
+                    if excluded is not None and excluded(path):
+                        counts['ignored_files'] += 1
+                        continue
                     extension = os.path.splitext(entry.name)[1].lower()
                     if extension not in EXTENSIONS:
                         counts['ignored_files'] += 1
@@ -117,13 +120,19 @@ def preview(settings, job, *, max_entries=MAX_ENTRIES, max_depth=MAX_DEPTH):
     source_id, alias, _ = source
     result = {'source_id': source_id, 'estimated_files': 0, 'estimated_bytes': 0,
               'ignored_files': 0, 'by_extension': {}, 'warnings': ['METADATA_ESTIMATE_NOT_SNAPSHOT']}
-    for kind, path, stream, info in inventory(SourceMounts(settings.source_mounts), alias, result,
-                                            max_entries=max_entries, max_depth=max_depth):
-        if kind == 'file':
-            extension = os.path.splitext(path)[1].lower()
-            result['estimated_files'] += 1
-            result['estimated_bytes'] += info.st_size
-            result['by_extension'][extension] = result['by_extension'].get(extension, 0)+1
+    from .exclusions import epoch, blocked
+    with connect(settings.database) as db:
+        db.execute('BEGIN')
+        observed_epoch=epoch(db,source_id)
+        for kind, path, stream, info in inventory(SourceMounts(settings.source_mounts), alias, result,
+                                                max_entries=max_entries, max_depth=max_depth, excluded=lambda path: blocked(db,source_id,path)):
+            if kind == 'file':
+                extension = os.path.splitext(path)[1].lower()
+                result['estimated_files'] += 1
+                result['estimated_bytes'] += info.st_size
+                result['by_extension'][extension] = result['by_extension'].get(extension, 0)+1
+    with connect(settings.database) as db:
+        if epoch(db,source_id)!=observed_epoch:raise SourcePathError('SOURCE_CHANGED')
     if result['ignored_files']:
         result['warnings'].append('IGNORED_UNSUPPORTED_UNSAFE_OR_INVALID_ENTRIES')
     return result

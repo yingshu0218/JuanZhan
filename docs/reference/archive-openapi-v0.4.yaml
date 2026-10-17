@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.15
+  version: 0.4.16
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1548,7 +1548,7 @@ paths:
       - Documents
       summary: 二次确认永久清理档案元数据；仅 GC 无引用托管对象
       operationId: post_documents_id_purge
-      description: 必须先在回收站，永不删除外部来源文件。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      description: 必须先在回收站，confirm_document_id须与路径ID一致，expected_document_version在提交与worker执行时复核，恢复/修改后的旧任务不得删除新状态。永久删除元数据/解析记录，外部条目自动留精确路径排除规则，永不删除外部来源文件；派生物理字节清理待安全存储契约。托管原件仅由独立GC在无任何历史/回收引用且至少24小时宽限后删除。完成回执支持同ID/版本重放。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1564,10 +1564,16 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 confirm_document_id: *id001
+                expected_document_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9223372036854775806
               required:
               - confirm_document_id
+              - expected_document_version
       responses:
         '202':
           description: 已提交清理任务
@@ -2069,7 +2075,7 @@ paths:
       - Sources
       summary: 外部档案取消索引并添加排除规则
       operationId: post_sources_id_exclude_entry
-      description: 将关联 Document 置入逻辑回收站（可后续清理），不删除源文件。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      description: 异步任务原子新增精确文件路径排除规则并将关联Document置入逻辑回收站，不删除源文件。有Document时必须提供expected_document_version，无Document的待匹配条目可省略。活动请求复用首个任务快照；待处理屏障立即阻止扫描重导，失败终态释放屏障；扫描准备和发布均检查排除版本，变化则重试而不应用过期缺失/重关联。规则只匹配精确文件路径，不按hash全局屏蔽副本。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -2085,10 +2091,16 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 source_entry_id: *id001
+                expected_document_version:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 9223372036854775806
                 reason:
                   type: string
+                  maxLength: 1000
               required:
               - source_entry_id
       responses:
@@ -2114,7 +2126,7 @@ paths:
       - Sources
       summary: 移除排除规则，允许未来扫描再次发现
       operationId: delete_sources_id_exclusions_exclusion_id
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: '只移除本来源规则，不自动恢复回收站Document；保留Entry时扫描继续原记录，永久清理后可重新建档。规则版本变更会拒绝旧扫描提交。使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'

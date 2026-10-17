@@ -127,60 +127,64 @@ class DocumentService:
         return id
 
     def register_managed(self, obj: StoredObject, info: Registration, *, request=None, after_create=None):
-        self.verify_object(obj)
-        with self.write(request) as db:
-            required(db, 'spaces', info.space_id)
-            if info.folder_id is not None:
-                same_space(db, 'folders', info.folder_id, info.space_id)
-            if info.document_type_id is not None:
-                type = same_space(db, 'document_types', info.document_type_id, info.space_id)
-                if not type['is_active']:
-                    fail(422, 'INACTIVE_DOCUMENT_TYPE', 'Cannot assign a disabled document type')
-            if info.triage_status=='filed' and info.document_type_id is not None and db.execute(
-                'SELECT 1 FROM document_type_fields WHERE document_type_id=? AND required_for_filing=1 LIMIT 1',
-                (info.document_type_id,)).fetchone():
-                fail(422,'MISSING_REQUIRED_FIELDS','Required metadata must be supplied before filing')
-            duplicates = [row[0] for row in db.execute(
-                'SELECT DISTINCT d.id FROM documents d JOIN file_revisions r ON r.document_id=d.id '
-                'WHERE d.space_id=? AND r.sha256=? AND r.size_bytes=? ORDER BY d.id',
-                (info.space_id,obj.sha256,obj.size_bytes))]
-            if duplicates and info.duplicate_policy == 'reject':
-                raise HTTPException(409, detail={'code':'DUPLICATE_DETECTED', 'message':'Matching file already registered',
-                                                'details':{'duplicates':duplicates}})
-            object_id = self.managed_object(db, obj)
-            id, timestamp = uuid.uuid4().hex, utc_now()
-            db.execute('INSERT INTO documents(id,space_id,folder_id,document_type_id,title,imported_at,created_at,updated_at) '
-                       'VALUES (?,?,?,?,?,?,?,?)',
-                       (id,info.space_id,info.folder_id,info.document_type_id,info.title,timestamp,timestamp,timestamp))
-            revision_id = self.insert_revision(db, id, 1, object_id, obj, info)
-            db.execute('UPDATE documents SET current_revision_id=?,triage_status=? WHERE id=?', (revision_id,info.triage_status,id))
-            after = snapshot(db, id)
-            record_event(db, id, 'document_created', None, after, timestamp=timestamp)
-            if after_create is not None:
-                after_create(db,after)
-            return after
+        with self.store.locked():
+            self.verify_object(obj)
+            with self.write(request) as db:
+                required(db, 'spaces', info.space_id)
+                if info.folder_id is not None:
+                    same_space(db, 'folders', info.folder_id, info.space_id)
+                if info.document_type_id is not None:
+                    type = same_space(db, 'document_types', info.document_type_id, info.space_id)
+                    if not type['is_active']:
+                        fail(422, 'INACTIVE_DOCUMENT_TYPE', 'Cannot assign a disabled document type')
+                if info.triage_status=='filed' and info.document_type_id is not None and db.execute(
+                    'SELECT 1 FROM document_type_fields WHERE document_type_id=? AND required_for_filing=1 LIMIT 1',
+                    (info.document_type_id,)).fetchone():
+                    fail(422,'MISSING_REQUIRED_FIELDS','Required metadata must be supplied before filing')
+                duplicates = [row[0] for row in db.execute(
+                    'SELECT DISTINCT d.id FROM documents d JOIN file_revisions r ON r.document_id=d.id '
+                    'WHERE d.space_id=? AND r.sha256=? AND r.size_bytes=? ORDER BY d.id',
+                    (info.space_id,obj.sha256,obj.size_bytes))]
+                if duplicates and info.duplicate_policy == 'reject':
+                    raise HTTPException(409, detail={'code':'DUPLICATE_DETECTED', 'message':'Matching file already registered',
+                                                    'details':{'duplicates':duplicates}})
+                object_id = self.managed_object(db, obj)
+                id, timestamp = uuid.uuid4().hex, utc_now()
+                db.execute('INSERT INTO documents(id,space_id,folder_id,document_type_id,title,imported_at,created_at,updated_at) '
+                           'VALUES (?,?,?,?,?,?,?,?)',
+                           (id,info.space_id,info.folder_id,info.document_type_id,info.title,timestamp,timestamp,timestamp))
+                revision_id = self.insert_revision(db, id, 1, object_id, obj, info)
+                db.execute('UPDATE documents SET current_revision_id=?,triage_status=? WHERE id=?', (revision_id,info.triage_status,id))
+                after = snapshot(db, id)
+                record_event(db, id, 'document_created', None, after, timestamp=timestamp)
+                if after_create is not None:
+                    after_create(db,after)
+                return after
+
 
     def append_managed_revision(self, document_id, obj: StoredObject, info: RevisionChange, *, request=None):
-        self.verify_object(obj)
-        with self.write(request) as db:
-            before = expected(db, document_id, info.expected_document_version)
-            if before['deleted_at'] is not None:
-                fail(409, 'DOCUMENT_TRASHED', 'Restore the document before adding a revision')
-            current = db.execute('SELECT storage_kind FROM file_revisions WHERE id=?',
-                                 (before['current_revision_id'],)).fetchone()
-            if current is not None and current['storage_kind'] != 'managed':
-                fail(501, 'NOT_IMPLEMENTED', 'Taking external originals into managed storage is deferred')
-            object_id = self.managed_object(db, obj)
-            revision_no = db.execute('SELECT COALESCE(MAX(revision_no),0)+1 FROM file_revisions WHERE document_id=?',
-                                     (document_id,)).fetchone()[0]
-            revision_id = self.insert_revision(db, document_id, revision_no, object_id, obj, info)
-            timestamp = utc_now()
-            db.execute('UPDATE documents SET current_revision_id=?,document_version=document_version+1,updated_at=? WHERE id=?',
-                       (revision_id,timestamp,document_id))
-            # Keep current_parse_run_id: its older successful content is still useful.
-            after = snapshot(db, document_id)
-            record_event(db, document_id, 'revision_added', before, after, timestamp=timestamp)
-            return after
+        with self.store.locked():
+            self.verify_object(obj)
+            with self.write(request) as db:
+                before = expected(db, document_id, info.expected_document_version)
+                if before['deleted_at'] is not None:
+                    fail(409, 'DOCUMENT_TRASHED', 'Restore the document before adding a revision')
+                current = db.execute('SELECT storage_kind FROM file_revisions WHERE id=?',
+                                     (before['current_revision_id'],)).fetchone()
+                if current is not None and current['storage_kind'] != 'managed':
+                    fail(501, 'NOT_IMPLEMENTED', 'Taking external originals into managed storage is deferred')
+                object_id = self.managed_object(db, obj)
+                revision_no = db.execute('SELECT COALESCE(MAX(revision_no),0)+1 FROM file_revisions WHERE document_id=?',
+                                         (document_id,)).fetchone()[0]
+                revision_id = self.insert_revision(db, document_id, revision_no, object_id, obj, info)
+                timestamp = utc_now()
+                db.execute('UPDATE documents SET current_revision_id=?,document_version=document_version+1,updated_at=? WHERE id=?',
+                           (revision_id,timestamp,document_id))
+                # Keep current_parse_run_id: its older successful content is still useful.
+                after = snapshot(db, document_id)
+                record_event(db, document_id, 'revision_added', before, after, timestamp=timestamp)
+                return after
+
 
     def trash(self, document_id, change: VersionChange, *, request=None):
         with self.write(request) as db:

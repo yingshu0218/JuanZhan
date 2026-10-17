@@ -17,6 +17,7 @@ from .jobs import JobQueue, JobSpec
 from .source_paths import SourceMounts, SourcePathError
 from .source_scans import inventory
 from .uploads import sniff
+from .exclusions import epoch, blocked, verify
 
 MAX_MANIFEST_BYTES = 64 * 1024 * 1024
 
@@ -47,36 +48,39 @@ def prepare(settings, source, manifest, counts, *, include_dirs=False,
     mounts = SourceMounts(settings.source_mounts)
     root_digest = mounts.digest(source['root_ref'])
     size = 0
-    with closing(inventory(mounts, source['root_ref'], counts)) as records:
-        for kind, path, stream, info in records:
-            item = {'kind': kind, 'path': path}
-            if kind == 'file':
-                checksum = hashlib.sha256()
-                received = 0
-                while chunk := stream.read(min(65536, info.st_size-received+1)):
-                    received += len(chunk)
-                    if received > info.st_size:
+    with connect(settings.database) as db:
+        db.execute('BEGIN')
+        source['_exclusion_epoch']=epoch(db,source['id'])
+        with closing(inventory(mounts, source['root_ref'], counts, excluded=lambda path: blocked(db,source['id'],path))) as records:
+            for kind, path, stream, info in records:
+                item = {'kind': kind, 'path': path}
+                if kind == 'file':
+                    checksum = hashlib.sha256()
+                    received = 0
+                    while chunk := stream.read(min(65536, info.st_size-received+1)):
+                        received += len(chunk)
+                        if received > info.st_size:
+                            raise SourcePathError('SOURCE_CHANGED')
+                        checksum.update(chunk)
+                    if received != info.st_size:
                         raise SourcePathError('SOURCE_CHANGED')
-                    checksum.update(chunk)
-                if received != info.st_size:
-                    raise SourcePathError('SOURCE_CHANGED')
-                mime = sniff(stream, os.path.basename(path))
-                try:
-                    modified = datetime.fromtimestamp(info.st_mtime, timezone.utc).isoformat().replace('+00:00', 'Z')
-                except (ValueError, OverflowError, OSError):
-                    modified = None
-                item.update(sha256=checksum.hexdigest(), size_bytes=received, mime_type=mime,
-                            mtime_ns=info.st_mtime_ns, file_modified_at=modified,
-                            identity_hint=f'{info.st_dev}:{info.st_ino}')
-                counts[file_counter] += 1
-                counts[bytes_counter] += received
-            elif not include_dirs:
-                continue
-            line = json.dumps(item, ensure_ascii=False, separators=(',', ':'))+'\n'
-            size += len(line.encode('utf-8'))
-            if size > MAX_MANIFEST_BYTES:
-                raise SourcePathError('SOURCE_MANIFEST_LIMIT')
-            manifest.write(line)
+                    mime = sniff(stream, os.path.basename(path))
+                    try:
+                        modified = datetime.fromtimestamp(info.st_mtime, timezone.utc).isoformat().replace('+00:00', 'Z')
+                    except (ValueError, OverflowError, OSError):
+                        modified = None
+                    item.update(sha256=checksum.hexdigest(), size_bytes=received, mime_type=mime,
+                                mtime_ns=info.st_mtime_ns, file_modified_at=modified,
+                                identity_hint=f'{info.st_dev}:{info.st_ino}')
+                    counts[file_counter] += 1
+                    counts[bytes_counter] += received
+                elif not include_dirs:
+                    continue
+                line = json.dumps(item, ensure_ascii=False, separators=(',', ':'))+'\n'
+                size += len(line.encode('utf-8'))
+                if size > MAX_MANIFEST_BYTES:
+                    raise SourcePathError('SOURCE_MANIFEST_LIMIT')
+                manifest.write(line)
     if mounts.digest(source['root_ref']) != root_digest:
         raise SourcePathError('SOURCE_ROOT_CHANGED')
     return root_digest
@@ -84,6 +88,7 @@ def prepare(settings, source, manifest, counts, *, include_dirs=False,
 
 def publish(db, job, observed, manifest, counts, settings):
     db.row_factory = sqlite3.Row
+    verify(db,observed)
     source = db.execute('SELECT * FROM sources WHERE id=?', (observed['id'],)).fetchone()
     keys = ('space_id', 'root_ref', 'initial_import_policy', 'initial_target_folder_id', 'initial_triage_status')
     if source is None or source['status'] == 'disabled' or any(source[k] != observed[k] for k in keys):
@@ -102,6 +107,7 @@ def publish(db, job, observed, manifest, counts, settings):
     for line in manifest:
         item = json.loads(line)
         path = item['path']
+        if item['kind']=='file' and blocked(db,source['id'],path):continue
         parent_path, _, name = path.rpartition('/')
         if source['initial_import_policy'] == 'tree':
             mapped = db.execute('SELECT folder_id FROM initial_folder_map WHERE path=?', (parent_path,)).fetchone()

@@ -452,3 +452,12 @@ tree将相对目录（含空目录）创建到初始目标下，flat所有候选
 根digest改变（包括换成另一个空只读根）会SOURCE_ROOT_CHANGED，需恢复或核实原部署根，不提供自动重置。旧T13来源无摘要时以同路径/hash/size/inode锚点建立；若文件全部已变/已失踪而无锚点，则SOURCE_ROOT_UNVERIFIED，不能自动判全库缺失。跨机器/文件系统恢复需后续受审计的重新验证流程，不绕过保护。
 预算沿用300秒/3次/100000访问项/64层/64MiB匿名元数据。尚无自动调度、排除规则/取消索引（T15）、来源UI（T28）和真实转换器，不把API手动增量描述成自动扫描。
 镜像构建后`python scripts/smoke_incremental.py`验证真实RO挂载/HTTP/worker/SQLite、离线及错误空根、重启后继续扫描；只操作一次性测试目录/卷/随机管理员，不接触用户来源。
+
+## T15 排除与安全清理
+
+启动自动应用0005迁移，共5份，安装/Compose步骤不变。取消索引通过POST /sources/{id}/exclude-entry传Entry ID、有关联Doc时的版本及可选reason，轮询Job；GET/DELETE exclusions管理已提交规则，待处理屏障直到成功或终态失败。
+规则是精确文件路径，不影响其他同hash副本。排除不会物理删文件；移除规则不自动恢复Trash Doc。Purge后规则仍防重导，主动移除才允许重新建档。
+POST /documents/{id}/purge必须已Trash，并明确confirm_document_id和expected_document_version；执行复核，恢复/编辑后的旧任务拒绝。永久业务记录无法恢复，源字节保留。派生数据库记录删除，派生物理文件保留待其安全store协议，不走任意路径清理。
+托管原件GC默认至少24小时宽限，仍被任何历史/回收Revision引用都保留。Purge自动排延迟任务，孤儿发现排后续任务；本地管理员可`python -m juanzhan.maintenance gc`排队，由正常worker执行。无强制缩短保留期选项，不在正常卷运行测试时间快进。
+GC独占store锁且持DB写锁，注册/追加共享store锁贯穿验证与提交；不得颠倒锁序。上传繁忙时GC可能有限重试/失败，应查看真实Job结果，不把排队当成已删。
+`python scripts/smoke_maintenance.py`使用一次性RO挂载、数据卷、随机管理员，验证排除/扫描/外部purge、托管共享引用/宽限/实际unlink、恢复竞态与重启回执；只快进fixture候选时间，不触碰用户文件或正常管理员。

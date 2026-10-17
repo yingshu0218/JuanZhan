@@ -161,3 +161,17 @@ source_initial.prepare复用安全遍历/全量hash与匿名元数据清单；�
 根摘要比较dev/inode/物理根（只存hash，不外露）。不同只读空挂载SOURCE_ROOT_CHANGED；旧库无摘要，只有精确路径+hash+size+inode锚点或原库存为空可建立，否则SOURCE_ROOT_UNVERIFIED，不能判整库missing。已有摘要变化不自动重置，需恢复/核实部署根。
 Document投影实时检查挂载，来源离线独立于条目状态和解析；正常外部字节仍unknown，不承诺当前可下载或历史字节恢复。228项Python及真实容器回归见TESTING；OpenAPI0.4.15/48paths。
 安装/启动命令无变化，启动自动应用新迁移；不新增用户挂载/凭据或发布云配置草稿。
+
+## 当前接续点 · T15 后（优先于上文历史交接）
+
+T01～T15、T17/T18、T26/T27完成，下一切片T28生产来源向导/预扫描/源树/离线与失联界面；保持结构化优先及既有暖白/墨绿设计，不改参考原型。T16为P1.1，真实转换/OCR/检索/预览仍未完成。
+新增0005_maintenance.sql（已应用勿改）：排除epoch、取消索引intent屏障、永久清理最小回执、managed GC候选。前三/四迁移不变，启动按checksum升级至5份迁移。
+maintenance.router已接GET exclusions、POST exclude-entry、DELETE exclusion、POST document purge。有关联Document的取消索引需expected_document_version，无关联的needs_match条目可省略；活动请求复用首个任务快照。屏障入队即生效，成功同事务变为规则+逻辑回收，终态失败移除屏障。
+exclusions.py提供epoch/blocked/verify，安全遍历在打开字节前跳过精确路径，准备期持只读SQLite快照；发布复核epoch并再次过滤观测/旧库存，过期则SOURCE_CHANGED重试，不能把漏掉的排除文件判失联。移除规则不自动恢复Trash Document；永久清理后移除规则可重新建档。
+purge需confirm_document_id及expected_document_version，API和worker均校验Trash/版本；完成同一围栏事务清Doc/Entry/Revision/ParseRun/元数据/搜索记录，外部路径留排除规则，取消活动文档任务，最小receipt保留ID/版本/Job/时间，支持完成重放。派生物理文件暂保留，不按未定义storage_key删除。
+GC仅managed，全部Revision（含旧版本/回收）仍有引用就保留。最后引用解除或孤儿首次发现后至少86400秒；候选只存服务端键和eligible_after。物理unlink在独占store锁与围栏DB写事务中，崩溃回滚可留无引用缺文件记录，下次安全回收。
+所有托管登记/追加都持shared store锁贯穿verify与DB提交，锁顺序固定store→SQLite，避免GC删除已验证待提交对象。不要把GC调用放进已持DB写锁的上传路径，也不绕过锁调用注册。
+`python -m juanzhan.maintenance gc`仅排持久任务，worker执行；purge自动排至少24小时后的GC，发现新孤儿会排后续任务。无放宽保留期的公开选项。测试时只改一次性fixture候选时间，不改变正常数据保留策略。
+OpenAPI0.4.16/48paths；无新依赖或云安装启动步骤。不声称派生物理GC、来源UI、人工匹配/自动调度或正式生产部署完成。
+
+T15最终验收：238项Python通过（新增10项），smoke_maintenance真实容器通过，Archive/worker/Converter升级健康且smoke.py通过；OpenAPI0.4.16/48路径唯一键/引用验证通过。无用户来源或正常卷清理测试。

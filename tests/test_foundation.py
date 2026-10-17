@@ -26,7 +26,7 @@ def test_archive_restart_and_storage(settings):
                 path.write_bytes(b'real filesystem')
                 assert path.read_bytes() == b'real filesystem'
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 4
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 5
         assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
 
 
@@ -76,7 +76,7 @@ def test_concurrent_migrations(settings):
     with ThreadPoolExecutor(max_workers=2) as executor:
         list(executor.map(lambda _: migrate(settings.database), range(2)))
     with connect(settings.database) as db:
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 4
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 5
 
 
 def test_converter_boundary(settings):
@@ -135,7 +135,7 @@ def test_upgrade_source_observations_preserves_legacy_data_and_checksums(setting
     migrate(settings.database)
     with connect(settings.database) as db:
         current=dict(db.execute('SELECT name,sha256 FROM migration_checksums'))
-        assert len(current)==4 and all(current[k]==v for k,v in original.items())
+        assert len(current)==5 and all(current[k]==v for k,v in original.items())
         assert db.execute("SELECT root_ref,initial_import_completed_at FROM sources WHERE id='source'").fetchone()==('docs','before')
         assert db.execute('SELECT count(*) FROM source_root_baselines').fetchone()[0]==0
         assert db.execute('SELECT count(*) FROM source_missing_observations').fetchone()[0]==0

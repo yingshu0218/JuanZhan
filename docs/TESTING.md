@@ -272,3 +272,11 @@ T13最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：216 pas
 前端未改，未重复浏览器套件；自动调度、人工匹配写接口、排除规则/取消索引、来源UI、真实转换/检索/预览仍未验收。
 
 T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容器重启后执行新的增量仍接受原根基线，保持待匹配/已确认missing与人工版本；最后补充同来源缺失凭据校验后，11条增量针对性测试再次通过。`docker compose build archive`及`up -d --wait --no-build`通过，`python scripts/smoke.py`通过Web/CSP/资源、API/Converter能力边界和worker心跳。OpenAPI0.4.15/48路径唯一键与引用校验通过，无新依赖或云启动步骤。
+
+## T15 验收 · 2026-10-17
+
+新增取消索引/规则移除/扫描屏障与epoch过期、失败屏障释放、外部purge留规则与移除后重发现；新增purge确认/CSRF/版本/receipt、排队后恢复拒绝、共享与历史/回收引用保护、至少24小时宽限、孤儿两轮GC、登记共享锁阻止GC与合法键符号链接拒绝。
+`python scripts/smoke_maintenance.py`真实只读bind/HTTP/worker/SQLite通过：取消索引后preview=0/ignored=1、增量不重导；外部purge仅删系统记录，源hash/字节保留；移除规则后新建不同Document。托管共享对象仍有引用不删，最后引用清除后宽限内保留，只快进一次性fixture候选时间后实际unlink；恢复先于排队purge时VERSION_CONFLICT，链接不跟随；重启后最小清理回执与恢复状态保留，FK检查通过。
+未在正常数据卷执行purge/GC时间快进，未改正常管理员。派生物理GC/生产来源UI尚未验收，前端未改，不重复浏览器套件。
+
+最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：238 passed，52.07秒（新增10项），仅既有弃用提示。过期异常GC候选不再阻断新孤儿后续任务，有针对性回归。最终镜像重新运行smoke_maintenance通过；Compose三容器升级健康，smoke.py通过Web/CSP/静态资源、API/Converter边界与worker心跳。OpenAPI0.4.16/48路径唯一键/本地引用校验通过。

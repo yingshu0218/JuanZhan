@@ -117,3 +117,10 @@ SourceEntry保存source/space/document、精确相对路径、size/mtime_ns/sha2
 增量在同一事务登记新Entry/Document/Revision、更新既有Entry与新增Revision、保留current_parse_run_id、写source_updated和解析Job，文档版本随系统事实变化递增。
 缺失证据必须来自同来源、不同的completed incremental；失败清证据但不改Entry状态，返回文件清证据并available。成功增量只更新last_successful_scan_at。
 歧义新Entry document_id可null（原DDL已允许），status=needs_match；既有Document不合并/删除。源路径变化不重写历史Revision的source_path_at_capture。
+
+## T15 迁移0005
+
+新增source_exclusion_versions(source_id,version)、source_exclusion_intents(job_id,source_entry_id唯一,source_id,path)、document_purge_receipts(document_id,document_version,job_id,created_at)、managed_gc_candidates(storage_key,eligible_after)。应用旧迁移checksum不变。
+排除规则及屏障变化递增epoch，扫描围栏事务必须复核；终态失败释放intent，成功变为source_exclusions。原Entry可保留用于恢复，Purge时删除并留下规则。
+永久清理先断开Document current指针，再删Revision/解析级联与Entry/Doc/搜索；取消活动文档任务，保留最小receipt，不保留原业务字段。外部字节不在数据库清理操作范围。
+managed_objects不立即随Doc删除，GC必须核查所有file_revisions引用，候选从最后引用解除/首次发现计时至少24小时；物理失败可留无引用记录，重试清理不影响仍被引用的对象。
