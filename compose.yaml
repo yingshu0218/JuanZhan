@@ -23,6 +23,8 @@ services:
     command: ["python", "-m", "juanzhan.worker"]
     environment:
       JUANZHAN_DATA_DIR: /data
+      CONVERTER_URL: http://converter:8000
+      CONVERTER_SERVICE_TOKEN: ${CONVERTER_SERVICE_TOKEN:?Set CONVERTER_SERVICE_TOKEN}
       JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
     volumes:
       - archive_data:/data

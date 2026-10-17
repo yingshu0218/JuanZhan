@@ -124,3 +124,7 @@ SourceEntry保存source/space/document、精确相对路径、size/mtime_ns/sha2
 排除规则及屏障变化递增epoch，扫描围栏事务必须复核；终态失败释放intent，成功变为source_exclusions。原Entry可保留用于恢复，Purge时删除并留下规则。
 永久清理先断开Document current指针，再删Revision/解析级联与Entry/Doc/搜索；取消活动文档任务，保留最小receipt，不保留原业务字段。外部字节不在数据库清理操作范围。
 managed_objects不立即随Doc删除，GC必须核查所有file_revisions引用，候选从最后引用解除/首次发现计时至少24小时；物理失败可留无引用记录，重试清理不影响仍被引用的对象。
+
+## T19 Converter临时数据库（不属于Archive迁移）
+
+Converter在独立私有spool内维护tasks（临时ID/parse_run_id幂等指纹/状态/尝试/时间/安全错误/规范结果）与artifacts（随机ref→任务/sha256/大小/media_type）。SQLite FK/WAL及spool排他进程锁，只用于临时任务传输/TTL，不引用Archive表，不获得业务卷访问。Archive仍5个不可变迁移；ParseRun/DerivedAsset/ContentBlock的正式写入待T22，不因转换完成提前创建或切换current_parse_run_id。

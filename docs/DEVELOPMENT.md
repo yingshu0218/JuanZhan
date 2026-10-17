@@ -38,7 +38,7 @@ python scripts/smoke.py
 
 Archive 仅绑定宿主机 loopback 8000；Converter 无宿主机端口，仅内部网络可达。
 `/healthz` 是无敏感信息的运维端点，不应经生产公共网关发布。
-Converter 除健康检查外要求服务 Bearer Token；能力列表为空，任务请求返回 501。
+Converter 除健康检查外要求服务 Bearer Token；T19实现转换任务协议及最小UTF-8 TXT，OCR/预览/其他格式未实现。
 Archive 已提供认证、分类、上传、档案/元数据/批量业务API及同源生产Web；其余范围见STATUS，服务令牌只从运行环境注入。
 
 Archive 命名卷保存 database/managed/derived；Converter 临时区使用 tmpfs，不挂载业务卷。
@@ -471,3 +471,10 @@ JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium DOCKER_CONFIG="$PWD/.local/docker" npm 
 ```
 
 需可用Docker及本机Chromium；不新增前端依赖。测试使用8768业务端口和8769夹具就绪端口，临时只读来源/随机管理员/独立卷及真实worker；SIGTERM时删除仅本次容器/卷/临时目录。普通`test:e2e`仍为原8项主机临时服务回归，两个套件可独立运行。正常Compose挂载/管理员/环境启动配置未变，默认来源别名为空。
+
+## T19 Converter运行与验证
+
+正常Compose仍使用既有CONVERTER_SERVICE_TOKEN，无新凭证；worker新增CONVERTER_URL=http://converter:8000并复用该Token供内部客户端使用，尚未自动接入parse handler。Converter保留独立128MiB tmpfs、没有Archive卷，单uvicorn进程运行（多进程共享spool会因排他锁拒绝）。前端无改动，无新依赖/安装步骤。
+默认临时目录/tmp/juanzhan-converter；可通过CONVERTER_ROOT、CONVERTER_MAX_FILE_BYTES、CONVERTER_MAX_OUTPUT_BYTES、CONVERTER_MAX_JOBS、CONVERTER_TTL_SECONDS、CONVERTER_WALL_SECONDS、CONVERTER_CPU_SECONDS、CONVERTER_MEMORY_BYTES、CONVERTER_MAX_BLOCKS、CONVERTER_RECEIVE_SECONDS调整受验证上限。提高容量/输入/输出额度时须同步安排临时卷预算，默认参数针对当前128MiB tmpfs；RLIMIT_AS是子进程地址空间。默认4MiB/16MiB、2任务、TTL3600秒、30秒墙钟/10秒CPU/256MiB地址空间/10000块/60秒接收。
+在根目录运行`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`；构建Archive镜像后运行`DOCKER_CONFIG="$PWD/.local/docker" python scripts/smoke_converter.py`。后者自动创建独立Archive/Converter容器、网络及卷，用随机临时凭证通过真实上传、SQLite、HTTP转换/规范结果/字节校验和DELETE验证，最后仅清理本次夹具。正常管理员、卷与.env保持。
+ConverterClient可通过from_env创建，仅用于服务内部；使用submit→wait→result(预期Revision/ParseRun)→artifact校验流→delete。未完成/失败不应切换业务成功指针；T22负责正式持久化与重试预算。不要把Converter临时SQLite纳入Archive业务迁移或声称重建tmpfs可保留远端Job。

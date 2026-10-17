@@ -303,3 +303,15 @@ T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容�
 
 截图证据（本机/tmp，不入Git）：`/tmp/juanzhan-t28-sources.png`桌面库存，`/tmp/juanzhan-t28-wizard.png`配置确认，`/tmp/juanzhan-t28-offline.png`离线历史库存，`/tmp/juanzhan-t28-mobile.png`手机歧义状态。当前工作区无Browser插件，后续若安装可优先使用；此次真实浏览器证据已完成。
 边界：只展示已登记文件及其路径层次，不宣称完整物理目录枚举；没有自动扫描、人工匹配写入口、来源配置编辑、任务列表/刷新恢复、正文/原件预览或真实转换能力。来源回执仅当前空间页面保留。下一阶段T19，不是最终产品验收。
+
+## T19 验收 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：253 passed，51.35秒（比T28新增15项），仅既有Starlette/httpx弃用提示。Converter专项+foundation为23项通过；基础旧501/空能力断言已改为真实TXT能力及非法multipart拒绝，未删除验收要求。
+专项覆盖真实受限子进程/SQLite/磁盘/HTTP：UTF-8 BOM/中文/emoji/换行与精确码点定位，规范结果与null置信度，产物大小/hash/下载头及DELETE后404；PDF/HTML/二进制unsupported；全路径Token、未知/重复字段、路径/ID/布尔/OCR语言拒绝、大小与不完整multipart；相同parse_run_id同字节复用、冲突409、容量429与TTL回收；墙钟终止、块/输出额度失败、UTF-8后半段非法编码失败；同spool排他锁、queued重启恢复与running安全失败；注入发布/存储中断后，单runner把遗留running置failed并完成后续真实任务，尝试数仍1，不永久占据队首。内核RLIMIT保留，输出额度在写入前主动拒绝。
+客户端通过真实uvicorn/TCP验证chunked multipart、规范结果/Revision/ParseRun身份、下载hash校验和清理；错误hash不暴露暂存流。另有明确标注的fake contract peer只验证恶意JSON重复键/NaN/嵌套/超大返回、非法任务ID/资产引用与重定向拒绝，不把fake结果用于转换成功验收。
+首次检查暴露两处实现问题并已修复后重跑：子进程依赖调用者PYTHONPATH导致普通pytest找不到包，改为服务文件确定的包路径且不继承敏感环境；输出超限曾落为通用子进程失败，改为写前明确RESULT_LIMIT。没有放宽资源保护或禁用断言。
+
+`DOCKER_CONFIG=$PWD/.local/docker python scripts/smoke_converter.py`通过：独立网络/Archive与Converter容器/临时数据卷，真实HTTP管理员/空间/原件上传及SQLite登记；从Archive容器使用实际ManagedStore原件和内部客户端，跨HTTP提交Job/轮询/取规范JSON/核验产物/主动清理及404，PDF明确unsupported。Converter只有128MiB tmpfs，没有Archive卷；原件hash、标题和current_parse_run_id不变，parse_runs仍0/FK正常。随机测试凭证仅进程环境/安全stdin传递，不输出或保存，夹具容器/卷/网络已清理。
+`DOCKER_CONFIG=$PWD/.local/docker docker compose build archive`及`docker compose up -d --wait --no-build`通过，最终三个容器healthy；新`smoke.py`通过Web/CSP/资源、鉴权、真实TXT能力/非法multipart边界及worker心跳。额外一次性容器以默认128MiB tmpfs/256MiB子进程地址空间，处理恰好4MiB含emoji的真实UTF-8文件，完成规范结果/产物hash验证及清理；不承诺大规模性能。无新依赖、业务迁移、前端改动；本轮未重复浏览器套件，9项浏览器结果仍属T28。Converter OpenAPI0.4.1/6路径及Archive0.4.16/48路径唯一键/本地引用检查通过，已应用5次迁移未变。
+
+边界：只证明最小UTF-8 TXT及独立传输协议，不是六格式/OCR/预览或产品正文交付。单进程同spool重启已验证；Docker tmpfs重建丢失任务是允许边界，本轮未执行该故障场景，不能宣称远端ID跨容器重启持久。Archive parse handler、ParseRun/DerivedAsset/ContentBlock事务入库与历史正文保留仍在T22；上传解析任务仍明确未实现，不因Converter可用伪报业务成功。下个任务T20。

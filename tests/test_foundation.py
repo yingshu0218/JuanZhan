@@ -79,16 +79,19 @@ def test_concurrent_migrations(settings):
         assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0] == 5
 
 
-def test_converter_boundary(settings):
-    with TestClient(create_app('converter', settings)) as client:
+def test_converter_boundary(settings,tmp_path):
+    from juanzhan.conversion_store import ConverterConfig
+    with TestClient(create_app('converter', settings,converter_config=ConverterConfig(root=tmp_path/'converter'))) as client:
         assert client.get('/healthz').status_code == 200
         assert client.get('/v1/capabilities').status_code == 401
         headers = {'Authorization': 'Bearer ' + settings.converter_token}
-        assert client.get('/v1/capabilities', headers=headers).json() == {
-            'schema_versions': [], 'supported_input_types': [], 'ocr_available': False}
+        capabilities = client.get('/v1/capabilities', headers=headers).json()
+        assert capabilities['schema_versions'] == ['1.0']
+        assert capabilities['supported_input_types'] == ['text/plain']
+        assert capabilities['ocr_available'] is False
         response = client.post('/v1/jobs', headers=headers, json={'path': '/etc/passwd'})
-        assert response.status_code == 501
-        assert response.json()['error']['code'] == 'NOT_IMPLEMENTED'
+        assert response.status_code == 400
+        assert response.json()['error']['code'] == 'INVALID_MULTIPART'
     assert not settings.data_dir.exists()
 
 

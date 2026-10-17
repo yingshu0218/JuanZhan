@@ -182,3 +182,10 @@ T01～T15、T17/T18与T26～T28已交付。Sources/SourceWizard沿用既有Web�
 下一切片T19：先读CONVERTER/ARCHITECTURE/API和独立Converter OpenAPI，补齐真实输入输出、资源限制与归档worker适配；按路线图接T20/T21/T22，不用空能力声明或假解析结果宣称转换完成。默认结构化内容优先和人工字段保护继续适用。
 Sources回执仅当前空间页面生命周期，离开来源导航保留，切空间/刷新需凭Job ID调用已有接口；T31才提供完整中心。自动调度/人工匹配/来源配置编辑API均不存在，不加假入口。取消索引版本冲突应重新读取并确认，不自动重试写请求。
 来源浏览器验收需先build web和Archive镜像，再运行npm run test:e2e:sources --prefix web；使用一次性Docker卷/随机管理员/真实只读bind/worker，不接正常卷，清理仅针对本次夹具。现有8项浏览器套件仍用独立主机临时API，无新增依赖。
+
+## 当前接续点 · T19 后（优先于上文历史交接）
+
+T19独立转换协议和最小UTF-8 TXT已实现。接续T20真实六格式基础转换；先读CONVERTER、最新Converter OpenAPI0.4.1与conversion_*模块。不要重复搭建协议，不把最小TXT或unsupported当作完整格式支持。字段只生成候选且人工值优先，定位未知不伪造。
+Converter临时spool是独立SQLite+文件、默认/tmp/juanzhan-converter，在Compose128MiB tmpfs内；非Archive迁移/持久业务库。单uvicorn进程持排他锁、单runner、每任务子进程一次；已完成未清理任务也占容量2。清理失败可重试；默认TTL3600秒，活跃任务不被TTL删除。Docker重建tmpfs后任务可能404，原件仍在Archive；同spool重启仅queued继续，running失败不擅自重复。
+ConverterClient.from_env读取Compose worker的既有Token及CONVERTER_URL，不把上游未验证产物交给调用者；T22才接管parse handler/ParseRun/DerivedAsset/ContentBlock与围栏提交，现有上传parse仍HANDLER_NOT_AVAILABLE。T19不修改人工字段/当前成功解析，也不提供Web正文或下载入口。
+验证：pytest全量253项；scripts/smoke_converter.py独立容器/网络/数据卷真实上传→客户端→Converter→字节验证/清理，正常实例不动。脚本不要求新凭证或依赖；正常Compose升级/新冒烟见TESTING。

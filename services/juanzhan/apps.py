@@ -26,10 +26,15 @@ def error(status, code, message, **extra):
     return JSONResponse({"error": {"code": code, "message": message, **extra}}, status_code=status, headers=headers)
 
 
-def create_app(kind, settings=None):
+def create_app(kind, settings=None, *, converter_config=None):
     settings = settings or Settings.from_env()
     if kind not in ("archive", "converter"):
         raise ValueError("Unknown service")
+
+    conversion_store = None
+    if kind == "converter":
+        from .conversion_store import ConverterConfig, ConverterStore
+        conversion_store = ConverterStore(converter_config or ConverterConfig.from_env())
 
     @asynccontextmanager
     async def lifespan(app):
@@ -47,8 +52,14 @@ def create_app(kind, settings=None):
                 logger.info("Managed staging recovery deferred while writers are active")
         elif not settings.converter_token.strip():
             raise RuntimeError("CONVERTER_SERVICE_TOKEN must be configured")
-        logger.info("%s ready; document and conversion operations not implemented", kind)
-        yield
+        if conversion_store:
+            conversion_store.start()
+        logger.info("%s ready", kind)
+        try:
+            yield
+        finally:
+            if conversion_store:
+                conversion_store.close()
 
     app = FastAPI(title="JuanZhan " + kind, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
@@ -78,8 +89,7 @@ def create_app(kind, settings=None):
                 request.headers.get("authorization", "").encode(), expected.encode()
             ):
                 return error(401, "UNAUTHORIZED", "Valid service token required")
-            if request.url.path != "/v1/capabilities":
-                return error(501, "NOT_IMPLEMENTED", "Conversion is not implemented")
+
         if kind == "archive" and request.url.path != "/healthz":
             public_web = request.method in ('GET','HEAD') and (request.url.path in ('/','/favicon.svg') or request.url.path.startswith('/assets/'))
             public = public_web or (request.method, request.url.path) in {
@@ -90,6 +100,9 @@ def create_app(kind, settings=None):
                 except HTTPException as exc:
                     return error(exc.status_code, exc.detail['code'], exc.detail['message'])
         response = await call_next(request)
+        if kind == "converter":
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["X-Content-Type-Options"] = "nosniff"
         if kind == 'archive' and request.url.path.startswith('/api/v1/auth'):
             response.headers['Cache-Control'] = 'no-store'
             response.headers['Pragma'] = 'no-cache'
@@ -97,6 +110,8 @@ def create_app(kind, settings=None):
 
     @app.get("/healthz")
     def health():
+        if conversion_store and not conversion_store.ready():
+            return error(503, "NOT_READY", "Converter runner unavailable")
         if kind == "archive":
             try:
                 with connect(settings.database) as db:
@@ -121,7 +136,10 @@ def create_app(kind, settings=None):
         app.include_router(document_api.router(settings))
 
     if kind == "converter":
-        @app.get("/v1/capabilities")
-        def capabilities():
-            return {"schema_versions": [], "supported_input_types": [], "ocr_available": False}
+        from .conversion_api import router
+        from .conversion_store import ConversionError
+        @app.exception_handler(ConversionError)
+        async def conversion_error(request, exc):
+            return error(exc.status, exc.code, "Conversion request could not be completed")
+        app.include_router(router(conversion_store))
     return app

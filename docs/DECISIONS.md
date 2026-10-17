@@ -197,3 +197,11 @@ GC锁序store exclusive→SQLite写事务；托管register/append为store shared
 Sources按空间隔离实例，切换导航保留来源/前缀/分页与最近任务回执；读请求AbortController防过期结果，后台任务不随导航取消。任务每秒串行查询，300次后需手动继续，网络失败不重发写请求；重试仅按Job.retryable/attempts条件显示并由服务端裁决。切空间/刷新后回执不保留，完整恢复留T31，不引入本地敏感持久化。
 离线只呈现历史库存，不暗示当前原件可访问。歧义不提供不存在的人工匹配接口。取消索引确认捕获实际Document版本，后台再次验证；移除排除只改规则。来源区OS拖入拒绝，不把外部来源当上传目的地；逻辑目录拖入语义保持。
 验证采用独立Docker只读bind/SQLite/真实HTTP/worker及Chromium，不使用业务响应Mock；普通浏览器回归继续使用现有快速临时主机服务。测试夹具显式可读权限适配云环境umask 077，挂载仍内核只读。测试脚本不进入生产应用镜像，不开放测试API。
+
+## ADR-034 · 2026-10-17 · T19 独立转换协议与最小真实TXT
+
+按路线图T19交付协议，不提前把T20六格式/T22业务持久化混为完成。额外实现最小UTF-8 TXT以验证真实二进制→子进程→规范JSON→受控产物，不用假转换器结果充当功能；fake peer只验证客户端拒绝非法上游协议。只声明text/plain，其余格式unsupported，OCR明确不可用，preview=true发警告。无新依赖。
+临时ConverterStore采用独立SQLite/FK/WAL、0700私有spool、排他进程锁和单runner；每任务一个一次性子进程，默认4MiB输入、16MiB输出、10000块、30秒墙钟、10秒CPU、256MiB地址空间、64FD。默认容量2（含终态未清理），60秒接收、3600秒TTL。选择受限进程而非在线主进程解析；这不是完整系统调用/网络沙箱，当前解析器只本地读取文本/有限MIME探测，不执行文档代码或加载外链。T20新增解析器需继续评估隔离/压缩资源与依赖风险。
+parse_run_id在spool内唯一并绑定输入hash及选项，同请求复用、冲突拒绝；不接自动无限重试。重启同spool将running失败、queued继续，容器tmpfs重建则ID可失效，调用者必须将原件和协调事实留在Archive。清理只允许终态，TTL不杀活跃任务；清理的目录unlink可重做以恢复DB提交前后中断。发布中断留running时，单runner下一次数据库可用后置CONVERTER_PUBLISH_FAILED，再推进后续任务，不重复执行未确认副作用。
+资产ref随机32hex映射，路径不由客户端或文件名拼接；发布校验规范结果/身份/产物hash与大小，下载受鉴权和期限保护。Archive客户端禁代理继承/重定向，有界JSON与重复键/非有限值拒绝，结果验证Revision/ParseRun身份；资产私有暂存校验后才返回给持久化层。网络失败不自动重发写请求。
+Compose worker复用既有Converter服务Token和内部URL，不新增用户秘密。Archive业务库/源卷不向Converter开放；ParseRun/正文/候选/资产落盘与当前成功指针留T22，上传解析任务现仍明确未实现，不包装成UI正文交付。

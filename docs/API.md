@@ -3,7 +3,7 @@
 ## 权威文件
 
 - 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T15 扩展版本 0.4.16），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
-- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
+- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T19版本0.4.1），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
 
@@ -239,3 +239,8 @@ GET /sources/{id}/exclusions、POST /sources/{id}/exclude-entry、DELETE /source
 
 来源界面使用source-mounts、sources、entries(relative_prefix/page/page_size)、preview-scan、scan(initial/incremental)、exclusions、exclude-entry及jobs读取/条件重试。目录导航仅从已登记文件路径生成，不承诺目录枚举或空目录接口。取消索引先GET document取得document_version，确认后写expected_document_version；版本冲突不自动重提。
 任务回执和统计按真实result展示；预扫描不是导入/解析，离线不是单项missing。无新HTTP结构，Archive OpenAPI仍为0.4.16、48路径。
+
+## T19 Converter协议接通
+
+Converter OpenAPI0.4.1六路径已实现，任务提交202；身份只接受Archive生成的安全ID和multipart二进制，额外字段/重复字段拒绝。parse_run_id在本spool有效期内按输入hash+选项幂等，冲突409；容量429/超大小413/接收超时408/OCR不可用422。协议完成不等于支持格式：规范ParseResult.status可能unsupported。
+状态/result/asset均鉴权，结果未完成409，不存在/过期404。终态DELETE清理，活动409。artifacts强制随机ref、sha256和size_bytes；客户端还校验schema/Revision/ParseRun身份及下载字节，不跟随重定向。详见CONVERTER与ADR-034。Archive业务HTTP契约和迁移不变，parse handler接入留T22。

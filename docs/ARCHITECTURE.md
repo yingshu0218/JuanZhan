@@ -126,3 +126,9 @@ GC仅遍历managed/sha256合法键，以store独占锁+数据库写锁检查全�
 
 Sources负责当前空间来源/库存/排除读取与任务回执，SourceWizard负责两步只读别名配置；关联档案复用Detail。相对路径导航直接使用现有relative_prefix完整段查询和稳定分页，不枚举无界全树。
 读请求在条件变化时abort，写操作捕获来源/条目/版本快照且不自动网络重试。任务串行有界轮询独立于来源选择，完成后刷新当前空间资源；切空间卸载仅停止浏览器查询，持久worker任务仍执行。OpenAPI/数据库保持T15版本，未新增端点或迁移。
+
+## T19 独立转换传输
+
+conversion_api负责受限multipart/任务读取/流式受控产物；conversion_store拥有私有临时SQLite和文件、排他进程锁/单runner/容量/TTL；conversion_child执行有资源限制的最小TXT解析；conversion_models验证规范结构。子进程仅获必要PATH/LANG/固定包路径，不继承服务Token，限CPU/地址空间/文件大小/描述符和墙钟，stdout/stderr不泄露原文。
+converter_client是Archive内部纯HTTP客户端，二进制流上传/有限轮询、严格结果/身份/有界JSON、临时下载校验后开放；拒绝代理环境继承及重定向，不接客户端服务URL。Compose仅给worker既有Token及内部URL，Converter仍没有Archive数据库/managed/external卷。当前parse handler及正式持久化不接入，留T22实现幂等/版本/租约围栏/旧成功正文保留。
+临时任务单次执行，幂等作用域为当前spool生命周期。崩溃running失败不重放，queued同spool可恢复；容器tmpfs丢失可返回404，由Archive未来按持久任务预算协调，不宣称远端exactly-once。
