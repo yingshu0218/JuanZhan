@@ -22,7 +22,7 @@ class BatchRequest(BaseModel):
     document_ids: list[ID] = Field(min_length=1, max_length=100)
     selection_mode: Literal['explicit', 'snapshot']
     expected_versions: dict[str, Version]
-    operation: Literal['move_folder','add_tags','remove_tags','set_type','set_triage','set_favorite','trash','reprocess','set_metadata']
+    operation: Literal['move_folder','add_tags','remove_tags','set_type','set_triage','set_favorite','trash','restore','reprocess','set_metadata']
     payload: dict
 
     @model_validator(mode='after')
@@ -37,7 +37,7 @@ class BatchRequest(BaseModel):
 def changes(body):
     """Validate operation-specific payloads before enqueue; scopes are checked per item."""
     keys = {'move_folder':'folder_id', 'add_tags':'tag_ids', 'remove_tags':'tag_ids',
-            'set_type':'document_type_id', 'set_triage':'triage_status', 'set_favorite':'is_favorite', 'trash':None}
+            'set_type':'document_type_id', 'set_triage':'triage_status', 'set_favorite':'is_favorite', 'trash':None, 'restore':None}
     if body.operation not in keys:
         fail(501, 'BATCH_OPERATION_NOT_IMPLEMENTED', 'This operation awaits its business handler')
     key = keys[body.operation]
@@ -64,6 +64,12 @@ def apply(db, id, version, body):
         fail(422,'CROSS_SPACE_REFERENCE','Document belongs to another space')
     operation = body['operation']
     values = body['changes']
+    if operation=='restore':
+        if before['deleted_at'] is None:return before,before
+        folder=before['folder_id']
+        if folder is not None and db.execute('SELECT 1 FROM folders WHERE id=? AND space_id=?',(folder,body['space_id'])).fetchone() is None:folder=None
+        db.execute('UPDATE documents SET deleted_at=NULL,folder_id=? WHERE id=?',(folder,id))
+        return before,snapshot(db,id)
     if before['deleted_at'] is not None:
         if operation=='trash':return before,before
         fail(409,'DOCUMENT_TRASHED','Restore before editing')

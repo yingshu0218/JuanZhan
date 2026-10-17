@@ -180,4 +180,10 @@ integer为有符号64位；date为有效YYYY-MM-DD；Decimal只接普通十进�
 Archive根路径`/`及`/favicon.svg`、`/assets/{asset_path}`提供公开GET/HEAD编译静态资源，path-level server为根路径，不在/api/v1下。
 只包含Web外壳和代码，不包含档案/凭证；根HTML no-store及同源CSP，assets拒绝目录穿越。不开放POST或数据卷路径。
 所有业务API仍按既有鉴权/CSRF执行；生产UI完全使用已实现接口，未新增假上传/正文/预览/搜索API。
-未构建web/dist时根路径明确503 WEB_NOT_BUILT，不影响健康和API测试。OpenAPI0.4.10，47个路径模板。
+未构建web/dist时根路径明确503 WEB_NOT_BUILT，不影响健康和API测试。OpenAPI0.4.11，47个路径模板。
+
+## T27 批量恢复
+
+BatchRequest.operation新增restore，payload={}，沿用固定document_ids/expected_versions、异步逐项事务及审计，无新路径。
+活动档案恢复为skipped；回收档案清除deleted_at，保留同空间现存folder，否则置空。实际变化递增版本；过期版本失败且不修改档案。
+恢复不重新上传/复制/转换原件；一次撤销仍仅作用原成功项，并按当前版本保护后续编辑。

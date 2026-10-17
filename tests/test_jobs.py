@@ -316,3 +316,13 @@ def test_job_migration_preserves_prior_work_and_documents(tmp_path):
     with connect(database) as db:
         assert db.execute("SELECT name FROM spaces WHERE id='s'").fetchone()==('Space',)
         assert db.execute("SELECT status,attempts,timeout_seconds,auto_retry FROM jobs WHERE id='legacy'").fetchone()==('queued',0,60,1)
+
+
+def test_worker_child_can_finish_after_parent_closes_result_pipe(tmp_path):
+    import multiprocessing
+    from juanzhan.worker import _handler
+    receive,send=multiprocessing.Pipe(duplex=False)
+    receive.close()
+    # An actual closed OS pipe must not cause a second failed send/traceback.
+    _handler({'kind':'parse','target_type':'document'},str(tmp_path),send)
+    assert send.closed

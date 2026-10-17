@@ -25,6 +25,16 @@ export function Library({
   error,
   retry,
   importFiles,
+  checked,
+  toggle,
+  selectPage,
+  selectResults,
+  clearSelection,
+  snapshotBusy,
+  operate,
+  operationPending,
+  onDragStart,
+  onDragEnd,
 }) {
   return (
     <section className="library" aria-label="档案列表">
@@ -81,6 +91,45 @@ export function Library({
           <option value="-document_date">业务日期</option>
         </select>
       </div>
+      <div className="selection-controls">
+        <label className="check-label">
+          <input
+            type="checkbox"
+            aria-label="全选当前页"
+            ref={(node) => {
+              if (node)
+                node.indeterminate =
+                  documents.some((d) => checked.has(d.id)) &&
+                  !documents.every((d) => checked.has(d.id));
+            }}
+            disabled={loading || !documents.length}
+            checked={
+              documents.length > 0 && documents.every((d) => checked.has(d.id))
+            }
+            onChange={(e) => selectPage(e.target.checked)}
+          />
+          当前页
+        </label>
+        <button
+          disabled={loading || !total || snapshotBusy}
+          onClick={selectResults}
+        >
+          {snapshotBusy ? "正在固定范围…" : "选择筛选结果"}
+        </button>
+      </div>
+      {checked.size ? (
+        <div className="selection-bar" role="region" aria-label="已选档案">
+          <span>已选 {checked.size} 份</span>
+          <button
+            className="primary"
+            disabled={operationPending}
+            onClick={operate}
+          >
+            批量操作
+          </button>
+          <button onClick={clearSelection}>清除选择</button>
+        </div>
+      ) : null}
       {error ? (
         <div className="list-notice">
           <Notice error>{error}</Notice>
@@ -98,29 +147,44 @@ export function Library({
           </Empty>
         ) : documents.length ? (
           documents.map((doc) => (
-            <button
-              key={doc.id}
-              className={"file-tile" + (selected === doc.id ? " selected" : "")}
-              aria-pressed={selected === doc.id}
-              onClick={() => onSelect(doc.id)}
-            >
-              <div className="thumbnail">
-                <FileText size={view === "grid" ? 52 : 26} weight="thin" />
-                <span>
-                  {doc.origin_kind === "external" ? "关联档案" : "托管档案"}
-                </span>
-              </div>
-              <div className="file-caption">
-                <strong>{doc.title}</strong>
-                <small>{formatDate(doc.imported_at)}</small>
-                <div className="badges">
+            <div className="file-entry" key={doc.id}>
+              <input
+                className="file-select"
+                type="checkbox"
+                aria-label={"选择档案 " + doc.title}
+                checked={checked.has(doc.id)}
+                onChange={(e) => toggle(doc, e.target.checked)}
+              />
+              <button
+                draggable={!doc.deleted_at}
+                onDragStart={(e) => onDragStart(e, doc)}
+                onDragEnd={onDragEnd}
+                className={
+                  "file-tile" + (selected === doc.id ? " selected" : "")
+                }
+                aria-pressed={selected === doc.id}
+                onClick={() => onSelect(doc.id)}
+              >
+                <div className="thumbnail">
+                  <FileText size={view === "grid" ? 52 : 26} weight="thin" />
                   <span>
-                    {doc.triage_status === "filed" ? "已整理" : "待整理"}
+                    {doc.origin_kind === "external" ? "关联档案" : "托管档案"}
                   </span>
-                  <span>{processing[doc.processing_status] || "状态未知"}</span>
                 </div>
-              </div>
-            </button>
+                <div className="file-caption">
+                  <strong>{doc.title}</strong>
+                  <small>{formatDate(doc.imported_at)}</small>
+                  <div className="badges">
+                    <span>
+                      {doc.triage_status === "filed" ? "已整理" : "待整理"}
+                    </span>
+                    <span>
+                      {processing[doc.processing_status] || "状态未知"}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
           ))
         ) : (
           <Empty title="这里还没有档案">

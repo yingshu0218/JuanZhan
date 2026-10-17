@@ -218,3 +218,17 @@ Browser插件/skill未提供（Browser plugin not available），改用Playwrigh
 首屏文案对照的差异均由最新结构化优先要求或尚未实现能力解释；视觉语言和最新交互已对照验收，无遗留已知遮挡/横向溢出。
 只验证Chromium及上述视口；未验证Safari/Firefox、真实解析/预览/下载、T27拖拽/批量/恢复UI或正式生产发布。
 环境配置install_script/start_skill草稿已保存补入生产前端构建/启动步骤，未发布新快照；未修改网络规则、凭证或正常管理员。
+
+## T27 验收 · 2026-10-17
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：174 passed；保留既有Starlette/httpx弃用提示。
+- `npm run build --prefix web`：通过，生产静态资源构建完成。
+- `JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium npm_config_cache=/workspace/.npm npm run test:e2e --prefix web`：8 passed，52.9s。Browser插件不可用，使用Playwright与系统Chromium。
+- 新增5条真实浏览器流程：并发版本冲突与撤销保护；目录/标签/收藏/回收/恢复及移动端整理；真实内部拖放与OS文件上传/伪令牌拒绝；31份跨页固定快照且后续上传不混入；101份超限明确拒绝。使用临时SQLite、真实文件/HTTP/worker，未mock业务响应。
+- 新增Python覆盖批量恢复/撤销/陈旧版本、已活动项跳过，以及父管道关闭的worker确认发送。无新迁移。
+- 测试发现并修复窄屏样式误隐藏整理按钮、移动后详情消失留空状态、worker关闭时BrokenPipe；真实31项任务积压的浏览器等待设为30秒，不缩减业务流程。
+
+视觉复核已对照`/tmp/juanzhan-reference.png`与最新`/tmp/juanzhan-t27-desktop.png`、`/tmp/juanzhan-t27-results.png`、`/tmp/juanzhan-t27-mobile.png`：暖白/墨绿配色、多栏比例、标题/图标/留白沿用；新增选择栏/标签/结果弹窗为真实功能所需，原型假正文不保留。1440/1024/390视口由套件覆盖，390px操作弹窗无水平溢出；主流程无应用pageerror。未验证Safari/Firefox。
+尚未验收真实转换/OCR/检索/下载/原件预览、字段编辑UI与任务结果刷新恢复，不将当前通过视为完整产品验收。
+
+T27容器验收：`DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compose build archive`及`docker compose up -d --wait --no-build`通过，Archive/worker/Converter三容器健康。`python scripts/smoke_auth.py`通过隔离容器真实HTTP、批量回收/恢复及重启持久化；`python scripts/smoke.py`通过Web/CSP/静态资源、API就绪、Converter鉴权/空能力/501和worker心跳。

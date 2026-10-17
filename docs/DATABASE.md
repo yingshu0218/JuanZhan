@@ -85,3 +85,8 @@ API null删除行；boolean false存0，未设置无行。Decimal API固定四�
 
 无新迁移。浏览器不含演示业务数据库，不写localStorage中的档案/认证凭证；空间/目录/上传由既有API事务落SQLite。
 E2E临时SQLite与随机管理员跟随一次性测试服务清理，不使用或重置正常Compose卷。
+
+## T27 数据变更边界
+
+无新增迁移。批量restore复用既有deleted_at、document_version、jobs与document_events；逐项事务清除回收标记并校验目录，递增版本且记录审计。
+无变化项不增版本；冲突不修改。恢复/撤销均保留托管字节及元数据，不恢复不可用目录引用。

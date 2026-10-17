@@ -198,3 +198,29 @@ def test_lease_expiry_after_effect_rolls_back_documents_events_and_result(api):
     assert queue.get(job)['result'] is None
     assert queue.complete(job,claim['lease_token'],execute)
     assert detail(client,id)['document_version']==2
+
+
+def test_restore_batch_is_scoped_versioned_and_undoable(api):
+    _,settings,client,headers,space=api
+    a=upload(client,headers,space,b'restore-a')['document_id']
+    b=upload(client,headers,space,b'restore-b')['document_id']
+    f=folder(client,headers,space,'Restore folder')
+    patch(client,headers,a,1,folder_id=f)
+    assert client.post('/api/v1/documents/'+a+'/trash',headers=headers,json={'expected_document_version':2}).status_code==200
+    job=submit(client,headers,space,[a,b],'restore',{}, {a:3,b:1}).json()['job_id']
+    result=finish(settings,job)
+    assert result['succeeded']==1 and result['skipped']==1
+    assert detail(client,a)['folder_id']==f and detail(client,a)['deleted_at'] is None
+    undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
+    assert finish(settings,undo)['succeeded']==1
+    assert detail(client,a)['deleted_at'] is not None and detail(client,a)['document_version']==5
+    assert detail(client,b)['document_version']==1
+
+
+def test_restore_batch_conflict_does_not_restore_other_versions(api):
+    _,settings,client,headers,space=api
+    id=upload(client,headers,space)['document_id']
+    client.post('/api/v1/documents/'+id+'/trash',headers=headers,json={'expected_document_version':1})
+    job=submit(client,headers,space,[id],'restore',{}, {id:1}).json()['job_id']
+    assert finish(settings,job)['items'][0]['error_code']=='VERSION_CONFLICT'
+    assert detail(client,id)['deleted_at'] is not None

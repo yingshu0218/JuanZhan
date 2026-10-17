@@ -17,6 +17,7 @@ import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
 import { Library } from "./Library.jsx";
 import { Detail } from "./Detail.jsx";
+import { Operations, useOperations } from "./Operations.jsx";
 import { Uploads, useUploads } from "./Uploads.jsx";
 const views = {
   all: "全部档案",
@@ -55,6 +56,191 @@ export function Workspace({ api, logout, authError }) {
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
   const queue = useUploads(api, () => setRefresh((n) => n + 1));
+  const [checked, setChecked] = useState(new Map());
+  const [selectionMode, setSelectionMode] = useState("explicit");
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
+  const snapshotRequest = useRef(null);
+  const [notice, setNotice] = useState("");
+  const [dropTarget, setDropTarget] = useState("");
+  const [fileDrag, setFileDrag] = useState(false);
+  const dragDepth = useRef(0);
+  const internalDrag = useRef(null);
+  const operations = useOperations(api, (finished = true) => {
+    if (!finished) setChecked(new Map());
+    if (finished) setRefresh((n) => n + 1);
+  });
+  useEffect(() => {
+    setChecked(new Map());
+    setSelectionMode("explicit");
+    snapshotRequest.current?.abort();
+    setSnapshotBusy(false);
+    internalDrag.current = null;
+    return () => snapshotRequest.current?.abort();
+  }, [space, page, sort, type, folder, section]);
+  function context() {
+    return {
+      spaceId: space,
+      spaceName: spaces.find((s) => s.id === space)?.name || "空间",
+      catalog,
+      mode: selectionMode,
+    };
+  }
+  function prepare(items, operation = "move_folder", payload = null) {
+    if (!items.length) return;
+    const savedContext = context();
+    if (items.length !== checked.size || items.some((i) => !checked.has(i.id)))
+      savedContext.mode = "explicit";
+    operations.prepare(items, savedContext, operation, payload);
+  }
+  function toggle(doc, value) {
+    if (value && checked.size >= 100 && !checked.has(doc.id)) {
+      setNotice("最多选择100份档案，请先缩小范围。");
+      return;
+    }
+    setSelectionMode("explicit");
+    setChecked((current) => {
+      const next = new Map(current);
+      if (value) next.set(doc.id, { ...doc });
+      else next.delete(doc.id);
+      return next;
+    });
+  }
+  function query() {
+    const params = new URLSearchParams({
+      space_id: space,
+      page: "1",
+      page_size: "100",
+      sort,
+    });
+    if (folder) params.set("folder_id", folder);
+    if (type) params.set("document_type_id", type);
+    if (section === "inbox") params.set("triage_status", "needs_review");
+    if (section === "favorite") params.set("is_favorite", "true");
+    if (section === "trash") params.set("trash", "only");
+    return params;
+  }
+  async function selectResults() {
+    const controller = new AbortController();
+    snapshotRequest.current?.abort();
+    snapshotRequest.current = controller;
+    setSnapshotBusy(true);
+    setNotice("");
+    try {
+      const result = await api.request("/documents?" + query(), {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (result.total > 100) {
+        setNotice("当前筛选结果超过100份，请缩小筛选范围或按当前页操作。");
+        return;
+      }
+      setChecked(new Map(result.items.map((doc) => [doc.id, { ...doc }])));
+      setSelectionMode("snapshot");
+    } catch (e) {
+      if (e.name !== "AbortError") setNotice(message(e));
+    } finally {
+      if (!controller.signal.aborted) setSnapshotBusy(false);
+    }
+  }
+  function dragStart(event, doc) {
+    if (doc.deleted_at || operations.pending) {
+      event.preventDefault();
+      return;
+    }
+    const items = checked.has(doc.id) ? [...checked.values()] : [doc];
+    const token = crypto.randomUUID();
+    internalDrag.current = {
+      token,
+      items: items.map((item) => ({ ...item })),
+      context: {
+        ...context(),
+        mode: checked.has(doc.id) ? selectionMode : "explicit",
+      },
+    };
+    event.dataTransfer.setData("application/x-juanzhan-documents", token);
+    event.dataTransfer.effectAllowed = "move";
+  }
+  function resetDrag() {
+    internalDrag.current = null;
+    setDropTarget("");
+    setFileDrag(false);
+    dragDepth.current = 0;
+  }
+  function accepts(event) {
+    return (
+      [...event.dataTransfer.types].includes("Files") ||
+      (internalDrag.current &&
+        [...event.dataTransfer.types].includes(
+          "application/x-juanzhan-documents",
+        ))
+    );
+  }
+  function dragOver(event, target) {
+    if (!accepts(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = [...event.dataTransfer.types].includes(
+      "Files",
+    )
+      ? "copy"
+      : "move";
+    setDropTarget(target);
+  }
+  function drop(event, kind = "files", target = null) {
+    event.preventDefault();
+    event.stopPropagation();
+    const internal = internalDrag.current;
+    const files = [...event.dataTransfer.files];
+    const token = event.dataTransfer.getData(
+      "application/x-juanzhan-documents",
+    );
+    resetDrag();
+    if (files.length) {
+      if (!space) {
+        setNotice("请先建立或选择空间。");
+        return;
+      }
+      if (kind === "trash" || kind === "tag") {
+        setNotice("原文件请拖入列表或逻辑目录。");
+        return;
+      }
+      if (
+        [...event.dataTransfer.items].some(
+          (item) => item.webkitGetAsEntry?.()?.isDirectory,
+        )
+      ) {
+        setNotice("暂不支持拖入整个文件夹，请选择具体文件。");
+        return;
+      }
+      queue.enqueue(files, space, kind === "folder" ? target : folder);
+      return;
+    }
+    if (
+      !internal ||
+      token !== internal.token ||
+      internal.context.spaceId !== space
+    )
+      return;
+    if (operations.pending) {
+      setNotice("请等待当前操作结束后再拖动档案。");
+      return;
+    }
+    if (kind === "files") {
+      setNotice("请将档案拖到逻辑目录、标签或回收站。");
+      return;
+    }
+    operations.prepare(
+      internal.items,
+      internal.context,
+      kind === "trash" ? "trash" : kind === "tag" ? "add_tags" : "move_folder",
+      kind === "trash"
+        ? {}
+        : kind === "tag"
+          ? { tag_ids: [target] }
+          : { folder_id: target },
+    );
+  }
+
   useEffect(() => {
     const controller = new AbortController();
     api
@@ -100,6 +286,10 @@ export function Workspace({ api, logout, authError }) {
     ])
       .then(([result, folders, types, tags, definitions]) => {
         if (controller.signal.aborted) return;
+        if (page > 1 && (page - 1) * 30 >= result.total) {
+          setPage(Math.max(1, Math.ceil(result.total / 30)));
+          return;
+        }
         setDocuments(result.items);
         setTotal(result.total);
         setCatalog({ folders, types, tags, definitions });
@@ -155,9 +345,12 @@ export function Workspace({ api, logout, authError }) {
         setReady(true);
         chooseSpace(result.id);
       } else {
-        await api.request("/folders", {
+        await api.request(dialog === "tag" ? "/tags" : "/folders", {
           method: "POST",
-          body: { space_id: space, parent_id: folder || null, name },
+          body:
+            dialog === "tag"
+              ? { space_id: space, name }
+              : { space_id: space, parent_id: folder || null, name },
         });
         setRefresh((n) => n + 1);
       }
@@ -197,7 +390,38 @@ export function Workspace({ api, logout, authError }) {
     return rows;
   }, [catalog.folders]);
   return (
-    <div className="app">
+    <div
+      className="app"
+      onDragEnter={(e) => {
+        if ([...e.dataTransfer.types].includes("Files")) {
+          e.preventDefault();
+          dragDepth.current++;
+          setFileDrag(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        if ([...e.dataTransfer.types].includes("Files")) {
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (!dragDepth.current) {
+            setFileDrag(false);
+            setDropTarget("");
+          }
+        }
+      }}
+      onDragOver={(e) => dragOver(e, "files")}
+      onDrop={(e) => drop(e)}
+    >
+      {fileDrag ? (
+        <div className="drop-overlay" role="status">
+          松开文件，上传至所选空间 /{" "}
+          {catalog.folders.find(
+            (f) =>
+              f.id ===
+              (dropTarget.startsWith("folder:") ? dropTarget.slice(7) : folder),
+          )?.name || "未分类"}
+          ；内部档案拖动只改变逻辑分类。
+        </div>
+      ) : null}
       <header className="app-header">
         <div className="brand">
           <button
@@ -237,7 +461,15 @@ export function Workspace({ api, logout, authError }) {
         }}
       />
       {authError ? <Notice error>{authError}</Notice> : null}
-      <main className={mobileDetail ? "show-detail" : ""}>
+      {notice ? (
+        <div className="workspace-notice">
+          <Notice>{notice}</Notice>
+          <button aria-label="关闭提示" onClick={() => setNotice("")}>
+            关闭
+          </button>
+        </div>
+      ) : null}
+      <main className={mobileDetail && selected ? "show-detail" : ""}>
         <nav
           className={navOpen ? "sidebar open" : "sidebar"}
           aria-label="档案导航"
@@ -269,6 +501,11 @@ export function Workspace({ api, logout, authError }) {
                   className={!folder && section === key ? "active" : ""}
                   aria-current={!folder && section === key ? "page" : undefined}
                   onClick={() => chooseSection(key)}
+                  onDragOver={
+                    key === "trash" ? (e) => dragOver(e, "trash") : undefined
+                  }
+                  onDrop={key === "trash" ? (e) => drop(e, "trash") : undefined}
+                  data-drop-active={key === "trash" && dropTarget === "trash"}
                 >
                   <Icon size={19} />
                   {name}
@@ -297,6 +534,9 @@ export function Workspace({ api, logout, authError }) {
                 }
                 aria-current={folder === f.id ? "page" : undefined}
                 onClick={() => chooseSection("all", f.id)}
+                onDragOver={(e) => dragOver(e, "folder:" + f.id)}
+                onDrop={(e) => drop(e, "folder", f.id)}
+                data-drop-active={dropTarget === "folder:" + f.id}
               >
                 <Folder size={18} />
                 <span>{f.name}</span>
@@ -306,7 +546,46 @@ export function Workspace({ api, logout, authError }) {
               <small className="folder-empty">尚无逻辑目录</small>
             ) : null}
           </div>
+          <div className="nav-heading">
+            <span>标签</span>
+            <button
+              aria-label="新建标签"
+              disabled={!space}
+              onClick={() => openDialog("tag")}
+            >
+              <Plus size={17} />
+            </button>
+          </div>
+          <div className="tag-tree">
+            {catalog.tags.map((tag) => (
+              <button
+                key={tag.id}
+                aria-label={"标签 " + tag.name}
+                onClick={() => {
+                  if (checked.size)
+                    prepare([...checked.values()], "add_tags", {
+                      tag_ids: [tag.id],
+                    });
+                  else setNotice("先勾选档案，或将档案拖到标签上。");
+                }}
+                onDragOver={(e) => dragOver(e, "tag:" + tag.id)}
+                onDrop={(e) => drop(e, "tag", tag.id)}
+                data-drop-active={dropTarget === "tag:" + tag.id}
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
           <div className="nav-bottom">
+            {operations.receipt || operations.draft || operations.busy ? (
+              <button onClick={() => operations.setOpen(true)}>
+                {operations.draft
+                  ? "查看当前操作"
+                  : operations.pending
+                    ? "查看操作进度"
+                    : "查看操作结果"}
+              </button>
+            ) : null}
             <button onClick={() => openDialog("space")}>
               <Plus size={18} />
               新建空间
@@ -369,6 +648,28 @@ export function Workspace({ api, logout, authError }) {
               error={error}
               retry={() => setRefresh((n) => n + 1)}
               importFiles={importFiles}
+              checked={checked}
+              toggle={toggle}
+              selectPage={(value) => {
+                setSelectionMode("explicit");
+                setChecked(
+                  value
+                    ? new Map(documents.map((doc) => [doc.id, { ...doc }]))
+                    : new Map(),
+                );
+              }}
+              selectResults={selectResults}
+              snapshotBusy={snapshotBusy}
+              clearSelection={() => setChecked(new Map())}
+              operate={() =>
+                prepare(
+                  [...checked.values()],
+                  section === "trash" ? "restore" : "move_folder",
+                )
+              }
+              operationPending={operations.pending}
+              onDragStart={dragStart}
+              onDragEnd={resetDrag}
             />
             <Detail
               key={selected || "empty"}
@@ -380,21 +681,36 @@ export function Workspace({ api, logout, authError }) {
               definitions={catalog.definitions}
               onBack={() => setMobileDetail(false)}
               refreshKey={refresh}
+              operationPending={operations.pending}
+              onOperate={(doc) =>
+                prepare([doc], doc.deleted_at ? "restore" : "set_triage")
+              }
             />
           </>
         )}
       </main>
+      <Operations state={operations} catalog={catalog} />
       <Uploads queue={queue} api={api} inputRef={inputRef} />
       {dialog ? (
         <Dialog
-          title={dialog === "space" ? "新建空间" : "新建目录"}
+          title={
+            dialog === "space"
+              ? "新建空间"
+              : dialog === "tag"
+                ? "新建标签"
+                : "新建目录"
+          }
           onClose={() => {
             if (!saving) setDialog(null);
           }}
         >
           <form onSubmit={create}>
             <label>
-              {dialog === "space" ? "空间名称" : "目录名称"}
+              {dialog === "space"
+                ? "空间名称"
+                : dialog === "tag"
+                  ? "标签名称"
+                  : "目录名称"}
               <input name="name" autoFocus required maxLength="255" />
             </label>
             {formError ? <Notice error>{formError}</Notice> : null}

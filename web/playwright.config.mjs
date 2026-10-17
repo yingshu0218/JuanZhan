@@ -22,6 +22,7 @@ export default defineConfig({
     command: "../.venv/bin/python e2e/server.py",
     url: "http://127.0.0.1:8767/healthz",
     reuseExistingServer: false,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 15000 },
     timeout: 30000,
   },
 });

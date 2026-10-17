@@ -21,37 +21,45 @@ from .storage import ManagedStore, StorageBusy
 logger = logging.getLogger('juanzhan.worker')
 
 
+
+def _send(connection,message):
+    # Shutdown may close the parent's result pipe before the child finishes.
+    # Durable completion/leases, rather than this acknowledgement, own job state.
+    try:connection.send(message)
+    except (OSError,EOFError):pass
+
+
 def _handler(job,data_dir,connection):
     try:
         if job['kind']=='batch' and job['target_type'] in ('document_batch','document_batch_undo'):
             from .batches import execute
             settings = Settings(data_dir=Path(data_dir),converter_token='')
             JobQueue(settings).complete(job['id'],job['lease_token'],execute)
-            connection.send(('committed',))
+            _send(connection, ('committed',))
             return
         if job['kind']!='gc' or job['target_type']!='managed_staging':
-            connection.send(('failure','HANDLER_NOT_AVAILABLE','Job handler is not implemented',False))
+            _send(connection, ('failure','HANDLER_NOT_AVAILABLE','Job handler is not implemented',False))
             return
         payload = json.loads(job['payload_json'])
         if set(payload)-{'minimum_age_seconds'}:
-            connection.send(('failure','INVALID_JOB_PAYLOAD','Unsupported maintenance parameters',False))
+            _send(connection, ('failure','INVALID_JOB_PAYLOAD','Unsupported maintenance parameters',False))
             return
         age = payload.get('minimum_age_seconds',3600)
         if isinstance(age,bool) or not isinstance(age,(int,float)) or not 0<=age<=31536000:
-            connection.send(('failure','INVALID_JOB_PAYLOAD','Invalid recovery age',False))
+            _send(connection, ('failure','INVALID_JOB_PAYLOAD','Invalid recovery age',False))
             return
         store = ManagedStore(Path(data_dir)/'managed')
         removed = store.recover_staging(minimum_age_seconds=age)
         result = {'removed_staging_files':removed}
         encoded(result)
-        connection.send(('success',result))
+        _send(connection, ('success',result))
     except StorageBusy:
-        connection.send(('failure','STORAGE_BUSY','Storage recovery deferred while writers are active',True))
+        _send(connection, ('failure','STORAGE_BUSY','Storage recovery deferred while writers are active',True))
     except OSError:
-        connection.send(('failure','STORAGE_IO_ERROR','Storage maintenance encountered an I/O error',True))
+        _send(connection, ('failure','STORAGE_IO_ERROR','Storage maintenance encountered an I/O error',True))
     except Exception:
         # Never persist raw exception text, stack traces, paths or job inputs.
-        connection.send(('failure','HANDLER_ERROR','Job handler failed',False))
+        _send(connection, ('failure','HANDLER_ERROR','Job handler failed',False))
     finally:
         connection.close()
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.10
+  version: 0.4.11
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2971,13 +2971,14 @@ components:
           - set_triage
           - set_favorite
           - trash
+          - restore
           - reprocess
           - set_metadata
         payload:
           description: >-
             严格匹配operation。move_folder为{folder_id: ID或null}，add_tags/remove_tags为{tag_ids: ID数组}，
             set_type为{document_type_id: ID或null}，set_triage为{triage_status: needs_review或filed}，
-            set_favorite为{is_favorite: 布尔}，trash为{}；不允许额外字段。
+            set_favorite为{is_favorite: 布尔}，trash/restore为{}；不允许额外字段。
           type: object
           additionalProperties: true
       required:

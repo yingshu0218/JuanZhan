@@ -310,6 +310,16 @@ with connect('/data/database/archive.sqlite3') as db:
     ready()
     assert request(metadata_path)[1][0]['source_parse_run_id']=='metadata-smoke-run'
     assert request(document_path)[1]['document_version']==10
+    for operation,version in [('trash',10),('restore',11)]:
+        status,batch_restore,_=request('/api/v1/documents/batch','POST',{'space_id':space_id,
+            'document_ids':[uploaded['document_id']],'selection_mode':'explicit',
+            'expected_versions':{uploaded['document_id']:version},'operation':operation,'payload':{}},csrf)
+        assert status==202
+        assert json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))=={'job_id':batch_restore['job_id'],'status':'completed'}
+        assert request('/api/v1/jobs/'+batch_restore['job_id'])[1]['result']['succeeded']==1
+    assert request(document_path)[1]['deleted_at'] is None
+    assert request(document_path)[1]['document_version']==12
+    assert request(metadata_path)[1][0]['value']=='10.0000'
     assert any(s['id'] == space_id for s in request('/api/v1/spaces')[1])
     assert request('/api/v1/document-types?space_id='+space_id)[1][0]['id'] == catalog_type['id']
     assert request('/api/v1/document-types/'+catalog_type['id'], 'PATCH', {'is_active':False}, csrf)[0] == 200
@@ -320,7 +330,7 @@ with connect('/data/database/archive.sqlite3') as db:
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo, field definitions/template disable/persistence, typed metadata/filing/candidate adoption/persistence')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo, field definitions/template disable/persistence, typed metadata/filing/candidate adoption/persistence, durable batch trash/restore')
 finally:
     if started:
         docker('rm', '-f', name)

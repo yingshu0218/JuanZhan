@@ -81,3 +81,9 @@ web/生产React组件分为会话入口、工作区导航、列表、详情、�
 Vite开发时/api代理到Archive；生产由Archive公开编译静态资源同源承载，Cookie/CSRF只在内存与HttpOnly Cookie中流转。
 HTML提供CSP/no-store/nosniff，静态路径不能访问业务卷；API鉴权在middleware保留，仅GET/HEAD的根HTML/favicon/assets豁免。
 Docker不运行Node前端进程，构建在宿主按锁生成dist；生产仍为两个业务服务和独立worker进程。无数据库迁移。
+
+## T27 整理与拖放
+
+web/src/Operations.jsx集中操作草稿、持久任务提交/轮询、逐项结果与一次撤销；Workspace管理固定选择及OS/内部拖放，Library只承载选择和拖动入口。
+分类上下文随草稿固定，导航不改变已接受任务。关闭弹窗可继续浏览，完成后刷新当前资源且不清除后来产生的选择。
+复用现有REST、worker、SQLite与托管存储，无新服务/依赖/迁移；内部拖放不操作物理文件。

@@ -24,6 +24,8 @@ export function Detail({
   definitions,
   onBack,
   refreshKey,
+  onOperate,
+  operationPending,
 }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -108,6 +110,13 @@ export function Detail({
           <strong>{doc.title}</strong>
         </div>
         <div className="read-tools">
+          <button
+            className="manage-button"
+            disabled={operationPending}
+            onClick={() => onOperate(doc)}
+          >
+            {doc.deleted_at ? "恢复档案" : "整理操作"}
+          </button>
           <button
             aria-label="刷新档案详情"
             onClick={() => setAttempt((n) => n + 1)}
