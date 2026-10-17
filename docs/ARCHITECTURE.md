@@ -137,3 +137,8 @@ converter_client是Archive内部纯HTTP客户端，二进制流上传/有限轮�
 
 conversion_formats提供共用Output预算、SafeZip、确定性文本解码及DOCX/PDF/MD/EPUB适配，conversion_html只提取安全文本结构，conversion_child分发并生成带hash的plain_text/Markdown。解析始终在资源受限子进程中，主进程对结果/身份/所有产物逐个校验，非跟随打开并先检查普通文件，避免产物路径/特殊文件越界。
 新增纯Python依赖与锁定许可见THIRD-PARTY，无系统工具/模型运行依赖；PDF页数/内容流与ZIP成员/膨胀/单成员/比率由服务配置公布，源码和模型保持真实定位。HTML/Markdown不运行浏览器或下载资源，不发布原始活动HTML。T22的正式派生store和事务管线仍未实现。
+
+
+## T21 更新 · 2026-10-17
+
+T21：转换子进程内增加受限PDFium/Pillow栅格解码与按需Tesseract OCR，模型只读固定哈希；PNG缩略图经过重新编码，按源页/帧顺序且有页数/像素/输出预算。服务能力不等于Archive已持久化结果，数据流第3～5步仍待T22/T23/T29。技术选择ADR-036。

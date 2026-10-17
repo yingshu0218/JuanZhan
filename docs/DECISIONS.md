@@ -213,3 +213,12 @@ T19受限子进程继续兜底，新增页数/ZIP条目/累计膨胀读取/成�
 只产生plain_text/从块重新生成的安全Markdown，不返回原始活动HTML、源链接/图片或执行脚本；HTML不计算外部CSS，显式隐藏节点过滤不能冒充浏览器视觉判断。二进制签名优先，MD/HTML语义用已识别文本的MIME提示。TXT只支持确定的UTF-8或BOM UTF-16/32，不猜测单字节编码。
 定位只采真实证据：PDF页码；EPUB spine/href且无伪页数；DOCX/HTML实际标题路径或unknown；MD源行字符跨度，长片段映射不可靠则unknown；TXT解码码点。候选仅原始properties/meta/manifest且置信度null，不侵入人工业务值或归档逻辑。源对象和Archive解析状态均不随独立转换改变，T22才做正式业务提交。
 六格式实物和恶意样本通过真实HTTP/子进程/SQLite/文件及容器验证；扫描PDF空文本警告不等于OCR，下一切片T21。复杂表格/阅读顺序/布局降级须有说明，不将本轮视为最终产品验收。
+
+
+## ADR-036 · 2026-10-17 · T21 本地按需OCR与栅格缩略图
+
+采用哈希锁定tesserocr2.11/Tesseract5.5.1、pypdfium2 5.14、Pillow13 wheels及固定提交tessdata_fast eng/chi_sim；不引入系统apt、外部CLI、远程OCR或LLM。cysignals间接依赖为LGPL-3.0，许可保留及正式发行义务见THIRD-PARTY，不声称全部MIT。模型通过TLS下载、大小/哈希验证，Docker内离线复核并赋非root可读权限；服务运行不联网下载模型。
+
+请求默认OCR关闭；服务可关闭，能力依据真实模型校验。PDF仅识别无文本页，图片按实际帧定位；置信度仅为真实引擎均值，所有OCR需复核。预览采用按源顺序的最多5页PNG缩略图，安全重编码清元数据；截断警告，不替代完整原件预览。设置像素/页数/输出等上限，原生子进程RLIMIT_AS升为512MiB，OMP单线程，其余资源与进程组终止保留。
+
+仍以独立Converter/临时产物交付；T22持久化管线、T23内容候选API和T29/T32用户体验后续完成。此次无业务迁移或用户已确认产品需求变更。

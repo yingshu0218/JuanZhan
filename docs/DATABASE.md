@@ -128,3 +128,8 @@ managed_objects不立即随Doc删除，GC必须核查所有file_revisions引用�
 ## T19 Converter临时数据库（不属于Archive迁移）
 
 Converter在独立私有spool内维护tasks（临时ID/parse_run_id幂等指纹/状态/尝试/时间/安全错误/规范结果）与artifacts（随机ref→任务/sha256/大小/media_type）。SQLite FK/WAL及spool排他进程锁，只用于临时任务传输/TTL，不引用Archive表，不获得业务卷访问。Archive仍5个不可变迁移；ParseRun/DerivedAsset/ContentBlock的正式写入待T22，不因转换完成提前创建或切换current_parse_run_id。
+
+
+## T21 更新 · 2026-10-17
+
+T21无数据库迁移，仍为5条不可变迁移。OCR块/置信度、源页/帧定位和缩略图目前仅在Converter私有spool；ParseRun/ContentBlock/DerivedAsset/候选及当前成功指针的持久化、事务围栏由T22实现。不得直接把Converter SQLite当业务库。

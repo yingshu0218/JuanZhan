@@ -78,15 +78,21 @@ try:
     status,space,_=request(base,'/api/v1/spaces',body=json.dumps({'name':'Converter real fixture'}).encode(),cookie=cookie,csrf=session['csrf_token'])
     assert status==201
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
-    from format_samples import samples
-    for kind,(mime,content) in samples().items():
+    from format_samples import samples, raster_sample
+    ocr_mode='--ocr' in sys.argv
+    fixtures=samples() if not ocr_mode else {
+        'png':('image/png',raster_sample(text='真实中文档案 测试识别')),
+        'jpg':('image/jpeg',raster_sample('JPEG')),
+        'tiff':('image/tiff',raster_sample('TIFF')),
+        'pdf':('application/pdf',raster_sample('PDF'))}
+    for kind,(mime,content) in fixtures.items():
         boundary='fixture-'+uuid.uuid4().hex
         body=(f'--{boundary}\r\nContent-Disposition: form-data; name="space_id"\r\n\r\n{space["id"]}\r\n'
               f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="original.{kind}"\r\nContent-Type: {mime}\r\n\r\n').encode()+content+f'\r\n--{boundary}--\r\n'.encode()
         status,uploaded,_=request(base,'/api/v1/documents/upload',body=body,cookie=cookie,csrf=session['csrf_token'],content_type='multipart/form-data; boundary='+boundary)
         assert status==201
     # Executes the real Archive-side client inside Archive; it has no Converter spool mount.
-    code='''
+    code='OCR_MODE='+repr(ocr_mode)+'\n'+'''
 import hashlib,uuid,time
 from juanzhan.config import Settings
 from juanzhan.converter_client import ConverterClient,ConverterClientError
@@ -101,23 +107,30 @@ for _ in range(60):
   break
  except ConverterClientError:time.sleep(.1)
 else:raise AssertionError('Converter fixture not ready')
-assert capabilities['supported_input_types']==SUPPORTED
+assert capabilities['supported_input_types']==SUPPORTED+['image/png','image/jpeg','image/tiff']
 with connect(settings.database) as db:
  rows=db.execute('SELECT r.id,r.sha256,o.storage_key,r.mime_type,d.id,d.title,d.current_parse_run_id FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id JOIN documents d ON d.id=r.document_id').fetchall()
- assert len(rows)==6 and db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
+ assert len(rows)==(4 if OCR_MODE else 6) and db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
 store=ManagedStore(settings.data_dir/'managed')
 for revision,sha,key,mime,document,title,current in rows:
  with store.open(key) as file:original=file.read()
- options=Options(file_revision_id=revision,parse_run_id=uuid.uuid4().hex,declared_mime=mime,generate_preview=False)
+ options=Options(file_revision_id=revision,parse_run_id=uuid.uuid4().hex,declared_mime=mime,generate_preview=OCR_MODE,ocr_enabled=OCR_MODE,ocr_languages='chi_sim,eng' if OCR_MODE else '')
  with store.open(key) as file:job=client.submit(file,options)
  assert client.wait(job['job_id'])['status']=='completed'
  result=client.result(job['job_id'],file_revision_id=revision,parse_run_id=options.parse_run_id)
  assert result['status']=='completed' and result['source_mime']==mime and result['extraction']['text_available']
- assert all(block['confidence'] is None for block in result['blocks'])
- if mime=='application/pdf':
-  assert result['page_count']==2 and {block['locator']['page'] for block in result['blocks']}=={1,2}
- else:assert result['page_count'] is None and all('page' not in block['locator'] for block in result['blocks'])
- if mime=='application/epub+zip':assert [block['locator']['spine_index'] for block in result['blocks']]==[0,0,1,1]
+ if OCR_MODE:
+  text=''.join(block['text'] for block in result['blocks']).replace(' ','')
+  assert result['extraction']['ocr_used'] and result['page_count']==1
+  assert ('真实中文档案' in text) if mime=='image/png' else ('scannedarchive2026' in text)
+  assert any(block['confidence'] is not None for block in result['blocks'])
+  assert len([a for a in result['artifacts'] if a['kind']=='thumbnail'])==1
+ else:
+  assert all(block['confidence'] is None for block in result['blocks'])
+  if mime=='application/pdf':
+   assert result['page_count']==2 and {block['locator']['page'] for block in result['blocks']}=={1,2}
+  else:assert result['page_count'] is None and all('page' not in block['locator'] for block in result['blocks'])
+  if mime=='application/epub+zip':assert [block['locator']['spine_index'] for block in result['blocks']]==[0,0,1,1]
  for asset in result['artifacts']:
   with client.artifact(asset) as file:assert hashlib.sha256(file.read()).hexdigest()==asset['sha256']
  with store.open(key) as file:assert hashlib.sha256(file.read()).hexdigest()==sha
@@ -126,7 +139,7 @@ for revision,sha,key,mime,document,title,current in rows:
  print('PASS: real '+mime+' upload, normalized blocks, provenance/locators, verified text/Markdown and cleanup')
 with connect(settings.database) as db:
  assert db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0 and not db.execute('PRAGMA foreign_key_check').fetchall()
-print('PASS: all six original objects and Archive business parse state preserved')
+print('PASS: all original objects and Archive business parse state preserved; OCR mode='+str(OCR_MODE))
 '''
     print(docker('exec','-i',archive,'python','-',input=code))
 finally:

@@ -19,12 +19,18 @@ def router(store):
     receiving = asyncio.Semaphore(1)
     config = store.config
     from .conversion_formats import SUPPORTED
+    from .conversion_raster import IMAGES, available_languages
+    languages_available=available_languages(config.ocr_models_dir) if config.enable_ocr else ()
 
     @routes.get('/capabilities')
     def capabilities():
-        return {'schema_versions': ['1.0'], 'supported_input_types': SUPPORTED,
-                'ocr_available': False, 'max_file_bytes': config.max_file_bytes,
-                'max_pages': config.max_pages, 'preview_available': False, 'ocr_languages': [],
+        return {'schema_versions': ['1.0'], 'supported_input_types': SUPPORTED+IMAGES,
+                'ocr_available': bool(languages_available), 'max_file_bytes': config.max_file_bytes,
+                'max_pages': config.max_pages, 'preview_available': True, 'ocr_languages': list(languages_available),
+                'preview_input_types': ['application/pdf']+IMAGES,
+                'preview_kind': 'thumbnail', 'max_preview_pages': config.max_preview_pages,
+                'max_ocr_pages': config.max_ocr_pages, 'max_image_pixels': config.max_image_pixels,
+                'render_dpi': config.render_dpi,
                 'max_output_bytes': config.max_output_bytes, 'max_blocks': config.max_blocks,
                 'max_jobs': config.max_jobs, 'ttl_seconds': config.ttl_seconds,
                 'wall_seconds': config.wall_seconds, 'cpu_seconds': config.cpu_seconds,
@@ -95,8 +101,10 @@ def router(store):
                 if any(language not in ('chi_sim','eng') for language in languages) or len(languages) != len(set(languages)):
                     fail(422, 'INVALID_OCR_LANGUAGE', 'OCR language is not allowed')
                 if info.ocr_enabled:
-                    fail(422, 'OCR_UNAVAILABLE', 'OCR is not available')
-                if languages:
+                    if not languages_available:fail(422, 'OCR_UNAVAILABLE', 'OCR is not available')
+                    if not set(languages or ['eng'])<=set(languages_available):
+                        fail(422, 'OCR_LANGUAGE_UNAVAILABLE', 'Requested OCR model is not available')
+                elif languages:
                     fail(422, 'OCR_DISABLED', 'Languages require OCR')
                 try:
                     return await run_in_threadpool(store.submit, file.file, info)

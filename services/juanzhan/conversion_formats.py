@@ -341,7 +341,7 @@ def epub_format(data,out):
         out.warn('EPUB_REFLOW_NO_PHYSICAL_PAGES')
 
 
-def pdf_format(data,out):
+def pdf_format(data,out, missing_page=None):
     from pypdf import PdfReader
     from pypdf.errors import PdfReadError, DependencyError
     out.parser='pypdf'
@@ -357,6 +357,7 @@ def pdf_format(data,out):
             text=page.extract_text() or ''
             if index:out.add('page_break','',{'kind':'page','page':index+1})
             if text.strip():out.prose(text,{'kind':'page','page':index+1})
+            elif missing_page is not None:missing_page(index)
             else:out.warn('NO_TEXT_LAYER_OCR_REQUIRED')
         if reader.metadata:
             for prop,key in (('/Title','title'),('/Author','author')):

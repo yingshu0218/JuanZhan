@@ -77,3 +77,15 @@ def chinese_pdf():
     stream=DecodedStreamObject();stream.set_data(('BT /F1 12 Tf 72 720 Td <'+'中文资料'.encode('utf-16-be').hex()+'> Tj ET').encode())
     page[NameObject('/Contents')]=writer._add_object(stream)
     result=BytesIO();writer.write(result);return result.getvalue()
+
+
+def raster_sample(format='PNG',text='Real scanned archive 2026',pages=1):
+    from PIL import Image, ImageDraw, ImageFont
+    image=Image.new('RGB',(1600,500),'white')
+    font=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',58)
+    ImageDraw.Draw(image).text((60,160),text,font=font,fill='black')
+    result=BytesIO()
+    if format in ('PDF','TIFF'):
+        image.save(result,format=format,save_all=True,append_images=[image]*(pages-1),resolution=144,**({'compression':'tiff_lzw'} if format=='TIFF' else {}))
+    else:image.save(result,format=format)
+    return result.getvalue()

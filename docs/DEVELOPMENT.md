@@ -10,6 +10,7 @@
 
 ```sh
 UV_CACHE_DIR=/workspace/.uv-cache uv sync --frozen
+python scripts/setup_ocr_models.py
 UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q
 ```
 
@@ -29,6 +30,7 @@ if not p.exists():
     p.touch(mode=0o600)
     p.write_text('CONVERTER_SERVICE_TOKEN=' + secrets.token_urlsafe(32) + '\n')
 PY
+python scripts/setup_ocr_models.py
 python -m pip download --no-cache-dir --require-hashes --only-binary=:all: --no-deps -r requirements.lock -d wheelhouse
 npm ci --prefix web --cache /workspace/.npm
 npm run build --prefix web
@@ -38,7 +40,7 @@ python scripts/smoke.py
 
 Archive 仅绑定宿主机 loopback 8000；Converter 无宿主机端口，仅内部网络可达。
 `/healthz` 是无敏感信息的运维端点，不应经生产公共网关发布。
-Converter 除健康检查外要求服务 Bearer Token；T19实现转换任务协议及最小UTF-8 TXT，OCR/预览/其他格式未实现。
+Converter 除健康检查外要求服务 Bearer Token；T19～T21实现转换协议、六格式基础解析、按需OCR和PDF/图片受限缩略图；业务正文尚未接入。
 Archive 已提供认证、分类、上传、档案/元数据/批量业务API及同源生产Web；其余范围见STATUS，服务令牌只从运行环境注入。
 
 Archive 命名卷保存 database/managed/derived；Converter 临时区使用 tmpfs，不挂载业务卷。
@@ -485,3 +487,12 @@ ConverterClient可通过from_env创建，仅用于服务内部；使用submit→
 六格式网络验收在根目录执行`DOCKER_CONFIG="$PWD/.local/docker" UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen python scripts/smoke_formats.py`；脚本通过已安装pypdf生成真实PDF和实际DOCX/EPUB/文本文件，独立容器/网络/卷真实HTTP上传后，从Archive内部客户端调用Converter，校验结果、两种资产及原件/业务状态。测试资源仅夹具，退出即清理。
 可选CONVERTER_MAX_PAGES、CONVERTER_MAX_ARCHIVE_ENTRIES、CONVERTER_MAX_ARCHIVE_BYTES、CONVERTER_MAX_ARCHIVE_MEMBER_BYTES、CONVERTER_MAX_COMPRESSION_RATIO分别默认200/1024/16MiB/8MiB/200；仍受T19输入/输出/块数/CPU/地址空间/墙钟保护，提高上限必须同时评估tmpfs与容器资源。没有引入系统pdftotext运行依赖；本轮仅用本机已有命令独立核对中文PDF样本。
 Archive自动parse/业务正文仍待T22，因此现有上传界面不会因本轮能力扩充自动展示正文；勿改前端为伪成功。
+
+
+## T21 OCR模型与缩略图
+
+安装/刷新依赖后运行`python scripts/setup_ocr_models.py`：仅下载ocr-models.lock.json所列官方tessdata_fast固定提交的eng/chi_sim文件，验证TLS、大小和SHA256后原子替换；重复运行复用有效文件。`--verify`只校验，不联网。模型目录忽略Git，但镜像构建必须COPY并再次验证；镜像内模型/清单可由非root服务读取，模型和许可证不能漏出发布产物。Docker不再需要apt/system tesseract/poppler；tesserocr和pypdfium2使用哈希锁定的Linux wheels。已验证Linux x86_64，不声称其他平台可用。
+
+请求ocr_enabled默认false；CONVERTER_ENABLE_OCR=false可关闭服务OCR，缺少模型时仍可解析文本层与生成缩略图。可用语言由实际模型校验决定；服务初始化后变更模型需重启。CONVERTER_OCR_MODELS_DIR为管理员可信模型目录，不能来自请求。其他可选上限：CONVERTER_MAX_IMAGE_PIXELS=12000000、MAX_OCR_PAGES=10、MAX_PREVIEW_PAGES=5、RENDER_DPI=120（均加CONVERTER_前缀）；地址空间默认提升到512MiB，CPU10秒/墙钟30秒和128MiB tmpfs不变，OMP线程固定1。复杂/大页可明确失败，不承诺任意PDF都能识别。
+
+`DOCKER_CONFIG="$PWD/.local/docker" UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen python scripts/smoke_formats.py --ocr`使用真实中英文图片、扫描PDF，验证Archive上传→内部客户端→真实OCR/缩略图/资产校验→清理；正常卷/管理员不参与。测试样本绘制需要本机Noto CJK字体`/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`（Debian包fonts-noto-cjk），生产OCR/渲染不需要该字体包。

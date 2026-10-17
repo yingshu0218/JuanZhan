@@ -101,7 +101,7 @@ def test_authentication_unknown_fields_booleans_languages_and_limits(app):
         assert submit(client,path='/etc/passwd').status_code==422
         assert submit(client,file_revision_id='../bad').status_code==422
         assert submit(client,ocr_enabled='yes').status_code==422
-        assert submit(client,ocr_enabled='true').json()['error']['code']=='OCR_UNAVAILABLE'
+        assert submit(client,ocr_enabled='true',ocr_languages='eng,eng').json()['error']['code']=='INVALID_OCR_LANGUAGE'
         assert submit(client,ocr_languages='unknown').json()['error']['code']=='INVALID_OCR_LANGUAGE'
         assert submit(client,ocr_languages='eng').json()['error']['code']=='OCR_DISABLED'
         assert client.post('/v1/jobs',headers=HEADERS,json={'url':'https://example.test'}).status_code==400
@@ -179,7 +179,7 @@ def test_archive_client_real_socket_chunked_upload_verify_and_cleanup(app):
     with real_server(app) as base:
         client=ConverterClient(base,'private-converter-token')
         from juanzhan.conversion_formats import SUPPORTED
-        assert client.capabilities()['supported_input_types']==SUPPORTED
+        assert client.capabilities()['supported_input_types']==SUPPORTED+['image/png','image/jpeg','image/tiff']
         content='真实客户端原件\n'.encode()
         options=Options(file_revision_id='r',parse_run_id='p',generate_preview=False)
         first=client.submit(BytesIO(content),options)

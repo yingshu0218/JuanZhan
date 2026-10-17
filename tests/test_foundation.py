@@ -88,8 +88,8 @@ def test_converter_boundary(settings,tmp_path):
         capabilities = client.get('/v1/capabilities', headers=headers).json()
         assert capabilities['schema_versions'] == ['1.0']
         from juanzhan.conversion_formats import SUPPORTED
-        assert capabilities['supported_input_types'] == SUPPORTED
-        assert capabilities['ocr_available'] is False
+        assert capabilities['supported_input_types'] == SUPPORTED+['image/png','image/jpeg','image/tiff']
+        assert capabilities['ocr_available'] is True
         response = client.post('/v1/jobs', headers=headers, json={'path': '/etc/passwd'})
         assert response.status_code == 400
         assert response.json()['error']['code'] == 'INVALID_MULTIPART'

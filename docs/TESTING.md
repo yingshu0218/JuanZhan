@@ -328,3 +328,18 @@ T14最终镜像回归：`python scripts/smoke_incremental.py`再次通过，容�
 Converter OpenAPI0.4.2/6路径、Archive0.4.16/48路径唯一键/本地引用检查通过，5个已应用SQL迁移未改。前端未变，本轮不重复9项T28浏览器验收；安装/启动仍使用原冻结依赖+wheelhouse+Compose通用步骤，无新凭证需求。
 
 边界：基础文本/语义结构已验收，不承诺DOCX复杂布局/浮动图像/页眉页脚/脚注、PDF多栏/表格顺序、HTML外部CSS可见性或所有旧EPUB兼容；降级警告及严格编码/XML范围见CONVERTER。扫描PDF无文本不等于OCR完成，OCR/受限原件预览仍T21；业务ParseRun/派生物持久化和旧成功正文仍T22。没有测试或宣称10万文件/大文档性能、跨平台发布或最终产品完成。
+
+
+## T21 验收 · 2026-10-17
+
+最终`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：297 passed，81.56秒，比T20新增18项；无跳过/禁用，只有既有Starlette/httpx弃用提示。新增验收使用Pillow+实际Noto CJK字体绘制中英文光栅，PDF为嵌入扫描图片且pypdf确认没有隐藏文本层，未伪造OCR输出。
+
+真实子进程/文件/私有SQLite/鉴权HTTP覆盖PNG/JPEG/TIFF/扫描PDF识别与PNG缩略图，中文“真实中文档案/测试识别”、英文实际文字、真实页/帧定位及引擎均值置信度；混合PDF原文本层保留且只有缺文本第二页OCR。关闭OCR/关闭预览、不需OCR的文本层、空白识别提示、多帧TIFF缩略图截断，像素/OCR页数额度失败，OCR请求墙钟终止和清理、破损图片失败、密码PDF在预览开启时仍有准确错误。服务OCR关闭、缺失/损坏模型、仅eng模型能力、未安装语言拒绝、重复/未知语言及管理布尔配置均有回归。缩略图PNG格式、最大边1024、去EXIF与实际下载SHA256核对，输入hash保持。
+
+最终镜像内真实网络链路`uv run --frozen python scripts/smoke_formats.py --ocr`通过4种扫描实物（中文PNG、英文JPEG/TIFF/PDF）：独立Archive/Converter/网络/随机管理员/数据卷，真实上传归档并从Archive内部客户端提交OCR、取规范结果/缩略图、下载hash校验/清理。每份原件、标题和current_parse_run_id不变，parse_runs仍0且FK正常。无业务正文持久化的事实也被断言，不能据OCR成功声称T22已交付。原六格式smoke_formats.py及协议smoke_converter.py同样通过，退出清理仅本次夹具。
+
+完整安装步骤`.local/cloud-install.sh`已实际执行成功：冻结uv、模型校验、哈希wheelhouse、npm ci/build、离线Docker构建；全新临时目录额外运行模型下载脚本再重复运行，TLS/固定大小/SHA256和复用通过。首次容器测试发现umask077导致模型清单/模型不可由非root读取，已改Docker COPY权限并重建重测。PDFium页/bitmap不支持上下文协议的问题已改为ExitStack显式close并通过回归。正常Compose重建后3服务healthy，smoke.py验证Web/CSP/已编译资源、鉴权、能力和worker心跳。正常.env/管理员/数据卷及5条不可变迁移保留。
+
+Converter OpenAPI0.4.3/6路径、Archive0.4.16/48路径成功解析并通过既有规格校验。真实中文扫描PDF缩略图`/tmp/juanzhan-t21-preview.png`已目视检查，证据在本机不入Git。前端源代码未变，本轮不重复浏览器套件；只验证构建和正常Web冒烟。保存可复用环境install_script/start_skill草稿，含模型准备/校验、冻结安装与重启健康检查；草稿保存不等于发布或新任务恢复验证。
+
+边界：仅Linux x86_64容器实测，不承诺所有扫描质量、倾斜手写、复杂布局/大文件性能/其他平台。OCR置信度为引擎均值而非校准概率，必须人工复核。预览仅前若干页PNG缩略图，不是完整PDF/Office排版或用户预览API；T22/T23/T29/T32及T34发行许可清单待后续完成。

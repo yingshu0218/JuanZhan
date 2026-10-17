@@ -196,3 +196,8 @@ T19/T20独立转换协议与六格式基础解析已完成，接续T21按需OCR/
 依赖通过uv.lock/requirements.lock及wheelhouse哈希离线构建：pypdf6.21.1/markdown-it-py4.2.0/defusedxml0.7.1/mdurl0.1.2，许可与范围见THIRD-PARTY。新增资源默认200页、1024 ZIP成员、16MiB膨胀/累计读取、8MiB单成员/PDF解码流、200压缩比，保留T19 CPU/地址空间/墙钟保护；严格XML拒绝DTD/实体，不读取远程资源。
 Converter OpenAPI0.4.2/6路径，Archive0.4.16/48路径及5次迁移不变。客户端保持规范/身份/hash核验。T20仅在独立服务输出，尚不创建业务ParseRun/DerivedAsset/ContentBlock，不切current_parse_run_id；T22才能接parse handler、重试/围栏与旧成功正文保留。HTML不返回可执行原始HTML，Markdown由安全块生成，T32仍需负责最终预览/下载安全。
 pytest全量279项通过；scripts/smoke_formats.py真实上传六格式→Archive客户端→Converter→结果/资产/清理，SQLite和原件不变，运行需uv run以便生成pypdf真实样本。T19 smoke_converter保留并更新能力/unsupported二进制期望；浏览器9项证据仍属T28，本轮UI未改。
+
+
+## T21 更新 · 2026-10-17
+
+当前接续点T21之后：按ADR-036/CONVERTER实现的真实OCR与受限缩略图已验收；下一项T22接ParseRun/派生store/ContentBlock/候选和事务围栏，失败保留旧成功正文，不能直接信任远端artifact路径或未校验字节。模型安装先python scripts/setup_ocr_models.py；容器非root读取权限和哈希校验必须保留。Archive0.4.16/48路径、5条迁移保持。T23内容API/T29结构化阅读/T32用户下载尚未实现，生产Web没有正文/OCR UI。

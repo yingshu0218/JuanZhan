@@ -27,7 +27,7 @@ headers={'Authorization':'Bearer '+os.environ['CONVERTER_SERVICE_TOKEN']}
 with urllib.request.urlopen(urllib.request.Request(base+'/v1/capabilities', headers=headers), timeout=5) as r:
     cap=json.load(r)
     from juanzhan.conversion_formats import SUPPORTED
-    assert cap['schema_versions']==['1.0'] and cap['supported_input_types']==SUPPORTED and not cap['ocr_available']
+    assert cap['schema_versions']==['1.0'] and cap['supported_input_types']==SUPPORTED+['image/png','image/jpeg','image/tiff'] and cap['ocr_available']
 try:
     urllib.request.urlopen(urllib.request.Request(base+'/v1/jobs', data=b'', headers=headers), timeout=5)
 except urllib.error.HTTPError as e:

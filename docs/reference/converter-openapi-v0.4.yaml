@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Archive Document Converter (independent service)
-  version: 0.4.2
-  description: 不接LLM的独立文档转换服务。T20实现DOCX/PDF文本层/Markdown/HTML/TXT/EPUB基础解析；OCR、原件预览及Archive持久化未接入。只在内部网络使用服务Bearer Token，不访问Archive业务数据库或来源卷。
+  version: 0.4.3
+  description: 不接LLM的独立文档转换服务。T20实现六格式基础解析；T21按需OCR扫描PDF及PNG/JPEG/TIFF，并生成受限PNG缩略图。Archive持久化和用户原件预览尚未接入。只在内部网络使用服务Bearer Token，不访问Archive业务数据库或来源卷。
 servers:
 - url: /
   description: 转换器独立容器的 HTTP 根路径
@@ -73,15 +73,15 @@ paths:
                 ocr_enabled:
                   type: boolean
                   default: false
-                  description: 表单只接受true/false；当前true返回OCR_UNAVAILABLE
+                  description: 表单只接受true/false，默认false；仅无文本PDF页及图片按需OCR；引擎/模型不可用返回OCR_UNAVAILABLE或OCR_LANGUAGE_UNAVAILABLE
                 ocr_languages:
                   type: string
-                  description: 逗号分隔：chi_sim,eng；需在服务端白名单验证
+                  description: 逗号分隔：chi_sim,eng；禁止重复且必须已在capabilities声明，启用OCR不传语言默认eng；未启用时传语言返回OCR_DISABLED
                   maxLength: 255
                 generate_preview:
                   type: boolean
                   default: true
-                  description: 表单只接受true/false；当前true记录PREVIEW_NOT_AVAILABLE警告，不产生预览
+                  description: 表单只接受true/false；PDF/PNG/JPEG/TIFF生成受限PNG缩略图，按原页/帧顺序，超页数有PREVIEW_TRUNCATED；其他格式记录PREVIEW_NOT_AVAILABLE
               additionalProperties: false
       responses:
         '202':
@@ -537,20 +537,20 @@ components:
           type: array
           items:
             type: string
-          description: 基础解析：text/plain,text/markdown,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,application/epub+zip；以实际capabilities为准。
+          description: 基础解析：text/plain,text/markdown,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,application/epub+zip，以及image/png,image/jpeg,image/tiff；以实际capabilities为准。
         ocr_available:
           type: boolean
         max_file_bytes:
           type: integer
         max_pages:
           type: integer
-          description: PDF页数上限，默认200；DOCX/HTML/Markdown/TXT/EPUB不推测物理页数。
+          description: PDF页数上限，默认200；DOCX/HTML/Markdown/TXT/EPUB不推测物理页数；图片page_count对应实际帧数。
         preview_available:
           type: boolean
-          description: 当前false
+          description: 当前支持PDF及PNG/JPEG/TIFF的重新编码PNG缩略图；不代表完整原件预览或DOCX/EPUB排版渲染
         ocr_languages:
           type: array
-          description: 当前为空
+          description: 当前通过模型SHA256校验的可用语言；支持eng/chi_sim。开启OCR不传语言默认eng；禁用服务OCR或缺失模型时相应能力不声明
           items:
             type: string
         max_output_bytes:
@@ -590,6 +590,26 @@ components:
           type: integer
           minimum: 1
           description: ZIP成员压缩比上限，默认200
+        preview_input_types:
+          type: array
+          items:
+            type: string
+          description: 支持缩略图的输入MIME
+        preview_kind:
+          type: string
+          const: thumbnail
+        max_preview_pages:
+          type: integer
+          description: 默认5，每页一张PNG，最大边1024像素
+        max_ocr_pages:
+          type: integer
+          description: 默认10，单任务实际OCR页数上限，超过则任务失败OCR_PAGE_LIMIT
+        max_image_pixels:
+          type: integer
+          description: 默认12000000，单帧解码/单PDF页渲染像素上限
+        render_dpi:
+          type: integer
+          description: PDF栅格化默认120DPI
     Locator:
       type: object
       required:

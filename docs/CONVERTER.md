@@ -31,7 +31,7 @@ OCR 默认关闭，按文档/任务启用并受服务能力和语言白名单约
 每次任务一个受限子进程，无自动重试，默认4MiB输入、16MiB输出、10000块、30秒墙钟、10秒CPU、256MiB RLIMIT_AS；接收60秒、同时接收1份、spool最多2个任务（含已完成待清理）。内存限制是子进程地址空间，不等于整容器RSS保证。JSON和资产均验证后发布，源数据不执行或获取远程内容。
 受控产物是随机32位小写hex引用，经private DB映射到任务文件；下载attachment/nosniff/no-store。客户端下载先写私有暂存，核验长度及sha256后才返回文件流供后续持久化，不接URL/绝对路径。主动DELETE只允许终态，活动返回409；TTL默认自接收起3600秒，终态才清理，容量满429。
 临时SQLite不是Archive业务数据库，也不承诺容器重建持久性。相同parse_run_id绑定输入sha256及全部选项，重复返回原job_id，冲突409；DELETE/TTL/重建tmpfs后映射不保留。同spool服务重启恢复queued，running标CONVERTER_RESTARTED；发布/存储异常恢复后，单runner将遗留running标CONVERTER_PUBLISH_FAILED，不无限阻塞队列。Archive必须保留原件并按有限预算重新协调，不能把临时Job当永久事实。
-当前Archive仅有内部客户端，尚未把parse任务接入本服务或持久化ParseRun/块/资产；这些属于T22。六格式转换T20、OCR T21、内容/候选API T23及界面T29仍待开发。
+当前Archive仅有内部客户端，尚未把parse任务接入本服务或持久化ParseRun/块/资产；这些属于T22。六格式T20及按需OCR/缩略图T21已交付；业务管线T22、内容/候选API T23及界面T29仍待开发。
 
 ## T20 当前实现 · 协议0.4.2
 
@@ -43,3 +43,16 @@ PDF通过pypdf提取文本层、页码和实际Title/Author；不调用JavaScrip
 六格式均输出plain_text和由块重新生成的Markdown，完整表格结构以JSON为准，Markdown布局可能降级；Markdown中的HTML/特殊语法转义，不保留源文件主动资源。元数据仅来自实际属性/meta/manifest，均候选/confidence=null，不写人工业务值，不猜正文作者/日期/语言。
 默认ZIP成员1024、膨胀总量及累计读取16MiB、单成员8MiB、压缩比200，拒绝重复/加密/符号链接/非规范路径或非stored/deflate成员；保留4MiB输入、16MiB产物总量/JSON、10000块及T19子进程限制。PDF解码可能先触发子进程内存/时限保护，不能承诺任意复杂4MiB文件都可转换。
 OCR、原件预览及业务正文入库未实现，仍按T21/T22接续。结果completed只表明当前基础转换完成，不等于Archive已切换成功正文。
+
+
+## T21 当前实现 · 协议0.4.3
+
+在六格式基础上增加image/png、image/jpeg、image/tiff。ocr_enabled默认false；开启时不传语言默认eng，允许显式eng/chi_sim或逗号组合，禁止重复/任意模型路径。capabilities仅声明完整性校验通过的模型；服务CONVERTER_ENABLE_OCR=false或缺失模型时不声明OCR，提交开启请求明确422，不静默假装识别。关闭OCR仍可完成图片归档后的独立转换：text_available=false、IMAGE_OCR_DISABLED，按选项生成缩略图。
+
+扫描PDF仅对extract_text为空的真实页运行OCR，混合PDF保留文本层，读取顺序/表格仍未保证。OCR块定位page为源PDF页或图片实际帧（非伪造物理分页）；置信度是Tesseract MeanTextConf/100，并非校准概率，原文本层保持null。ocr_used仅在实际运行时true；空识别有OCR_NO_TEXT_DETECTED，所有OCR结果有OCR_TEXT_REQUIRES_REVIEW，均值低于0.7有OCR_LOW_CONFIDENCE；不会据识别文本自动确认标题/作者/日期等业务字段。
+
+generate_preview=true仅对PDF/上述图片生成重新编码PNG thumbnail产物（非preview_pdf），按源页/帧顺序，单张最大边1024，不带原EXIF或活动PDF内容。默认前5页，更多页有PREVIEW_TRUNCATED；PREVIEW_THUMBNAILS_IN_SOURCE_ORDER说明产物与源顺序对应。关闭预览不生成图像产物。DOCX/EPUB/HTML等仍PREVIEW_NOT_AVAILABLE，不提供排版保真承诺。
+
+OCR默认最多10实际识别页，超出OCR_PAGE_LIMIT；输入/渲染单页超过1200万像素报IMAGE_PIXEL_LIMIT；PDF栅格120DPI；输出累计仍16MiB，JSON/文件/页数/CPU/墙钟限制与进程组终止、TTL、资产校验协议保持。原生库地址空间预算512MiB，OMP单线程；资源失败不抹除Archive原件。模型固定提交、校验与原生依赖许可见THIRD-PARTY/DEVELOPMENT。
+
+本轮只交付Converter和内部客户端真实验收，Archive解析handler/ParseRun/派生资产入库及内容API待T22/T23；Web和用户原件预览待T29/T32。

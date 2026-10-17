@@ -10,6 +10,9 @@ dependencies = [
     "pypdf>=6,<7",
     "markdown-it-py>=4,<5",
     "defusedxml>=0.7.1,<0.8",
+    "tesserocr==2.11.0",
+    "pypdfium2==5.14.0",
+    "pillow==13.0.0",
 ]
 
 [dependency-groups]

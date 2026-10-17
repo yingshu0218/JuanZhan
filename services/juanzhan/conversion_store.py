@@ -35,7 +35,7 @@ class ConverterConfig:
     ttl_seconds: float = 3600.0
     wall_seconds: float = 30.0
     cpu_seconds: int = 10
-    memory_bytes: int = 256 * 1024 * 1024
+    memory_bytes: int = 512 * 1024 * 1024
     max_blocks: int = 10000
     receive_seconds: float = 60.0
     max_pages: int = 200
@@ -43,6 +43,12 @@ class ConverterConfig:
     max_archive_bytes: int = 16 * 1024 * 1024
     max_archive_member_bytes: int = 8 * 1024 * 1024
     max_compression_ratio: int = 200
+    enable_ocr: bool = True
+    ocr_models_dir: str = str(Path(__file__).resolve().parents[2]/'ocr-models')
+    max_image_pixels: int = 12_000_000
+    max_ocr_pages: int = 10
+    max_preview_pages: int = 5
+    render_dpi: int = 120
 
     def __post_init__(self):
         if not (1 <= self.max_file_bytes <= 64*1024*1024 and
@@ -52,7 +58,10 @@ class ConverterConfig:
                 1 <= self.max_blocks <= 10000 and 0 < self.receive_seconds <= 300 and
                 1 <= self.max_pages <= 1000 and 1 <= self.max_archive_entries <= 10000 and
                 1024 <= self.max_archive_member_bytes <= self.max_archive_bytes <= 64*1024*1024 and
-                1 <= self.max_compression_ratio <= 1000):
+                1 <= self.max_compression_ratio <= 1000 and
+                1 <= self.max_image_pixels <= 24_000_000 and
+                1 <= self.max_ocr_pages <= 1000 and
+                1 <= self.max_preview_pages <= 20 and 72 <= self.render_dpi <= 200):
             raise ValueError('Invalid converter resource limits')
 
     @classmethod
@@ -63,7 +72,11 @@ class ConverterConfig:
             raw = os.getenv('CONVERTER_' + name.upper())
             if raw is not None:
                 original = getattr(defaults, name)
-                values[name] = Path(raw) if name == 'root' else type(original)(raw)
+                if isinstance(original, bool):
+                    if raw.lower() not in ('true','false'):raise ValueError('Invalid boolean setting')
+                    values[name] = raw.lower() == 'true'
+                else:
+                    values[name] = Path(raw) if name == 'root' else type(original)(raw)
         return cls(**values)
 
 
@@ -258,6 +271,8 @@ class ConverterStore:
         result = None
         try:
             environment = {key:value for key,value in os.environ.items() if key in ('PATH','LANG')}
+            environment['OMP_THREAD_LIMIT']='1'
+            environment['OMP_NUM_THREADS']='1'
             environment['PYTHONPATH'] = str(Path(__file__).resolve().parents[1])
             process = subprocess.Popen([sys.executable, '-m', 'juanzhan.conversion_child', str(directory)],
                                        env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

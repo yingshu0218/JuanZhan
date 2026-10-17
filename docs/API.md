@@ -3,7 +3,7 @@
 ## 权威文件
 
 - 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T15 扩展版本 0.4.16），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
-- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T20版本0.4.2），6 个 path 模板，独立服务根路径。
+- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T21版本0.4.3），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
 
@@ -249,3 +249,6 @@ Converter OpenAPI0.4.1六路径已实现，任务提交202；身份只接受Arch
 
 Converter0.4.2保持六路径/ParseResult1.0，capabilities公布六种MIME和新增页数/ZIP资源限额；declared_mime仅补充已识别文本的MD/HTML语义提示，二进制签名优先。结果含规范块、实际属性候选、plain_text/安全Markdown，所有资产继续强制ref/大小/hash验证。
 扫描PDF可协议完成且text_available=false并警告OCR_REQUIRED，加密文件失败；EPUB无物理页码。输出上限/归一化/未知定位和格式保真范围见CONVERTER。无Archive路由或SQL变更，业务正文/候选持久化仍待T22/T23。
+
+
+T21新增Converter能力：PDF/PNG/JPEG/TIFF按需OCR与受限PNG缩略图；capabilities包含preview_input_types、preview_kind、max_preview_pages、max_ocr_pages、max_image_pixels、render_dpi及实际可用模型语言。请求OCR默认关闭，开启未传语言默认eng；模型缺失/服务关闭422，未知/重复语言422。普通文本格式即使开启也不会虚标ocr_used。Archive公开API没有新增预览、OCR控制或内容读取实现，继续按T22/T23/T29接入。

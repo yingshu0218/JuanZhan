@@ -100,7 +100,7 @@ for _ in range(60):
     except ConverterClientError:time.sleep(.1)
 else:raise AssertionError('Converter unavailable')
 from juanzhan.conversion_formats import SUPPORTED
-assert caps['supported_input_types']==SUPPORTED and not caps['ocr_available']
+assert caps['supported_input_types']==SUPPORTED+['image/png','image/jpeg','image/tiff'] and caps['ocr_available']
 with connect(settings.database) as db:
     row=db.execute('SELECT r.id,r.sha256,o.storage_key,d.id,d.title,d.current_parse_run_id FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id JOIN documents d ON d.id=r.document_id').fetchone()
     assert db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
