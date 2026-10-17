@@ -182,7 +182,7 @@ def test_worker_real_maintenance_and_unsupported_handler(queue):
     Worker(settings).run_once()
     result = jobs.get(unsupported['id'])
     assert result['status']=='failed' and result['attempts']==1
-    assert result['error']['code']=='HANDLER_NOT_AVAILABLE'
+    assert result['error']['code']=='INVALID_JOB_PAYLOAD'
 
 
 def slow_handler(job,data_dir,connection):

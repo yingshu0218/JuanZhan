@@ -93,7 +93,10 @@ class JobQueue:
                    'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                    (id,spec.kind,spec.target_type,spec.target_id,'queued',payload,spec.max_attempts,
                     stamp(now),stamp(now),spec.idempotency_key,fingerprint,now,spec.timeout_seconds,int(spec.auto_retry)))
-        return public(row(db,id))
+        job=row(db,id)
+        from .parsing import requested
+        requested(db,job)
+        return public(job)
 
     def get(self,id):
         with connect(self.settings.database) as db:
@@ -106,6 +109,8 @@ class JobQueue:
                    'lease_owner=NULL,lease_expires_at=NULL,updated_at=? WHERE id=?',
                    ('queued' if again else 'failed',encoded({'code':code,'message':message,'retryable':retryable}),
                     int(retryable),now+delay,stamp(now),job['id']))
+        from .parsing import failed as parse_failed
+        parse_failed(db,job,code)
         from .exclusions import failed
         failed(db,job,not again)
         from .source_scans import job_state

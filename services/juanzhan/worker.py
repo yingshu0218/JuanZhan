@@ -29,8 +29,22 @@ def _send(connection,message):
     except (OSError,EOFError):pass
 
 
-def _handler(job,data_dir,connection,source_mounts=()):
+def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
     try:
+        if job['kind'] in ('parse','ocr') and job['target_type']=='document':
+            from .parsing import execute,ParseFailure
+            settings=Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts)
+            try:
+                execute(settings,job)
+                _send(connection,('committed',))
+            except ParseFailure as exc:
+                _send(connection,('failure',exc.code,'Parse attempt could not complete safely',exc.retryable))
+            return
+        if job['kind']=='gc' and job['target_type']=='derived_objects':
+            from .derived import run_gc
+            run_gc(Settings(data_dir=Path(data_dir),converter_token=''),job)
+            _send(connection,('committed',))
+            return
         if job['target_type'] in ('source_exclude','document_purge','managed_objects') and job['kind'] in ('batch','purge','gc'):
             from .maintenance import exclude,purge,run_gc
             from fastapi import HTTPException
@@ -135,7 +149,7 @@ class Worker:
         receive,send = context.Pipe(duplex=False)
         arguments = (job,str(self.settings.data_dir),send)
         if self.handler is _handler:
-            arguments += (self.settings.source_mounts,)
+            arguments += (self.settings.source_mounts,self.settings.converter_token)
         process = context.Process(target=self.handler,args=arguments,daemon=True)
         started = time.monotonic()
         next_heartbeat = started

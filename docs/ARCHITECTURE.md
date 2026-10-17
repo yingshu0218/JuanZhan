@@ -142,3 +142,12 @@ conversion_formats提供共用Output预算、SafeZip、确定性文本解码及D
 ## T21 更新 · 2026-10-17
 
 T21：转换子进程内增加受限PDFium/Pillow栅格解码与按需Tesseract OCR，模型只读固定哈希；PNG缩略图经过重新编码，按源页/帧顺序且有页数/像素/输出预算。服务能力不等于Archive已持久化结果，数据流第3～5步仍待T22/T23/T29。技术选择ADR-036。
+
+
+## T22 持久解析事务
+
+parsing.begin在租约事务中创建独立ParseRun与attempt映射，parse_requests顺序由入队事务确定，不能用完成时间决定胜者。托管原件通过安全store核验；外部原件只从管理员别名/当前条目路径用O_NOFOLLOW只读打开，复制到私有临时文件并复核大小/hash/读取前后身份，绝不因同大小/mtime就接受不同内容。转换器HTTP和产物下载在DB写事务之外，远端规范身份/字节预算/hash继续由ConverterClient验证。
+
+派生store位于data/derived，复用ManagedStore的no-follow、普通文件、限额、fsync、原子无覆盖和内容地址key；锁独立于原件store。先落字节，再在同一JobQueue.complete事务中插入块/候选/资产顺序并切current_parse_run_id，人工业务字段不变。共享store锁跨落盘到注册，GC独占store后再取DB写锁。中断允许留孤儿，绝不回滚时删除可能被并发引用的字节。parse_asset_order保留相同图像帧的逻辑顺序，derived_assets复用物理对象。
+
+失败/租约过期/父worker超时钩子关闭当前尝试，不清空旧正文。过期Revision、回收档案或非最新请求结果discarded，任务与丢弃原因一起提交；状态查询也按请求代次/尝试排序。每次有限重试使用新ParseRun，不跨丢失tmpfs承诺exactly-once。远端任务ID持久留证，完成时主动DELETE；异常/被杀留下的任务依赖Converter墙钟上限+TTL兜底，不谎称跨容器主动取消。

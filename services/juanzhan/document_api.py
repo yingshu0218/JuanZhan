@@ -85,18 +85,23 @@ def project(db,id,store,mounts=None):
     result['origin_kind']=revision['storage_kind'] if revision else 'managed'
     current=db.execute('SELECT revision_id,status FROM parse_runs WHERE id=?',(result['current_parse_run_id'],)).fetchone()
     result['content_stale']=bool(current and current['revision_id']!=result['current_revision_id'])
-    latest=db.execute('SELECT status,COALESCE(completed_at,started_at,created_at) AS state_time FROM parse_runs WHERE document_id=? AND revision_id=? ORDER BY created_at DESC,id DESC LIMIT 1',
+    latest=db.execute('SELECT p.status,COALESCE(p.completed_at,p.started_at,p.created_at) AS state_time,COALESCE(q.sequence,0) AS request_sequence '
+                      'FROM parse_runs p LEFT JOIN parse_attempts a ON a.parse_run_id=p.id LEFT JOIN parse_requests q ON q.sequence=a.request_sequence '
+                      'WHERE p.document_id=? AND p.revision_id=? ORDER BY COALESCE(q.sequence,0) DESC,COALESCE(a.attempt,0) DESC,p.created_at DESC,p.id DESC LIMIT 1',
                       (id,result['current_revision_id'])).fetchone()
     status=latest['status'] if latest else 'not_started'
-    job=db.execute("SELECT status,error_json,updated_at FROM jobs WHERE target_type='document' AND target_id=? AND kind IN ('parse','ocr') "
-                   "AND json_extract(payload_json,'$.revision_id')=? ORDER BY created_at DESC,id DESC LIMIT 1",
+    job=db.execute("SELECT j.status,j.error_json,j.updated_at,COALESCE(q.sequence,0) AS request_sequence FROM jobs j LEFT JOIN parse_requests q ON q.job_id=j.id "
+                   "WHERE j.target_type='document' AND j.target_id=? AND j.kind IN ('parse','ocr') "
+                   "AND json_extract(j.payload_json,'$.revision_id')=? ORDER BY COALESCE(q.sequence,0) DESC,j.created_at DESC,j.id DESC LIMIT 1",
                    (id,result['current_revision_id'])).fetchone()
-    if job and (not latest or job['updated_at']>=latest['state_time']):
+    if job and (not latest or job['request_sequence']>latest['request_sequence'] or
+                (job['request_sequence']==latest['request_sequence'] and job['updated_at']>=latest['state_time'])):
         if job['status'] in ('queued','running'):status=job['status']
         elif job['status']=='failed':
             error=json.loads(job['error_json']) if job['error_json'] else {}
             status='unsupported' if error.get('code')=='HANDLER_NOT_AVAILABLE' else 'failed'
         elif not latest:status='failed' if job['status']=='completed' else 'not_started'
+    if current and status in ('failed','unsupported'):result['content_stale']=True
     result['processing_status']=status
     # documents contains no backend file paths; expose the explicit public field set.
     keys=('id','space_id','folder_id','title','description','document_date','document_type_id','tag_ids',

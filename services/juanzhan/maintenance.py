@@ -88,6 +88,8 @@ def purge(db,job,settings):
         if not db.execute('SELECT 1 FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=? LIMIT 1',(key,)).fetchone():
             db.execute('INSERT INTO managed_gc_candidates VALUES (?,?) ON CONFLICT(storage_key) DO UPDATE SET eligible_after=max(eligible_after,excluded.eligible_after)',
                        (key,now+RETENTION_SECONDS))
+    from .derived import schedule_gc
+    schedule_gc(db,settings,'derived-after-purge:'+job['id'],now+RETENTION_SECONDS)
     gc=gc_job(db,settings,'gc-after-purge:'+job['id'],now+RETENTION_SECONDS) if object_keys else None
     return {'document_id':id,'purged':True,'external_file_deleted':False,'gc_job_id':gc['id'] if gc else None}
 
@@ -201,9 +203,11 @@ def router(settings):
 
 def main():
     parser=argparse.ArgumentParser(description='Queue reference-aware managed object GC (minimum 24h grace)')
-    parser.add_argument('operation',choices=['gc']);parser.parse_args()
+    parser.add_argument('operation',choices=['gc'])
+    parser.add_argument('--store',choices=['managed','derived'],default='managed')
+    args=parser.parse_args()
     settings=Settings.from_env()
-    job=JobQueue(settings).enqueue(JobSpec(kind='gc',target_type='managed_objects',idempotency_key='manual-gc:'+uuid.uuid4().hex))
+    job=JobQueue(settings).enqueue(JobSpec(kind='gc',target_type='derived_objects' if args.store=='derived' else 'managed_objects',idempotency_key='manual-gc:'+uuid.uuid4().hex))
     print(json.dumps({'job_id':job['id'],'status':job['status']}))
 
 

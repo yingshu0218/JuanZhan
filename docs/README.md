@@ -27,4 +27,4 @@
 
 本知识库不引入其他无关业务、账号或个人资料。用户要求直接交付 GitHub，不制作新的 ZIP。
 
-当前开发已推进至T21：六格式解析、按需OCR及有界缩略图已在独立Converter验收；下一步T22业务解析管线。模型安装与许可见[开发环境](DEVELOPMENT.md)及[第三方依赖](THIRD-PARTY.md)。
+当前开发已推进至T22：六格式/OCR/缩略图已接入Archive持久解析管线；下一步T23正文、历史和候选公开API。模型安装与许可见[开发环境](DEVELOPMENT.md)及[第三方依赖](THIRD-PARTY.md)。

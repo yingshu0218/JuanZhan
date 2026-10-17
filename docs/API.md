@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T15 扩展版本 0.4.16），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T22 扩展版本 0.4.17），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T21版本0.4.3），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -252,3 +252,10 @@ Converter0.4.2保持六路径/ParseResult1.0，capabilities公布六种MIME和�
 
 
 T21新增Converter能力：PDF/PNG/JPEG/TIFF按需OCR与受限PNG缩略图；capabilities包含preview_input_types、preview_kind、max_preview_pages、max_ocr_pages、max_image_pixels、render_dpi及实际可用模型语言。请求OCR默认关闭，开启未传语言默认eng；模型缺失/服务关闭422，未知/重复语言422。普通文本格式即使开启也不会虚标ocr_used。Archive公开API没有新增预览、OCR控制或内容读取实现，继续按T22/T23/T29接入。
+
+
+## T22 当前行为
+
+Archive OpenAPI0.4.17保持48个路径模板；只明确已有Document.content_stale及真实处理状态，未声称所有基线路由都已实现。上传返回的job_id现在可经真实worker解析入库，Job.completed仍需看result.status（completed/unsupported/discarded）。不支持输入也保留原件；discarded表示已失效请求，不能用来宣称当前正文已更新。失败/有限重试通过既有Jobs协议返回，不提供客户端任意转换器URL或路径。
+
+Document状态按持久请求顺序及尝试序号计算，旧任务较晚完成不覆盖较新状态；同Revision最近解析失败/不支持且有旧成功缓存时content_stale=true，跨Revision缓存也为true。原件availability独立于解析状态。公开content/parse-runs/reparse/候选查询留T23，T22不开放派生文件下载路径。

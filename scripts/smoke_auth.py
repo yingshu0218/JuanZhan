@@ -137,7 +137,7 @@ try:
         outcome=json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
         assert outcome['job_id'] in expected_jobs and outcome['status']=='failed'
         expected_jobs.remove(outcome['job_id'])
-        assert request('/api/v1/jobs/'+outcome['job_id'])[1]['error']['code']=='HANDLER_NOT_AVAILABLE'
+        assert request('/api/v1/jobs/'+outcome['job_id'])[1]['error']['code']=='CONVERTER_NOT_CONFIGURED'
     document_path='/api/v1/documents/'+uploaded['document_id']
     assert request(document_path)[1]['document_version']==1
     assert request(document_path,'PATCH',{'expected_document_version':1,'is_favorite':True},csrf)[1]['document_version']==2

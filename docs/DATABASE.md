@@ -133,3 +133,14 @@ Converter在独立私有spool内维护tasks（临时ID/parse_run_id幂等指纹/
 ## T21 更新 · 2026-10-17
 
 T21无数据库迁移，仍为5条不可变迁移。OCR块/置信度、源页/帧定位和缩略图目前仅在Converter私有spool；ParseRun/ContentBlock/DerivedAsset/候选及当前成功指针的持久化、事务围栏由T22实现。不得直接把Converter SQLite当业务库。
+
+
+## T22 迁移0006/0007
+
+parse_requests(sequence INTEGER PRIMARY KEY AUTOINCREMENT,job_id唯一,document_id,revision_id)以入队事务确立请求顺序，复合FK约束档案与Revision；升级按原created_at/id回填可关联的parse/ocr任务，不改状态或重放旧失败。parse_attempts(parse_run_id主键,request_sequence,attempt,remote_job_id)的请求+attempt唯一，每次重试留下独立历史；失败钩子只关闭当前尝试。
+
+parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)保留原产物顺序和同字节多帧关系；derived_assets已有唯一约束保持不动，多个逻辑帧可关联同一资产。derived_gc_candidates(storage_key,eligible_after)仅是无引用候选，GC每次复查所有derived_assets引用，至少发现后24小时宽限；purge级联删除引用并排延迟GC，不物理删除NAS。
+
+完成事务同时写parse_runs、content_blocks（结构/真实locator/置信度）、extracted_metadata（值/来源/locator）、derived_assets/顺序及成功指针，Job也同时completed；跨表失败全部回滚。规范完整JSON作为派生产物保存，包含OCR语言与所有降级警告。失败或unsupported不插成功正文/不切指针，旧成功全部历史保留。没有新增FTS写入，搜索仍T24。旧5条迁移不改。
+
+0007对parse_attempts与parse_asset_order增加INSERT/UPDATE作用域约束，拒绝跨Document/Revision关联尝试或跨ParseRun关联资产；已应用0006保持不变。当前共7条迁移，升级与新装执行同一序列。

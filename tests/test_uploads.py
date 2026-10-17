@@ -57,8 +57,8 @@ def test_real_upload_atomic_registration_and_truthful_parse_job(uploads):
     assert job['status']=='queued'
     Worker(settings).run_once()
     job=client.get('/api/v1/jobs/'+result['job_id']).json()
-    assert job['status']=='failed' and job['error']['code']=='HANDLER_NOT_AVAILABLE'
-    assert counts(settings)==[1,1,1,1,1]
+    assert job['status']=='queued' and job['error']['code']=='CONVERTER_UNAVAILABLE'
+    assert counts(settings)==[1,1,1,1,2]
 
 
 def test_duplicate_reject_and_explicit_keep_separate(uploads):

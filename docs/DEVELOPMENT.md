@@ -496,3 +496,12 @@ Archive自动parse/业务正文仍待T22，因此现有上传界面不会因本�
 请求ocr_enabled默认false；CONVERTER_ENABLE_OCR=false可关闭服务OCR，缺少模型时仍可解析文本层与生成缩略图。可用语言由实际模型校验决定；服务初始化后变更模型需重启。CONVERTER_OCR_MODELS_DIR为管理员可信模型目录，不能来自请求。其他可选上限：CONVERTER_MAX_IMAGE_PIXELS=12000000、MAX_OCR_PAGES=10、MAX_PREVIEW_PAGES=5、RENDER_DPI=120（均加CONVERTER_前缀）；地址空间默认提升到512MiB，CPU10秒/墙钟30秒和128MiB tmpfs不变，OMP线程固定1。复杂/大页可明确失败，不承诺任意PDF都能识别。
 
 `DOCKER_CONFIG="$PWD/.local/docker" UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen python scripts/smoke_formats.py --ocr`使用真实中英文图片、扫描PDF，验证Archive上传→内部客户端→真实OCR/缩略图/资产校验→清理；正常卷/管理员不参与。测试样本绘制需要本机Noto CJK字体`/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`（Debian包fonts-noto-cjk），生产OCR/渲染不需要该字体包。
+
+
+## T22 更新 · 2026-10-17
+
+T22无新依赖/模型/凭证，既有冻结安装、哈希wheelhouse和Compose重建/启动命令不变，启动自动执行新增0006/0007迁移。worker复用现有CONVERTER_URL/CONVERTER_SERVICE_TOKEN；未配置时CONVERTER_NOT_CONFIGURED，不可达时有限重试CONVERTER_UNAVAILABLE。原件上传64MiB上限不等于默认Converter4MiB解析上限，大文件仍可归档并如实报解析额度失败。
+
+运行uv run --frozen python scripts/smoke_formats.py --persist验证六格式自动入库；加--ocr验证真实OCR持久化，加--external验证实际内核只读挂载、来源API首扫、真实worker转换入库及源内容变更拒绝。均带DOCKER_CONFIG=$PWD/.local/docker，使用独立卷/随机凭证，退出只清理夹具。原smoke_formats无--persist模式仍用于独立Converter，不自动启动worker。
+
+派生GC自动于解析尝试/永久清理时排延迟任务，可通过python -m juanzhan.maintenance gc --store derived手动排队；从首次发现无引用起至少24小时宽限，全部历史/回收引用均保护。保留data/derived完整字节及DB的一致备份，备份恢复演练仍T32。既有失败HANDLER_NOT_AVAILABLE任务升级不会自动重排，公开重解析入口随T23完成。

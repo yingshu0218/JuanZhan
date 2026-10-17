@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.16
+  version: 0.4.17
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2592,7 +2592,9 @@ components:
           - failed
           - unsupported
           - not_started
-        content_stale: *id002
+        content_stale:
+          type: boolean
+          description: 有成功缓存且来自旧Revision，或当前Revision最近解析失败/不支持时为true；不清空旧成功内容。状态按解析请求顺序与尝试数确定，不由较晚返回的旧任务覆盖。
         imported_at: *id006
         deleted_at:
           type:

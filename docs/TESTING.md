@@ -343,3 +343,22 @@ Converter OpenAPI0.4.2/6路径、Archive0.4.16/48路径唯一键/本地引用检
 Converter OpenAPI0.4.3/6路径、Archive0.4.16/48路径成功解析并通过既有规格校验。真实中文扫描PDF缩略图`/tmp/juanzhan-t21-preview.png`已目视检查，证据在本机不入Git。前端源代码未变，本轮不重复浏览器套件；只验证构建和正常Web冒烟。保存可复用环境install_script/start_skill草稿，含模型准备/校验、冻结安装与重启健康检查；草稿保存不等于发布或新任务恢复验证。
 
 边界：仅Linux x86_64容器实测，不承诺所有扫描质量、倾斜手写、复杂布局/大文件性能/其他平台。OCR置信度为引擎均值而非校准概率，必须人工复核。预览仅前若干页PNG缩略图，不是完整PDF/Office排版或用户预览API；T22/T23/T29/T32及T34发行许可清单待后续完成。
+
+
+## T22 验收 · 2026-10-17
+
+最终全量`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：317 passed，126.27秒（较T21新增20项），无跳过/禁用；只有既有Starlette/httpx弃用提示。覆盖每次attempt独立排延迟GC，以及数据库拒绝跨档案/跨解析关联。没有仅靠Mock宣称转换成功。
+
+新增真实Archive HTTP上传→持久Jobs/worker子进程→uvicorn TCP Converter→规范结果/原件和产物校验→SQLite正文/候选/资产/成功指针，六种实物文件均通过。规范完整JSON、文本、Markdown和缩略图通过安全store实际读取/hash核验，业务标题/标签/整理状态/document_version不因解析改变。实际OCR多帧TIFF保留真实1/2帧定位，两帧相同PNG共享字节但资产顺序仍完整。
+
+失败/不支持保留旧成功正文，跨Revision与同Revision最近失败均显示stale；未知类型归档不丢原件，unsupported不晋升。租约过期关闭旧尝试、有限重试新建独立run；旧token不能提交。新请求/新Revision/回收三个围栏均用真实转换结果验证；额外验证旧请求较晚开始/返回也不覆盖新成功的状态投影。故障注入在真实发布事务写完后、提交前抛出IO错误，块/候选/资产/指针全部回滚，已落文件作为孤儿保留；重试真实转换可复用字节并成功。损坏托管原件明确ORIGINAL_INTEGRITY且无部分正文。派生GC先发现候选，宽限24h后删真正孤儿，同时所有历史成功资产仍可实际打开。升级从旧5迁移回填请求映射，queued/failed原状态不变、无擅自ParseRun/重放，旧checksum保留且重复迁移成功。
+
+容器`scripts/smoke_formats.py --persist`（需uv run --frozen python）通过6格式自动入库；`--persist --ocr`通过真实中英文PNG/JPEG/TIFF/扫描PDF入库；`--persist --external`通过真实来源HTTP配置/首扫→内核只读bind→worker解析入库。外部源同大小字节被宿主夹具故意改变后，SOURCE_REVISION_CHANGED明确拒绝，旧成功指针和缓存保留且stale=true，夹具恢复原字节后hash一致；Archive未写外部源。Converter从未获得来源/业务卷。每组独立容器/网络/卷/随机管理员，退出清理仅本次夹具。
+
+独立Archive `smoke_auth.py`真实认证/CSRF/token/重启/上传/文件管理/批量/七类型字段/采纳回归通过；该夹具故意无Converter配置，断言由旧HANDLER_NOT_AVAILABLE更新为真实CONVERTER_NOT_CONFIGURED。正常Compose重建后自动执行第6/7迁移，3服务healthy，`smoke.py`验证Web/CSP/已编译资产、鉴权、转换能力和worker心跳。前5迁移、正常.env/管理员/数据卷保留。前端源码未改，不重复浏览器交互套件。
+
+Archive OpenAPI0.4.17/48路径，Converter0.4.3/6路径；现有规格解析/引用与迁移检查通过。可复用环境只更新start_skill草稿，加入自动持久化与上述验收，install_script沿用；保存草稿不等于发布或新任务恢复验证。没有测试/声称跨平台、10万文件性能、生产发布或备份恢复完成。
+
+边界：正文/历史/候选公开GET、重解析入口仍T23，中文FTS和搜索T24/T25，结构化阅读T29、用户原件下载/预览及备份T32仍未完成。远端主动DELETE尽力执行，崩溃/请求仍活动时靠Converter执行期限+TTL兜底；历史失败不会因升级自动重排。
+
+补充数据库硬约束验收：不同档案的ParseRun/attempt或资产顺序关联在INSERT/UPDATE时被SQLite拒绝，不只依赖调用方判断；0007为独立增量迁移，0006应用后未改checksum。

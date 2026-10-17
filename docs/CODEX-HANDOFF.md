@@ -201,3 +201,8 @@ pytest全量279项通过；scripts/smoke_formats.py真实上传六格式→Archi
 ## T21 更新 · 2026-10-17
 
 当前接续点T21之后：按ADR-036/CONVERTER实现的真实OCR与受限缩略图已验收；下一项T22接ParseRun/派生store/ContentBlock/候选和事务围栏，失败保留旧成功正文，不能直接信任远端artifact路径或未校验字节。模型安装先python scripts/setup_ocr_models.py；容器非root读取权限和哈希校验必须保留。Archive0.4.16/48路径、5条迁移保持。T23内容API/T29结构化阅读/T32用户下载尚未实现，生产Web没有正文/OCR UI。
+
+
+## T22 更新 · 2026-10-17
+
+当前接续点T22之后（优先于历史交接）：parsing.py/derived.py已接worker，0006迁移新增请求顺序/尝试/资产顺序/派生GC，0007补齐关联作用域约束，当前共7条迁移。下一T23公开正文、解析历史与候选读取/显式采纳/重解析入口，先读现行OpenAPI和内容规范，不把已实现入库当公开API已完成。状态与发布都按请求顺序和尝试数围栏；失败/不支持保留旧成功，GC保护全部历史引用。正常Compose启动自动迁移，无新依赖或凭证；原5迁移和.env/管理员/数据卷保留。用smoke_formats.py --persist、--persist --ocr、--persist --external验证；后者实际只读来源API首扫→自动解析，并验证源内容变更拒绝。不得重跑用户旧失败任务或把原件写回。

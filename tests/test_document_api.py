@@ -225,7 +225,7 @@ def test_failed_current_parse_job_keeps_old_success_snapshot(api):
         db.commit()
     assert detail(client,id)['processing_status']=='failed'
     assert detail(client,id)['current_parse_run_id']=='success'
-    assert detail(client,id)['content_stale'] is False
+    assert detail(client,id)['content_stale'] is True
     doc=app.state.documents.get_record(id)
     obj=app.state.storage.put(io.BytesIO(b'revision two'),max_bytes=100)
     updated=app.state.documents.append_managed_revision(id,obj,RevisionChange(expected_document_version=doc['document_version'],original_filename='two.txt',mime_type='text/plain'))

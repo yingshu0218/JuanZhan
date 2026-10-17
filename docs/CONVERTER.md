@@ -56,3 +56,8 @@ generate_preview=true仅对PDF/上述图片生成重新编码PNG thumbnail产物
 OCR默认最多10实际识别页，超出OCR_PAGE_LIMIT；输入/渲染单页超过1200万像素报IMAGE_PIXEL_LIMIT；PDF栅格120DPI；输出累计仍16MiB，JSON/文件/页数/CPU/墙钟限制与进程组终止、TTL、资产校验协议保持。原生库地址空间预算512MiB，OMP单线程；资源失败不抹除Archive原件。模型固定提交、校验与原生依赖许可见THIRD-PARTY/DEVELOPMENT。
 
 本轮只交付Converter和内部客户端真实验收，Archive解析handler/ParseRun/派生资产入库及内容API待T22/T23；Web和用户原件预览待T29/T32。
+
+
+## T22 更新 · 2026-10-17
+
+T22已将Archive parse/ocr handler接入真实HTTP转换器：原件校验、独立尝试、规范结果与派生资产校验、短事务围栏发布及历史保护。规范完整JSON/文本/Markdown/缩略图持久在Archive data/derived，转换器只保留临时副本，始终没有业务库/来源卷权限。远端清理异常由墙钟+TTL兜底。公开读取与界面仍待T23/T29。
