@@ -153,3 +153,13 @@ Linux/POSIX读取逐段使用目录描述符及NOFOLLOW，不先resolve再open�
 严格相对路径保留磁盘Unicode/大小写，不进行会合并不同名称的NFC/casefold或百分号解码；规范化指结构校验，拒绝绝对/盘符/反斜杠/控制字符/空段/dot/dotdot。
 挂载状态只表示瞬时根可读与只读，后续每次读取重查。只读bind不阻止宿主机修改内容，也不构成历史快照；一致性、hash/Revision由后续扫描任务验证。
 T27下一步说明曾把Source/SourceEntry合并到T11；以原路线图为准，这些及预扫描属于T12，本轮不提前宣称实现。
+
+## ADR-029 · 2026-10-17 · T12 预扫描与任务状态一致性
+
+配置与库存访问复用现有sources/source_entries/scan_runs，不新增表或修改已应用迁移。SourceCreate保存初始/后续分类策略，不启动导入，不把扫描间隔配置冒充已运行调度。
+跨空间也禁止重叠来源；内部读取Linux fdinfo/mountinfo，将不同bind别名映射到底层根路径并结合dev/inode比较。现有根离线而无法证明分离时保守409，不暴露真实路径。
+预扫描候选扩展名统计与真实解析能力分离；保留原件、只读元数据、跳过符号链接/特殊/不支持项。遇不可读子树或嵌套可写挂载失败，避免隐藏未遍历内容。
+使用已有scan_preview Job和spawn worker，目标为scan_runs.id；API事务合并同来源活动请求。显式传递白名单配置给默认子handler，保持自定义handler既有三参数契约。
+JobQueue在同一围栏事务同步scan_runs及来源状态，覆盖claim/完成/重试/失败/过期租约/预算耗尽；child仅返回读取结果，parent完成Job与关联记录，无先保存扫描成功再完成Job的间隙。
+预扫描不创建SourceEntry/Document/Revision/Folder，也不更新成功导入时间；来源离线不改条目状态。即时挂载health与最后扫描error分开表达。
+实施保护默认为访问100000项、深度64、120秒、3次尝试；1千真实文件资源基线见TESTING，超限明确失败，未来按负载调整，不承诺10万档案性能。

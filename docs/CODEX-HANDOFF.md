@@ -123,3 +123,15 @@ Unicode/大小写保留磁盘精确名称，不把不同规范形式合并。所
 GET /source-mounts鉴权/no-store，仅alias/status/error_code，状态是即时探测不是成功扫描证明；读取仍重新验证。
 202项Python通过；scripts/smoke_sources.py用隔离真实bind/SQLite/HTTP验证，无用户目录或正常密码改动。OpenAPI0.4.12/48paths，无新迁移/依赖；web未改。
 云环境安装/启动命令不变，不为默认开发环境自动配置用户来源；已有配置草稿未发布状态不变。
+
+## 当前接续点 · T12 后（优先于上文历史交接）
+
+T01～T12、T17/T18、T26/T27完成，下一切片T13首次tree/flat导入、逻辑目录复制、事务入库与首扫幂等。
+source_api.py已支持外部来源POST/GET、详情、entries分页与preview-scan；/scan和exclusions尚未实现。SourceEntry当前仅读取，T13扫描负责写入，严禁preview偷偷创建条目或档案。
+SourceCreate只收别名；same_space校验初始/后续目标目录，重叠检查全局生效。source_paths.identity用私有inode/dev及mountinfo根路径检测不同bind别名，根不可用时不能证明分离，拒绝新注册；绝不将私有身份键返回HTTP。
+source_scans.preview通过T11描述符边界统计已知候选扩展名，不读取解析正文；默认访问100000项、深度64、120秒和最多3次尝试。上限属于实施保护默认，未宣称大规模吞吐验收。
+Job.target_type=source_preview，target_id=scan_runs.id，payload={}。同来源queued/running请求返回原Job；终态后显式POST新建。Worker显式传递settings.source_mounts到spawn子进程，不依赖偶然继承环境。
+JobQueue在claim/failure/complete中同事务同步scan_runs和来源状态，包含租约过期/耗尽/超时；complete仍受租约围栏保护。preview不写last_successful_scan_at或initial_import_completed_at。
+来源即时health与最后扫描状态分开：挂载ready但上一预扫描失败时status可为error。离线读取库存照常，不改available/suspected_missing/missing；后续T14再实现缺失确认。
+entries.relative_prefix为完整目录段，无尾斜杠，%/_字面匹配；按规范路径/ID稳定分页，每页最多100。未知字段与任意根路径均拒绝。
+209项Python及真实容器HTTP/worker/RO挂载/重启验证见TESTING；OpenAPI0.4.13/48paths，无新迁移/依赖/前端改动。云配置安装启动不变，不新增用户挂载或发布既有草稿。

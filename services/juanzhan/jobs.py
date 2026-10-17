@@ -106,6 +106,8 @@ class JobQueue:
                    'lease_owner=NULL,lease_expires_at=NULL,updated_at=? WHERE id=?',
                    ('queued' if again else 'failed',encoded({'code':code,'message':message,'retryable':retryable}),
                     int(retryable),now+delay,stamp(now),job['id']))
+        from .source_scans import job_state
+        job_state(db,job,'queued' if again else 'failed',stamp(now),error=encoded({'code':code,'message':message,'retryable':retryable}))
 
     def claim(self,owner,*,lease_seconds=30):
         if not owner or not 0<lease_seconds<=300:
@@ -115,10 +117,9 @@ class JobQueue:
             expired = db.execute("SELECT id FROM jobs WHERE status='running' AND (lease_expires_at IS NULL OR lease_expires_at<=?)",(now,)).fetchall()
             for (id,) in expired:
                 self._failure(db,row(db,id),'LEASE_EXPIRED','Previous worker lease expired',True,now)
-            # Legacy/external rows with exhausted budgets must never get an extra attempt.
-            db.execute("UPDATE jobs SET status='failed',retryable=0,error_json=?,updated_at=? "
-                       "WHERE status='queued' AND attempts>=max_attempts",
-                       (encoded({'code':'ATTEMPTS_EXHAUSTED','message':'Attempt limit reached','retryable':False}),stamp(now)))
+            # Keep linked preview state consistent even for externally exhausted rows.
+            for (id,) in db.execute("SELECT id FROM jobs WHERE status='queued' AND attempts>=max_attempts").fetchall():
+                self._failure(db,row(db,id),'ATTEMPTS_EXHAUSTED','Attempt limit reached',False,now)
             candidate = db.execute("SELECT id FROM jobs WHERE status='queued' AND available_at<=? AND attempts<max_attempts "
                                    'ORDER BY created_at,id LIMIT 1',(now,)).fetchone()
             if candidate is None:
@@ -127,7 +128,10 @@ class JobQueue:
             db.execute("UPDATE jobs SET status='running',attempts=attempts+1,lease_owner=?,lease_token=?,"
                        'lease_expires_at=?,updated_at=?,progress_done=0,progress_total=NULL WHERE id=?',
                        (owner,token,now+lease_seconds,stamp(now),candidate[0]))
-            return row(db,candidate[0])
+            job = row(db,candidate[0])
+            from .source_scans import job_state
+            job_state(db,job,'running',stamp(now))
+            return job
 
     def _owned(self,db,id,token):
         job = row(db,id)
@@ -169,6 +173,8 @@ class JobQueue:
                        'lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,updated_at=?, '
                        'progress_done=COALESCE(progress_total,progress_done) WHERE id=?',
                        (result_json,stamp(self.clock()),id))
+            from .source_scans import job_state
+            job_state(db,job,'completed',stamp(self.clock()),result=result_json)
             return True
 
     def failure(self,id,token,code,message,*,retryable):

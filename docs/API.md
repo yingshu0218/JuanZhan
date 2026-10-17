@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T11 扩展版本 0.4.12），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T12 扩展版本 0.4.13），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -194,3 +194,15 @@ GET /source-mounts需要已有认证，Cache-Control:no-store；返回{items:[{a
 status为ready/offline/unavailable；错误码为null、SOURCE_OFFLINE、SOURCE_NOT_READ_ONLY、SOURCE_UNREADABLE、SOURCE_UNSAFE_OR_UNAVAILABLE。
 无服务器绝对路径，不接受客户端根路径，不创建来源或扫描。ready仅代表即时根探测，子路径/后续读取仍需验证。
 本轮契约版本0.4.12、48路径；/sources及其扫描/条目接口仍待T12～T15，本轮不宣称已实现。
+
+## T12 来源与预扫描已实现
+
+GET/POST /sources、GET /sources/{id}、GET /sources/{id}/entries、POST /sources/{id}/preview-scan已实现；路径模板数仍48，契约0.4.13。
+创建仅external和管理员root_alias，名称规范化/255字符，初始tree/flat、filed/needs_review及同空间目标目录；scan_interval_minutes可null或0～525600，只存配置，调度尚未实现。
+全局禁止重复别名、相同inode及重叠配置/物理根，409 SOURCE_OVERLAP；现有根不可探测时409 SOURCE_OVERLAP_UNVERIFIED。Linux身份信息只在内部使用。
+Source增加initial_target_folder_id/initial_triage_status与health{mount_status,error_code}；即时挂载offline独立于扫描错误和条目状态，查询不写入条目。
+条目仅读数据库；relative_prefix按完整路径/目录段匹配，%/_为普通字符，不接受绝对/遍历/尾斜杠。page1～1000000、page_size1～100，默认1/30，排序relative_path_norm,id。
+预扫描不接收根路径或导入参数；活动任务合并，返回202{job_id,status}；结果见既有Job.result。统计pdf/docx/md/markdown/html/htm/txt/epub候选扩展名，不证明真实格式/转换能力。
+结果含source_id/estimated_files/estimated_bytes/ignored_files/by_extension/warnings；METADATA_ESTIMATE_NOT_SNAPSHOT表示动态元数据估算，IGNORED_UNSUPPORTED_UNSAFE_OR_INVALID_ENTRIES表示跳过项（符号链接目录按一个项计）。
+默认访问项100000、目录深度64、执行120秒、最多3次尝试，超限SOURCE_PREVIEW_LIMIT失败；不可读/嵌套可写不返回截断成功。scan_runs与Job状态/结果同事务保存，preview不设置成功扫描/导入时间。
+/source…/scan、排除规则/取消索引及来源UI仍待T13～T15/T28，自动扫描调度、忽略规则及同名逻辑目录冲突预检不在本轮实现。

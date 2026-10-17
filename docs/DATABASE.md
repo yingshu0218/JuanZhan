@@ -95,3 +95,10 @@ E2E临时SQLite与随机管理员跟随一次性测试服务清理，不使用�
 
 本轮仅配置挂载白名单与安全访问，无迁移，GET /source-mounts不创建sources/source_entries/documents或扫描记录。
 Source/SourceEntry访问及扫描预览留T12，复用已存在的DDL，不把挂载ready误写为last_successful_scan_at。
+
+## T12 复用来源与扫描表
+
+无新迁移。创建来源写sources（root_ref只保存管理员别名）；preview事务写scan_runs(mode=preview,status=queued)及jobs(kind=scan_preview,target_type=source_preview,target_id=scan_runs.id)。
+队列事务同时更新scan_runs的status/started_at/finished_at/result_json/error_json及sources状态；重试清除结束标记/旧结果，保留首次started_at，最终完成与Job结果原子落库。
+preview不写source_entries/documents/file_revisions/folders，不更新initial_import_completed_at或last_successful_scan_at；离线仅读取库存，不改条目状态。
+条目查询按source_id及完整路径段筛选，relative_path_norm,id稳定排序，Unicode精确保留。

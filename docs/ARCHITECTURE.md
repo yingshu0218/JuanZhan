@@ -93,3 +93,10 @@ web/src/Operations.jsx集中操作草稿、持久任务提交/轮询、逐项结
 source_paths.py提供SourceMounts，输入仅管理员白名单中的alias和严格相对路径；不提供写入/重命名/删除方法。source_api.py只提供鉴权别名发现，不访问业务源表。
 按目录描述符遍历并拒绝符号链接，根和每层后代检查ST_RDONLY；普通文件通过固定inode描述符读取，避免路径换成符号链接后逃逸。
 Linux的O_PATH、/proc/self/fd与fstatvfs为运行前提；无额外服务/依赖。外部来源须分别只读挂载到API和worker，Converter不挂载。
+
+## T12 来源与预扫描数据流
+
+source_api负责别名配置、健康投影与库存查询，source_scans负责有界只读遍历；所有字节访问仍经过source_paths，无外部写回。
+创建预扫描事务内登记scan_runs及Job；队列claim/failure/complete在同一事务同步关联扫描状态/结果，租约恢复同样适用。
+worker将设置中的白名单显式送入spawn子进程；子进程仅读取并返回小型计数结果，parent围栏完成落库。目录栈最多64层，流式scandir，不收集完整文件列表，不将私有路径放进错误/结果。
+即时挂载health、扫描状态与已有条目状态独立；来源健康失败不执行批量missing。首扫/增量、规则和来源前端待后续。

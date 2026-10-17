@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.12
+  version: 0.4.13
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1848,7 +1848,7 @@ paths:
       - Sources
       summary: 注册一个外部来源挂载别名
       operationId: post_sources
-      description: 只能选择服务器白名单中已挂载的只读目录；禁止客户端提交任意宿主机路径。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      description: 只能选择服务器白名单中已挂载的只读目录；禁止客户端提交任意宿主机路径。拒绝已有来源相同或重叠的别名/物理根（跨空间同样拒绝）；无法验证现有根分离时返回409 SOURCE_OVERLAP_UNVERIFIED。只保存配置，不扫描/导入。扫描间隔仅保存配置，调度器尚未实现。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -1886,7 +1886,7 @@ paths:
       - Sources
       summary: 查询来源配置/健康
       operationId: get_sources_id
-      description: ''
+      description: 即时挂载健康独立于扫描状态与条目状态。离线查询不改写任何条目或成功导入时间。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -1909,7 +1909,7 @@ paths:
       - Sources
       summary: 按真实来源路径列出文件
       operationId: get_sources_id_entries
-      description: ''
+      description: 读取已存来源条目，按规范路径和ID稳定排序，不遍历磁盘。relative_prefix必须是完整相对路径段（无尾斜杠），按精确路径或目录后代匹配，百分号和下划线为普通字符；来源离线仍可读取已有条目。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -1951,7 +1951,7 @@ paths:
       - Sources
       summary: 异步预扫描并统计将导入的数量与体量
       operationId: post_sources_id_preview_scan
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: '同来源存在queued/running预扫描时返回该任务，终态后可显式新建。结果见Job.result与ScanPreview。只做可读普通文件的元数据统计，支持扩展名pdf/docx/md/markdown/html/htm/txt/epub；跳过不支持、非法路径、符号链接及特殊文件。遇不可读目录/嵌套可写挂载或资源上限则失败，绝不以截断统计冒充成功。不创建档案、条目、Revision或逻辑目录，不更新首次导入/成功扫描时间；scan_runs状态/结果与Job同事务落库。默认100000个已访问项、64层目录、120秒、最多3次尝试。数量/字节仅是即时元数据估算，不保证有效格式或快照；忽略规则与目录冲突预检待后续。使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/SourceId'
@@ -2794,6 +2794,20 @@ components:
           enum:
           - tree
           - flat
+        initial_target_folder_id:
+          type: [string, 'null']
+        initial_triage_status:
+          type: string
+          enum: [filed, needs_review]
+        health:
+          type: object
+          required: [mount_status, error_code]
+          properties:
+            mount_status:
+              type: string
+              enum: [ready, offline, unavailable]
+            error_code:
+              type: [string, 'null']
         initial_import_completed_at:
           type:
           - string
@@ -3158,16 +3172,20 @@ components:
       minProperties: 1
     SourceCreate:
       type: object
+      additionalProperties: false
       properties:
         space_id: *id001
         name:
           type: string
+          minLength: 1
+          maxLength: 255
         kind:
           type: string
           enum:
           - external
         root_alias:
           type: string
+          pattern: '^[a-z][a-z0-9_-]{0,63}$'
           description: 只能传部署时预配置的挂载别名
         initial_import_policy:
           type: string
@@ -3192,6 +3210,7 @@ components:
           - integer
           - 'null'
           minimum: 0
+          maximum: 525600
       required:
       - space_id
       - name

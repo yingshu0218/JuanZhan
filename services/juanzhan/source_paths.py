@@ -151,3 +151,35 @@ class SourceMounts:
                 code = exc.code
             items.append({'alias': alias, 'status': status, 'error_code': code})
         return items
+
+    def identity(self, alias):
+        """Private comparison key, never returned through HTTP.
+
+        mountinfo roots detect separately bound aliases of the same underlying tree.
+        Fail closed if Linux mount identity cannot be established.
+        """
+        with self.root(alias) as fd:
+            try:
+                info = os.fstat(fd)
+                with open(f'/proc/self/fdinfo/{fd}') as file:
+                    mount_id = next(line.split()[1] for line in file if line.startswith('mnt_id:'))
+                with open('/proc/self/mountinfo') as file:
+                    row = next(line.split() for line in file if line.split()[0] == mount_id)
+                def unescape(value):
+                    return re.sub(r'\\([0-7]{3})', lambda m: chr(int(m[1], 8)), value)
+                mount_root, mountpoint = unescape(row[3]), unescape(row[4])
+                actual = os.readlink(f'/proc/self/fd/{fd}')
+                relative = os.path.relpath(actual, mountpoint)
+                if relative == '..' or relative.startswith('../'):
+                    raise ValueError()
+                physical = os.path.normpath(os.path.join(mount_root, relative))
+                return (info.st_dev, info.st_ino, physical, self._mounts[alias])
+            except (OSError, StopIteration, ValueError):
+                raise SourcePathError('SOURCE_IDENTITY_UNAVAILABLE') from None
+
+    @staticmethod
+    def overlaps(left, right):
+        def nested(a, b):
+            return a == b or a.startswith(b.rstrip('/') + '/') or b.startswith(a.rstrip('/') + '/')
+        return ((left[0] == right[0] and (left[1] == right[1] or nested(left[2], right[2])))
+                or nested(left[3], right[3]))

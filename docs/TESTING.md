@@ -241,3 +241,14 @@ T27容器验收：`DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compos
 本轮未改前端，未重复浏览器套件；上一切片8项浏览器验收保留，不将其记为本轮新运行。
 
 `python scripts/smoke_sources.py`通过：一次性容器中的真实只读/可写/嵌套可写bind，鉴权别名HTTP与SQLite；Unicode读取、根内/越界符号链接、路径遍历、FIFO/目录拒绝，内核写入返回EROFS。100轮失败探测无描述符泄漏；宿主替换已打开路径为越界符号链接后，读取仍绑定原inode。原件hash不变、无来源/条目/档案记录产生，测试容器和临时目录已清理。初次测试发现测试目录继承宿主umask导致容器无读取权，及写权限先于挂载只读检查；夹具显式设置读取/遍历与文件写权限后验证EROFS，未放宽应用检查。
+
+## T12 验收 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：209 passed（新增7项），仅既有Starlette/httpx弃用提示。
+新增真实SQLite/HTTP/worker覆盖：来源CSRF/别名/跨空间目标/重叠拒绝，列表详情；持久预扫描与活动请求合并、重启后读取；前缀%/_字面与目录段/分页；离线库存保留；离线有限重试恢复；过期租约围栏与幂等完成；终态失败与disabled来源拒绝。预扫描无档案/条目/Revision及成功导入标记。
+Archive镜像构建及正常Compose升级通过，三个容器健康；`python scripts/smoke.py`通过Web/CSP/API/Converter边界及worker心跳。
+本轮前端未改，未重复浏览器验收；原有8项浏览器结果仍属T27。首扫/增量/真实格式转换、忽略规则与来源UI未验收，不视为完整外部来源交付。
+
+`python scripts/smoke_sources.py`已通过真实只读bind/SQLite/HTTP/worker：保存来源、CSRF、跨bind别名同根与父子根拒绝、预扫描活动合并、2份文件24字节/2项忽略的精确统计、嵌套可写挂载终态失败、Job与scan_runs结果一致、容器重启后会话/来源/结果保留。无档案/条目/Revision产生、原件hash不变、fixture卷和容器清理。
+1,000份真实文件的元数据预扫描基线为0.032秒、进程峰值RSS 21,368 KiB（本开发机Linux容器；非大规模性能承诺），逐项数/深度的低限实验均以SOURCE_PREVIEW_LIMIT失败，未静默截断。默认上限100,000项/64层为可调整保护值，未声称验证10万文件吞吐。重启验收发现Docker临时端口可能变化，脚本已重新查询映射后检查就绪。
+补充移除/遗留预扫描目标的队列验证：不存在scan_runs时handler明确INVALID_SOURCE_PREVIEW失败，不在claim阶段回滚造成队首阻塞。

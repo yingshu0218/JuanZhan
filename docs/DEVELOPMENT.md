@@ -423,3 +423,13 @@ volumes:
 路径必须精确相对路径，无绝对路径/反斜杠/盘符/空段/./../控制字符；保留Unicode与大小写，不将不同磁盘名称合并。Linux O_PATH和/proc/self/fd为要求。
 只读bind不阻止宿主机更新原件；本层不声称提供历史快照或稳定hash，扫描一致性后续实现。Source/SourceEntry、预扫描/增量扫描尚未开放。
 验收先构建archive镜像，再运行`python scripts/smoke_sources.py`；脚本仅创建一次性测试目录/容器，校验真实RO/RW/嵌套挂载/HTTP，结束清理，不接触正常卷或管理员。
+
+## T12 来源API与预扫描
+
+沿用T11的可选JUANZHAN_SOURCE_MOUNTS及API/worker同路径只读bind，无新增依赖、构建步骤或默认用户挂载。GET /source-mounts获取可选别名，POST /sources保存配置；同空间目标目录与全局根重叠校验由事务执行。
+POST /sources/{id}/preview-scan需要Cookie CSRF或Bearer，返回持久job_id；同来源活动预扫描复用原任务，轮询GET /jobs/{id}看结果。queue/scanning不等于完成，更不等于已导入。
+扫描只统计可读普通文件的候选扩展名；不解析、不hash整文件、不创建库存/档案/目录。忽略数量含特殊文件、符号链接与不支持类型，符号链接目录按一项计。不可读子树/嵌套可写/资源超限明确失败。
+默认100000访问项、64层、120秒、最多3次尝试；SOURCE_OFFLINE/SOURCE_CHANGED/SOURCE_FILE_MISSING可有限重试，安全拒绝不可重试。任务结束后显式POST可新建独立预扫描。
+Source.health反映当前挂载，Source.status也反映最后预扫描错误/当前任务；挂载恢复不等于已有成功导入。GET entries读取持久库存，来源离线也可用，不修改available/missing。
+scan_interval_minutes仅保存配置，尚无自动调度；/scan首次导入、增量/忽略规则、目录冲突预检与来源UI后续交付。1千真实文件资源基线只用于当前开发机，不代表大规模性能承诺。
+`python scripts/smoke_sources.py`已扩展隔离来源配置/真实worker预扫描、嵌套可写失败、重启持久化与资源上限检查；仅处理一次性测试目录/卷/容器，结束清理。Docker重启可能重分配临时主机端口，脚本重新查询后等待就绪。

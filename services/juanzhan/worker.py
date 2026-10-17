@@ -29,8 +29,20 @@ def _send(connection,message):
     except (OSError,EOFError):pass
 
 
-def _handler(job,data_dir,connection):
+def _handler(job,data_dir,connection,source_mounts=()):
     try:
+        if job['kind']=='scan_preview' and job['target_type']=='source_preview':
+            from .source_scans import preview
+            from .source_paths import SourcePathError
+            settings = Settings(data_dir=Path(data_dir),converter_token='',source_mounts=source_mounts)
+            try:
+                result = preview(settings,job)
+                encoded(result)
+                _send(connection, ('success',result))
+            except SourcePathError as exc:
+                _send(connection, ('failure',exc.code,'Source preview could not complete safely',
+                    exc.code in ('SOURCE_OFFLINE','SOURCE_CHANGED','SOURCE_FILE_MISSING')))
+            return
         if job['kind']=='batch' and job['target_type'] in ('document_batch','document_batch_undo'):
             from .batches import execute
             settings = Settings(data_dir=Path(data_dir),converter_token='')
@@ -93,7 +105,10 @@ class Worker:
             return None
         context = multiprocessing.get_context('spawn')
         receive,send = context.Pipe(duplex=False)
-        process = context.Process(target=self.handler,args=(job,str(self.settings.data_dir),send),daemon=True)
+        arguments = (job,str(self.settings.data_dir),send)
+        if self.handler is _handler:
+            arguments += (self.settings.source_mounts,)
+        process = context.Process(target=self.handler,args=arguments,daemon=True)
         started = time.monotonic()
         next_heartbeat = started
         outcome = None
