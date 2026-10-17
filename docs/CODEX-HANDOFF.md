@@ -211,3 +211,10 @@ pytest全量279项通过；scripts/smoke_formats.py真实上传六格式→Archi
 ## T23 更新 · 2026-10-18
 
 当前接续点T23之后（优先于历史交接）：content.py已实现正文/历史/候选分页与版本+Revision+request_id保护的reprocess；Archive OpenAPI0.4.18/49路径、7迁移，Converter0.4.3/6路径。下一T24锁定中文分词引擎/字典及许可，FTS单文档增量重建与tokenizer版本，不能把q示例过滤当全文检索。读写都取真实持久数据；不可在T29前添加假正文。reprocess已成功需force=true，不同活动请求409；同请求编号重发复用。来源离线正文缓存可读且stale，候选采纳仍需显式typed/versioned操作。测试content专项及smoke_formats --persist/--persist --ocr/--persist --external（含真正离线第二实例）。无安装/环境变量/迁移新增，保留.env/管理员/正常数据卷。
+
+
+## T24 已交付 · 2026-10-18
+
+版本化Han单字/双字词元、繁简及全半角归一、英文数字混排、真实FTS5单档案增量与显式重建已实现；不是语义分词。SQLite触发器持久脏代次，worker自动调度并避免积压饿死，发布受租约/代次保护，失败保留旧成功索引。升级新增0008（总8条），不修改旧7条或重跑旧失败解析；新增OpenCC锁定依赖及Apache-2.0许可。算法、限制和恢复见ADR-039/DEVELOPMENT。
+
+下一切片T25公开检索API：消费真实FTS并实现空间/回收过滤、结果新鲜度、类型安全过滤/排序；当前q仍501，没有搜索UI。T29阅读、T31任务界面、T32下载/预览/备份等仍未完成。Archive0.4.18/49路径、Converter0.4.3/6路径保持。验证结果见TESTING。

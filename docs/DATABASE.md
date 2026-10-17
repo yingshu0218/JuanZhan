@@ -149,3 +149,10 @@ parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)
 ## T23 无新增迁移
 
 继续使用7条不可变迁移。正文/候选/历史读取既有ContentBlock、extracted_metadata、ParseRun及派生资产；无临时SQLite替代业务真相。reprocess请求通过既有jobs.idempotency_key/request_hash、parse_requests/attempt记录，同一写事务排队并捕获当前Revision；不新增动态路径、外部写回或业务字段自动覆盖。完整分页页字节预算在SQLite内计算后读取，业务版本只在人工操作/显式采纳变化时递增。
+
+
+## T24 迁移0008
+
+当前共8条迁移，既有7条校验和不变。search_dirty(document_id主键及级联FK,generation,scheduled_generation,last_error)为持久脏队列；document_search_state增加generation。升级只标记已有档案待索引，不重放旧解析失败。documents的业务版本/正文指针/回收状态、标签关联/名称、类型名称、可搜索字段值与字段启停触发代次变化；永久清理删除FTS行，级联触发器先检查档案存在。
+
+复用既有document_search FTS5及document_search_state。正文取current_parse_run_id最近成功缓存，字段仅active且searchable；索引包括标题/描述/日期/标签/类型/当前原始文件名。发布同时更新hash、tokenizer_version、ParseRun及代次；hash相同仍推进代次。脏队列不是公共检索结果，T25需空间/回收过滤及新鲜度投影。

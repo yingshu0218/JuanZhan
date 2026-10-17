@@ -512,3 +512,20 @@ T22无新依赖/模型/凭证，既有冻结安装、哈希wheelhouse和Compose�
 T23无依赖、环境变量或迁移新增，沿用冻结安装、现有镜像构建/Compose启动。pytest包含test_content.py；smoke_formats.py --persist现在同时验证三格式正文/分页历史/候选和公开幂等重解析，--ocr覆盖OCR结果，--external额外验证第二Archive实例没有来源可访问时仍返回相同缓存且source_offline/stale。所有夹具独立网络/随机凭证/卷，退出清理；正常卷不参与。
 
 调用POST /api/v1/documents/{id}/reprocess须附当前业务版本、当前Revision和客户端request_id（UUID可用）；成功缓存明确force=true，语言白名单及严格布尔，Cookie CSRF或Bearer。GET content默认blocks，text/markdown仍是JSON而非文件/HTML。公开内容不代表阅读界面或用户原件下载已完成；无新的环境配置步骤。
+
+
+## T24 更新 · 2026-10-18
+
+新增哈希锁定opencc-python-reimplemented==0.1.7，沿用uv sync --frozen及requirements.lock哈希wheelhouse下载、现有镜像构建流程；无新环境变量/凭证/模型下载。许可证在licenses/opencc，详细算法/字典摘要见ADR-039。Archive启动应用0008，当前8条迁移；保留.env/管理员/数据卷及既有7条迁移。
+
+在已初始化Archive环境中（本地用uv run --frozen，容器可docker compose exec archive）：
+
+```sh
+python -m juanzhan.indexing queue --limit 100
+python -m juanzhan.indexing rebuild --document DOCUMENT_ID
+python -m juanzhan.indexing rebuild --all
+```
+
+rebuild需要明确单档案或全量选择，只标脏并排有限批次；普通持续worker继续排剩余。--once不自动发现脏记录，需先queue。生产worker交替处理普通/索引队列，活动索引上限100。每文档输入8MiB、50万词元/16MiB输出；子进程512MiB地址空间/60 CPU秒、Job120墙钟秒，超限last_error且保留旧索引，不无限重试；修复后显式rebuild。版本变动重新生成索引，运行不下载/接受自定义词典路径。
+
+smoke_formats.py --persist --index --daemon --external验证六格式、自动调度及离线缓存；--persist --index --ocr验证真实OCR索引。所有夹具隔离，正常卷不参与。无公开搜索API变化，q仍501。

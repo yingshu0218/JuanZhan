@@ -31,6 +31,17 @@ def _send(connection,message):
 
 def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
     try:
+        if job['kind']=='reindex' and job['target_type']=='document_search':
+            import resource
+            resource.setrlimit(resource.RLIMIT_AS,(512*1024*1024,512*1024*1024))
+            resource.setrlimit(resource.RLIMIT_CPU,(60,60))
+            from .indexing import execute,IndexFailure
+            try:
+                execute(Settings(data_dir=Path(data_dir),converter_token=''),job)
+                _send(connection,('committed',))
+            except IndexFailure as exc:
+                _send(connection,('failure',exc.code,'Index could not be refreshed safely',False))
+            return
         if job['kind'] in ('parse','ocr') and job['target_type']=='document':
             from .parsing import execute,ParseFailure
             settings=Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts)
@@ -140,9 +151,9 @@ class Worker:
         else:
             process.join(timeout=0.5)
 
-    def run_once(self):
+    def run_once(self,*,prefer_index=False):
         self.queue.worker_heartbeat(self.owner)
-        job = self.queue.claim(self.owner,lease_seconds=self.lease_seconds)
+        job = self.queue.claim(self.owner,lease_seconds=self.lease_seconds,prefer_index=prefer_index)
         if job is None:
             return None
         context = multiprocessing.get_context('spawn')
@@ -228,9 +239,13 @@ def main():
     if args.once:
         print(json.dumps(worker.run_once()))
         return
+    prefer_index=False
     while not stop.is_set():
         try:
-            worker.run_once()
+            from .indexing import schedule
+            schedule(settings,limit=1)
+            worker.run_once(prefer_index=prefer_index)
+            prefer_index=not prefer_index
         except Exception:
             logger.error('Queue unavailable; retrying after bounded poll interval')
         stop.wait(args.poll_seconds)

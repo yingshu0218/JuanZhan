@@ -158,3 +158,8 @@ parsing.begin在租约事务中创建独立ParseRun与attempt映射，parse_requ
 content.py以SQLite只读快照查询当前成功指针/历史/候选，分别返回有界分页对象；history不嵌套所有候选，避免历史×候选放大。读取前用SQLite length(CAST(... AS BLOB))聚合所选页预算，序列化前复核16MiB总响应。blocks来自持久结构/真实locator；text/markdown经安全派生store核对描述符及实际字节后返回JSON字符串，不运行原件解析或HTML。
 
 来源当前健康只用于availability/stale投影，正文仍读本地缓存；缺失源不会消灭旧内容。重解析在鉴权写事务复核document_version/Revision与回收状态，以档案+request_id生成内部幂等键；同请求复用、不并行排同Revision的不同活动请求。force用于明确重跑已有成功，不绕过活动任务冲突或版本/租约围栏。只新增持久Job，不先清空正文或人工字段；后续仍由T22负责原件/hash/资源验证与晋升。候选采纳沿用T18，而不自动映射同名字段。
+
+
+## T24 版本化FTS增量索引
+
+见ADR-039。tokenizer.py生成确定词元；indexing.py以SQLite持久脏代次、有限JobQueue和租约围栏完成单档案增量/显式重建。普通worker自动发现提交后的脏记录，交替优先索引避免解析积压时饿死；--once仍只处理已有任务，便于受控维护。索引仅读数据库缓存与人工业务字段，来源离线不要求重新打开原件。失败/失去租约/新编辑不能清除最近成功索引。公开搜索与过滤排序由T25接续，阅读界面仍T29。

@@ -26,3 +26,8 @@ T20新增的解析依赖均为纯Python，不引入浏览器、LibreOffice、Jav
 不是“全部纯Python/全部MIT”：T21新增原生wheel以及LGPL-3.0间接依赖。已读取实际wheel的dist-info许可证及PDFium BUILD_LICENSES，镜像pip安装保留原包许可，同时COPY仓库licenses。cysignals原版源码入口为https://pypi.org/project/cysignals/1.12.6/#files 与https://github.com/sagemath/cysignals；未修改/静态链接进应用。公开发布镜像前，T34须完成包括该库对应源码与可替换机制、Tesseract/Leptonica及其捆绑图像库通知在内的完整发布清单；本地开发镜像不是正式发行验收。
 
 模型固定源URL、完整提交、大小和SHA256见ocr-models.lock.json；setup_ocr_models.py只从该清单下载并校验，不跟随可变HEAD，也不使用用户密钥。模型约6.3MiB，Git忽略，构建前下载、构建内再次离线验证。生产不读取系统字体、不下载任何远程文档资源；Noto CJK仅为开发真实扫描样本绘制使用。Linux x86_64容器实际加载并OCR通过，其他架构尚未实测。
+
+
+## T24 · OpenCC归一字典
+
+[opencc-python-reimplemented](https://github.com/yichen0831/opencc-python) 0.1.7：Apache-2.0，以实际wheel内LICENSE.txt为准，完整副本保存在licenses/opencc/LICENSE.txt，镜像保留dist-info许可。其词典只用于繁简转换；中文检索使用本仓库Han单/双字算法，不依赖语义分词词库。wheel SHA-256锁定于uv.lock/requirements.lock，25份.txt/.json字典/配置按相对路径排序、路径+NUL+字节+NUL计算SHA-256：4ffd2aa3019bda697f811e0d7e27604e30c9f30b31204af1b89622f7cd818179，运行首次使用验证。regex沿用既有锁定依赖；无外部下载服务。

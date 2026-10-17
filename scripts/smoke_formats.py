@@ -38,6 +38,7 @@ network=prefix+'-net'
 archive=prefix+'-archive'
 converter=prefix+'-converter'
 offline=prefix+'-offline'
+index_worker=prefix+'-index-worker'
 volume=prefix+'-data'
 token=secrets.token_urlsafe(32)
 password=secrets.token_urlsafe(32)
@@ -231,6 +232,76 @@ print('PASS: all original objects and Archive business parse state preserved; OC
         _,history,_=request(base,root+'/parse-runs',cookie=cookie)
         assert history['total']==2 and history['items'][0]['id']!=document['current_parse_run_id']
         print('PASS: authenticated content/parse history/candidates API and idempotent explicit reprocess over real HTTP')
+    if '--index' in sys.argv:
+        if not persist_mode:raise AssertionError('--index requires --persist')
+        def index_jobs(operation='queue'):
+            args=['exec',archive,'python','-m','juanzhan.indexing',operation]
+            if operation=='rebuild':args+=['--all']
+            queued=json.loads(docker(*args,'--limit','100'))['queued_jobs']
+            for _ in range(queued):
+                outcome=json.loads(docker('exec',archive,'python','-m','juanzhan.worker','--once'))
+                assert outcome['status']=='completed',outcome
+            return queued
+        assert index_jobs()==len(fixtures)
+        code='OCR_MODE='+repr(ocr_mode)+'\n'+'''
+from juanzhan.config import Settings
+from juanzhan.database import connect
+from juanzhan.tokenizer import VERSION,match_expression
+with connect(Settings.from_env().database) as db:
+ count=db.execute('SELECT count(*) FROM documents').fetchone()[0]
+ assert db.execute('SELECT count(*) FROM document_search').fetchone()[0]==count
+ assert not db.execute('SELECT document_id FROM document_search GROUP BY document_id HAVING count(*)!=1').fetchall()
+ assert not db.execute('SELECT 1 FROM document_search_state s JOIN documents d ON d.id=s.document_id JOIN search_dirty q ON q.document_id=d.id WHERE s.tokenizer_version!=? OR s.parse_run_id!=d.current_parse_run_id OR s.generation!=q.generation',(VERSION,)).fetchall()
+ query='檔案' if OCR_MODE else '真实'
+ assert db.execute('SELECT count(*) FROM document_search WHERE document_search MATCH ?',(match_expression(query),)).fetchone()[0]>0
+ query='ARCHIVE 2026' if OCR_MODE else 'Real PDF'
+ assert db.execute('SELECT count(*) FROM document_search WHERE document_search MATCH ?',(match_expression(query),)).fetchone()[0]>0
+ assert not db.execute('PRAGMA foreign_key_check').fetchall()
+print('PASS: real FTS5 Chinese two-character/traditional normalization and mixed English/numeric tokens; one row per current successful document')
+'''
+        print(docker('exec','-i',archive,'python','-',input=code))
+        assert index_jobs('rebuild')==len(fixtures)
+        document=listing['items'][0]
+        # Existing HTTP helper uses POST for bodies; PATCH is explicit here.
+        req=urllib.request.Request(base+'/api/v1/documents/'+document['id'],method='PATCH',data=json.dumps({
+            'expected_document_version':document['document_version'],'title':'星河索引文档'}).encode(),
+            headers={'Cookie':cookie,'X-CSRF-Token':session['csrf_token'],'Content-Type':'application/json'})
+        with urllib.request.urlopen(req,timeout=10) as response:assert response.status==200
+        assert index_jobs()==1
+        code='DOCUMENT_ID='+repr(document['id'])+'\n'+'''
+from juanzhan.config import Settings
+from juanzhan.database import connect
+from juanzhan.tokenizer import match_expression
+with connect(Settings.from_env().database) as db:
+ assert db.execute('SELECT document_id FROM document_search WHERE document_search MATCH ?',(match_expression('星河'),)).fetchall()==[(DOCUMENT_ID,)]
+ assert db.execute('SELECT count(*) FROM document_search').fetchone()[0]==db.execute('SELECT count(*) FROM documents').fetchone()[0]
+print('PASS: explicit rebuild is idempotent and a real HTTP title change is incrementally indexed')
+'''
+        print(docker('exec','-i',archive,'python','-',input=code))
+        if '--daemon' in sys.argv:
+            root='/api/v1/documents/'+document['id']
+            _,current,_=request(base,root,cookie=cookie)
+            req=urllib.request.Request(base+root,method='PATCH',data=json.dumps({
+                'expected_document_version':current['document_version'],'title':'自动队列索引'}).encode(),
+                headers={'Cookie':cookie,'X-CSRF-Token':session['csrf_token'],'Content-Type':'application/json'})
+            with urllib.request.urlopen(req,timeout=10) as response:assert response.status==200
+            run_with_token('run','-d','--name',index_worker,'--network',network,
+                '--mount',f'type=volume,source={volume},target=/data','-e','JUANZHAN_DATA_DIR=/data',
+                '-e','CONVERTER_SERVICE_TOKEN','-e','CONVERTER_URL=http://converter:8000',
+                'juanzhan-foundation:dev','python','-m','juanzhan.worker','--poll-seconds','0.05')
+            code='''
+from juanzhan.config import Settings
+from juanzhan.database import connect
+from juanzhan.tokenizer import match_expression
+with connect(Settings.from_env().database) as db:
+ print(db.execute('SELECT count(*) FROM document_search WHERE document_search MATCH ?',(match_expression('自动'),)).fetchone()[0])
+'''
+            for _ in range(50):
+                if docker('exec','-i',archive,'python','-',input=code)=='1':break
+                time.sleep(.1)
+            else:raise AssertionError('Continuous worker failed to drain the dirty outbox')
+            docker('rm','-f',index_worker)
+            print('PASS: continuous worker detects an HTTP edit and automatically publishes its FTS update')
     if external_mode:
         # Host-side fault injection changes a read-only source after capture; Archive must reject it.
         path=sorted(Path(source_fixture.name).iterdir())[0];original=path.read_bytes()
@@ -279,8 +350,17 @@ print(json.dumps({'job_id':job['id'],'document_id':document,'current':current}))
         assert cached['availability_status']=='source_offline' and cached['stale_for_current_revision']
         assert '/offline-fixture' not in json.dumps(cached)
         print('PASS: source genuinely unavailable in a second Archive instance; authenticated cached content remains readable and stale')
+        if '--index' in sys.argv:
+            code='''
+from juanzhan.config import Settings
+from juanzhan.database import connect
+with connect(Settings.from_env().database) as db:
+ assert db.execute('SELECT count(*) FROM document_search').fetchone()[0]==db.execute('SELECT count(*) FROM documents').fetchone()[0]
+print('PASS: persisted FTS rows remain available with the source genuinely offline')
+'''
+            print(docker('exec','-i',offline,'python','-',input=code))
 finally:
-    for name in (offline,archive,converter):
+    for name in (index_worker,offline,archive,converter):
         subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     if source_fixture:source_fixture.cleanup()
     for args in (('volume','rm',volume),('network','rm',network)):

@@ -377,3 +377,21 @@ Docker实际构建与三组跨容器链路通过：smoke_formats.py --persist（
 所有容器夹具独立随机管理员/数据卷/网络，退出只清理本次资源；正常.env/管理员/数据卷保留。正常Compose重建并通过smoke.py的Web/CSP/已编译资源、鉴权、能力及worker心跳。7条迁移保持，无新增安装步骤/凭证/环境配置变更；不重复前端浏览器套件。Archive OpenAPI0.4.18/49路径、Converter0.4.3/6路径的唯一键/引用与既有契约测试通过；YAML只重写相关路径和schema，原未修改定义语义保留。
 
 边界：本轮JSON API不直接渲染HTML、提供二进制下载或读取外部原件；源可用性unknown独立表达，不能当原件已验证。公开查询不是阅读UI，T29待接；中文FTS/搜索T24/T25、批量reprocess/set_metadata、原件下载/预览/备份T32和正式发布仍未交付。请求202只代表受理，模型/转换能力最终由后台检查；失败仍保留旧成功正文。
+
+
+## T24 验证 · 2026-10-18
+
+全量UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q：344 passed，177.17秒，无跳过/禁用；仅既有Starlette/httpx弃用警告。新增test_indexing.py 14项，专项与Job合计30 passed（31.52秒），foundation 8 passed。使用真实SQLite/文件/HTTP Converter/worker子进程，覆盖中文双字/繁简/全半角/英文数字、字段边界、title/标签/可搜索字段变更、回收恢复/永久删除、幂等重建修复重复行、并发调度、旧词元版本恢复、Job租约丢失和较新编辑围栏、真实发布后故障回滚、资源限制与显式恢复。失败新Revision保持旧成功正文及索引；公开q仍501有断言。
+
+实际Docker哈希离线wheel构建通过。两组隔离容器验收均通过：
+
+```sh
+uv run --frozen python scripts/smoke_formats.py --persist --index --daemon --external
+uv run --frozen python scripts/smoke_formats.py --persist --index --ocr
+```
+
+六格式及真实OCR经上传/只读来源→Converter→缓存入库→FTS；逐档案校验唯一FTS行、状态版本/代次/ParseRun，实际MATCH查询繁简中文双字和英文数字。全量显式重建无重复，HTTP修改标题仅一档案增量。持续worker实际发现另一HTTP编辑并自动发布FTS。真实只读来源变字节拒绝且旧缓存保留；第二Archive无可用来源挂载，仍能读鉴权缓存正文与持久FTS行。不是公开搜索API验收。
+
+所有夹具使用独立网络/卷/随机凭证且已清理；不接触正常管理员/数据。未改前端，未重复浏览器套件；没有大语料性能或最终产品完成承诺。OpenAPI保持Archive0.4.18/49路径、Converter0.4.3/6路径。
+
+正常Compose保留.env/管理员/数据卷，以新镜像up --wait --no-build成功；smoke.py验证Web/CSP/编译资源、Archive就绪、Converter鉴权/六格式能力和worker心跳，三个容器healthy。实际数据库8条迁移、foreign_key_check为0；正常库当前0档案，索引内容证明来自上述隔离实物夹具。可复用start_skill已更新为不硬编码迁移数量并加入FTS验收/维护流程，安装脚本和网络/凭证保持；草稿保存不等于发布或新任务恢复已验证。

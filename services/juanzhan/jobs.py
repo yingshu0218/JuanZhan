@@ -109,6 +109,8 @@ class JobQueue:
                    'lease_owner=NULL,lease_expires_at=NULL,updated_at=? WHERE id=?',
                    ('queued' if again else 'failed',encoded({'code':code,'message':message,'retryable':retryable}),
                     int(retryable),now+delay,stamp(now),job['id']))
+        from .indexing import failed as index_failed
+        index_failed(db,job,code,not again)
         from .parsing import failed as parse_failed
         parse_failed(db,job,code)
         from .exclusions import failed
@@ -116,7 +118,7 @@ class JobQueue:
         from .source_scans import job_state
         job_state(db,job,'queued' if again else 'failed',stamp(now),error=encoded({'code':code,'message':message,'retryable':retryable}))
 
-    def claim(self,owner,*,lease_seconds=30):
+    def claim(self,owner,*,lease_seconds=30,prefer_index=False):
         if not owner or not 0<lease_seconds<=300:
             raise ValueError('Worker owner and lease duration required')
         with self.write() as db:
@@ -128,7 +130,7 @@ class JobQueue:
             for (id,) in db.execute("SELECT id FROM jobs WHERE status='queued' AND attempts>=max_attempts").fetchall():
                 self._failure(db,row(db,id),'ATTEMPTS_EXHAUSTED','Attempt limit reached',False,now)
             candidate = db.execute("SELECT id FROM jobs WHERE status='queued' AND available_at<=? AND attempts<max_attempts "
-                                   'ORDER BY created_at,id LIMIT 1',(now,)).fetchone()
+                                   "ORDER BY CASE WHEN ? AND kind='reindex' AND target_type='document_search' THEN 0 ELSE 1 END,created_at,id LIMIT 1",(now,int(prefer_index))).fetchone()
             if candidate is None:
                 return None
             token = secrets.token_urlsafe(32)

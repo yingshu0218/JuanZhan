@@ -245,7 +245,7 @@ def test_upgrade_backfills_requests_without_replaying_old_jobs(tmp_path):
     assert {r['id']:r['status'] for r in rows(settings,'SELECT * FROM jobs')}=={'queued':'queued','old-failed':'failed'}
     assert not rows(settings,'SELECT * FROM parse_runs')
     current={r['name']:r['sha256'] for r in rows(settings,'SELECT * FROM migration_checksums')}
-    assert len(current)==7 and all(current[k]==v for k,v in checksums.items())
+    assert len(current)==8 and all(current[k]==v for k,v in checksums.items())
 
 
 def test_late_obsolete_attempt_does_not_shadow_newer_status(pipeline):
