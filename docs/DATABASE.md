@@ -73,3 +73,10 @@ T05 标签删除已复用共享审计插入，仍递增受影响 Document 版本
 复用原field_definitions和document_type_fields，无新迁移。API将key/type/space固定，停用不会删除模板/metadata_values。
 新增模板绑定要求启用/同空间，已有停用绑定可保留/调整/移除；所有模板替换在同一写事务验证并提交。
 约束配置保留JSON，七类型值落盘及规则求值留T18；目录、原件、Revision和现存文档版本不因定义更新而改变。
+
+## T18 元数据值与来源
+
+无新迁移；复用metadata_values现有互斥类型列、Decimal±90000000000000000缩放整数及SQLite类型触发器。
+API null删除行；boolean false存0，未设置无行。Decimal API固定四位字符串，不用浮点或文本做数值比较。
+元数据变化/版本递增/含前后metadata的document_events同事务；采纳事件附extracted_metadata_id，行关联source_parse_run_id。
+候选行不删除、旧人工值保留审计；失败回滚、no-op不改updated_at或版本。历史值读取不自动迁移/强制转型。

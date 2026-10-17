@@ -12,6 +12,7 @@ from .catalog import ID, required, same_space, transaction
 from .document_events import record_event, utc_now
 from .document_records import snapshot, expected
 from .documents import Registration, Version, VersionChange
+from .metadata_values import filing
 
 
 class DocumentPatch(BaseModel):
@@ -51,19 +52,6 @@ class DocumentPatch(BaseModel):
 
 class Triage(VersionChange):
     triage_status: Literal['needs_review','filed']
-
-
-def filing(db,record):
-    type_id=record['document_type_id']
-    if type_id is None:return
-    fields=db.execute('SELECT f.id,f.constraints_json,m.id,m.value_text FROM document_type_fields t '
-                      'JOIN field_definitions f ON f.id=t.field_definition_id '
-                      'LEFT JOIN metadata_values m ON m.field_definition_id=f.id AND m.document_id=? '
-                      'WHERE t.document_type_id=? AND t.required_for_filing=1', (record['id'],type_id)).fetchall()
-    missing=[row[0] for row in fields if row[2] is None or (row[3] is not None and not row[3].strip())]
-    if missing:fail(422,'MISSING_REQUIRED_FIELDS','Required metadata is missing')
-    if any(json.loads(row[1]) for row in fields):
-        fail(501,'FIELD_RULES_NOT_IMPLEMENTED','Custom filing constraints await typed field validation')
 
 
 def availability(db,revision,store):

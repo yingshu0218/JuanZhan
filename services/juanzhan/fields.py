@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request
 from pydantic import Field, field_validator
 
 from .auth import fail
+from .metadata_values import rules
 from .catalog import ID, Input, Name, Patch, TypeKey, now, required, scope, transaction
 
 FieldType = Literal['text','long_text','integer','decimal','date','boolean','single_select']
@@ -78,6 +79,7 @@ def router(settings):
     def create(body: FieldCreate,request: Request):
         with transaction(settings,request) as db:
             required(db,'spaces',body.space_id)
+            rules(body.type,body.constraints)
             if db.execute('SELECT count(*) FROM field_definitions WHERE space_id=?',(body.space_id,)).fetchone()[0]>=MAX_FIELDS_PER_SPACE:
                 fail(409,'FIELD_LIMIT_REACHED','Space has reached its field definition limit')
             id=uuid.uuid4().hex
@@ -90,7 +92,8 @@ def router(settings):
     @routes.patch('/{id}')
     def update(id: str,body: FieldPatch,request: Request):
         with transaction(settings,request) as db:
-            required(db,'field_definitions',id)
+            old=required(db,'field_definitions',id)
+            if 'constraints' in body.model_fields_set:rules(old['field_type'],body.constraints)
             values=body.model_dump(exclude_unset=True)
             columns=[];parameters=[]
             for key,value in values.items():

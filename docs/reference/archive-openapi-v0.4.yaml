@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.8
+  version: 0.4.9
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -831,7 +831,7 @@ paths:
       operationId: post_field_definitions
       description: >-
         每空间最多1000个字段（含停用）；key唯一且创建后key/type/space不可修改，不提供硬删除。
-        constraints是待T18求值的原样JSON配置，当前只校验对象/16KiB UTF-8/最大8层嵌套/有限数值；不代表已能验证字段值。
+        constraints按字段类型验证规则，紧凑JSON限16KiB/8层嵌套/有限数值；规则词汇见FieldDefinition.constraints。
         searchable/filterable只保存配置，不代表检索已实现。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       requestBody:
@@ -904,7 +904,7 @@ paths:
       description: >-
         只更新显式属性，至少一项且不接受null/额外属性。constraints整体替换，{}清空；其格式/资源界限同创建。
         停用保留历史值和现存模板引用，新模板不得绑定停用字段；已有模板可保留、调整必填/顺序或移除引用。
-        不自动改变档案版本/整理状态或重写历史值；完整字段值/归档约束在T18实施。Cookie写入须CSRF，Bearer无需CSRF。
+        不自动改变档案版本/整理状态或重写历史值；字段值与归档采用现行规则重新校验，配置修改不自动重写旧值。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1196,7 +1196,7 @@ paths:
       - Documents
       summary: 读取人工业务字段和值来源
       operationId: get_documents_id_metadata
-      description: ''
+      description: 返回已存储值（含停用及历史类型字段），按key/id排序；decimal固定四位字符串，来源与确认状态可追溯。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1220,8 +1220,12 @@ paths:
       - Documents
       summary: 保存自定义字段（字段类型由服务端验证）
       operationId: patch_documents_id_metadata
-      description: null = 删除该字段值；boolean false 不是 null；decimal 使用数字字符串且最多四位小数。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API
-        Bearer 不需要 CSRF。
+      description: >-
+        按同空间字段key局部修改；null删除，false保留布尔值。decimal为普通十进制字符串（最多四位小数，不接受浮点/指数），
+        范围±9000000000000.0000，存储×10000整数；返回固定四位字符串。integer为SQLite有符号64位整数，date为有效YYYY-MM-DD。
+        confirm严格布尔，人工写入origin=manual；不修改未提交字段。停用字段拒绝写入/删除，回收档案须先恢复。
+        每次1至1000个key，序列化值对象限256KiB，单文本65536字符。版本冲突409，任一失败全部回滚；无变化不递增版本。
+        已filed档案修改后仍须满足现模板（包括可选已存值）规则。Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1252,6 +1256,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '501':
+          description: 历史字段配置含未知规则，需显式修复配置
         '422':
           $ref: '#/components/responses/Validation'
         '404':
@@ -1262,7 +1268,11 @@ paths:
       - Documents
       summary: 显式采纳解析候选值
       operationId: post_documents_id_metadata_adopt_candidate
-      description: ' 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。'
+      description: >-
+        只接受同档案当前Revision/current_parse_run_id的completed解析候选，旧候选409，跨档案422，null候选不能删除值。
+        显式采纳按目标字段类型/约束验证并写入origin=extracted、is_confirmed=true、source_parse_run_id；
+        覆盖旧人工值必须由该显式请求及精确版本触发，解析本身不覆盖；事件记录原值/新值与候选ID。
+        候选不被删除，结果返回完整metadata列表；Cookie写入须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -1278,6 +1288,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 expected_document_version: *id004
                 extracted_metadata_id: *id001
@@ -1301,6 +1312,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '501':
+          description: 历史字段配置含未知规则，需显式修复配置
         '422':
           $ref: '#/components/responses/Validation'
         '404':
@@ -1330,7 +1343,7 @@ paths:
               $ref: '#/components/schemas/TriageRequest'
       responses:
         '501':
-          description: 必填字段存在尚未实现的自定义约束，等待T18完整校验
+          description: 历史字段配置含未知规则，需显式修复配置
         '200':
           description: 成功
           content:
@@ -2319,6 +2332,12 @@ components:
           maxLength: 255
         type: *id007
         constraints:
+          description: >-
+            text/long_text支持min_length/max_length（0至65536整数）、regex（完整匹配，512字符，量词数值上限65536，20ms超时）；
+            integer/decimal/date支持min/max且min不能大于max，边界类型同字段值；boolean只接受{}；
+            single_select支持options=[{id,label}]（1至1000个唯一稳定ID，id/label非空且各最多255字符），值必须是已定义option ID。
+            required_for_filing归类型模板，不接受constraints.required；其他键拒绝422。历史未知键在值写入/归档时501。
+            空options配置可先创建，但未配置options不能保存任何single_select值；约束更新保留历史值，后续写入/归档重新验证。
           type: object
           additionalProperties: true
         searchable: *id002
@@ -2953,10 +2972,16 @@ components:
       additionalProperties: false
     MetadataPatch:
       type: object
+      additionalProperties: false
       properties:
-        expected_document_version: *id004
+        expected_document_version:
+          type: integer
+          minimum: 1
+          maximum: 9223372036854775806
         values:
           type: object
+          minProperties: 1
+          maxProperties: 1000
           additionalProperties: true
           description: 字段 key→值；decimal 字段必须用字符串；null 表示删除该字段值
         confirm: *id002

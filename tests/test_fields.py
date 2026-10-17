@@ -83,7 +83,7 @@ def test_key_unique_including_inactive_but_reusable_in_other_space(api):
 
 def test_constraints_are_bounded_json_preserved_without_claiming_value_validation(api):
     _,_,client,headers,space=api
-    constraints={'options':[{'id':'stable','label':'选项'}],'future_rule':{'nested':[False,None,0]}}
+    constraints={'options':[{'id':'stable','label':'选项'}]}
     saved=create(client,headers,space,type='single_select',constraints=constraints).json()
     assert saved['constraints']==constraints
     deep={}

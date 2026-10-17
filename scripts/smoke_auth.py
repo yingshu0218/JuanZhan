@@ -280,6 +280,33 @@ print(job['id'])
     once=json.loads(docker('exec',name,'python','-m','juanzhan.worker','--once'))
     assert once=={'job_id':retry_id,'status':'completed'}
     assert request('/api/v1/jobs/'+retry_id)[1]['attempts']==2
+    assert request('/api/v1/field-definitions/'+field['id'],'PATCH',{'is_active':True},csrf)[0]==200
+    metadata_path=document_path+'/metadata'
+    status,values,_=request(metadata_path,'PATCH',{'expected_document_version':7,'values':{'contract_amount':'2.00'},'confirm':True},csrf)
+    assert status==200 and values[0]['value']=='2.0000'
+    assert request(document_path,'PATCH',{'expected_document_version':8,'document_type_id':catalog_type['id']},csrf)[0]==200
+    assert request(metadata_path,'PATCH',{'expected_document_version':9,'values':{'contract_amount':None},'confirm':True},csrf)[0]==422
+    assert request(metadata_path,'PATCH',{'expected_document_version':9,'values':{'contract_amount':'10.0001'},'confirm':True},csrf)[0]==422
+    # Seed a persisted candidate fixture; real parser generation belongs to T19+.
+    docker('exec','-i',name,'python','-',input="""
+import json
+from juanzhan.database import connect
+with connect('/data/database/archive.sqlite3') as db:
+    db.execute("INSERT INTO parse_runs(id,document_id,revision_id,parser_name,parser_version,schema_version,status,created_at) VALUES ('metadata-smoke-run',?,?,'fixture','1','1','completed','now')", DOC_IDS)
+    db.execute("INSERT INTO extracted_metadata(id,parse_run_id,candidate_key,candidate_value_json) VALUES ('metadata-smoke-candidate','metadata-smoke-run','amount',?)",(json.dumps('10.00'),))
+    db.execute("UPDATE documents SET current_parse_run_id='metadata-smoke-run' WHERE id=?",(DOC_ID,))
+    db.commit()
+""".replace('DOC_IDS',repr((uploaded['document_id'],uploaded['revision_id']))).replace('DOC_ID',repr(uploaded['document_id'])))
+    assert request(metadata_path)[1][0]['value']=='2.0000'
+    status,values,_=request(metadata_path+'/adopt-candidate','POST',{'expected_document_version':9,
+        'extracted_metadata_id':'metadata-smoke-candidate','field_definition_id':field['id']},csrf)
+    assert status==200 and values[0]['value']=='10.0000' and values[0]['origin']=='extracted'
+    docker('restart',name)
+    port=docker('port',name,'8000/tcp').split(':')[-1]
+    base='http://127.0.0.1:'+port
+    ready()
+    assert request(metadata_path)[1][0]['source_parse_run_id']=='metadata-smoke-run'
+    assert request(document_path)[1]['document_version']==10
     assert any(s['id'] == space_id for s in request('/api/v1/spaces')[1])
     assert request('/api/v1/document-types?space_id='+space_id)[1][0]['id'] == catalog_type['id']
     assert request('/api/v1/document-types/'+catalog_type['id'], 'PATCH', {'is_active':False}, csrf)[0] == 200
@@ -290,7 +317,7 @@ print(job['id'])
     assert request('/api/v1/documents', bearer=token['token'], use_cookie=False)[0] == 401
     assert request('/api/v1/auth/logout', 'POST', csrf=csrf)[0] == 204
     assert request('/api/v1/auth/tokens')[0] == 401
-    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo, field definitions/template disable/persistence')
+    print('PASS: container CLI setup, HTTP login/CSRF/token/revoke/logout, restart persistence, managed object/staging recovery, catalog CRUD, document lifecycle, durable jobs/worker/retry, multipart upload/duplicate/persistence, document HTTP management/subtree trash/restore, batch snapshot/partial results/guarded undo, field definitions/template disable/persistence, typed metadata/filing/candidate adoption/persistence')
 finally:
     if started:
         docker('rm', '-f', name)

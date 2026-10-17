@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T17 扩展版本 0.4.8），base `/api/v1`，44 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T18 扩展版本 0.4.9），base `/api/v1`，44 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -157,3 +157,20 @@ constraints整体替换，{}清空；规则词汇/选项形状和字段值验证
 模板fields同空间/去重，禁止新增停用字段绑定；已有绑定可保留/调整required_for_filing/display_order或移除。
 停用和模板变更不删除历史metadata_values、不自动切档案整理状态或修改document_version；后续归档仍按现行模板验证。
 未新增元数据值读写/候选采纳API；归档遇未实现复杂约束仍501。Cookie写入须CSRF，Bearer无需CSRF。
+
+## T18 元数据与候选采纳已实现（覆盖前文待实现约束说明）
+
+GET/PATCH /documents/{id}/metadata与POST /documents/{id}/metadata/adopt-candidate已实现。
+PATCH需expected_document_version、values（字段key到值）、严格布尔confirm；局部更新，null删除，false为布尔值。
+返回完整已存字段列表含来源/确认/source_parse_run_id，Decimal固定四位字符串；不新增/返回虚构未设置行。
+每次1～1000键、值JSON256KiB、单文本65536字符；unknown/cross-space key和停用字段写入/删除拒绝，回收档案先恢复。
+版本冲突409，类型/约束422，历史未知规则501；整次回滚，无事实变化不增版本，人工origin=manual。
+
+规则词汇：text/long_text支持min_length/max_length（0～65536）与regex（512字符、完整匹配、20ms超时、量词数值上限65536）；
+integer/decimal/date支持min/max，边界类型同值且min≤max；boolean仅{}；single_select的options是唯一稳定{id,label}数组，值用ID。
+integer为有符号64位；date为有效YYYY-MM-DD；Decimal只接普通十进制字符串最多4位小数，范围±9000000000000.0000，禁止浮点/指数/非有限值。
+新定义/约束更新拒绝未知词汇，历史未知配置需显式修复；不自动重写旧值。归档验证现模板全部必填及可选已存值。
+
+候选采纳必须指向同档案当前成功内容/当前Revision，旧候选409、跨档案422、null候选不允许删除。
+显式版本化采纳可替换人工值，记录origin=extracted/is_confirmed=true/source_parse_run_id和事件候选ID，原值留审计，原候选保留。
+真实解析候选生成仍待后续；批量set_metadata/reprocess尚未开放。
