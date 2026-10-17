@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T26 扩展版本 0.4.10），base `/api/v1`，47 个 path 模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（T11 扩展版本 0.4.12），base `/api/v1`，48 个 path 模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -187,3 +187,10 @@ Archive根路径`/`及`/favicon.svg`、`/assets/{asset_path}`提供公开GET/HEA
 BatchRequest.operation新增restore，payload={}，沿用固定document_ids/expected_versions、异步逐项事务及审计，无新路径。
 活动档案恢复为skipped；回收档案清除deleted_at，保留同空间现存folder，否则置空。实际变化递增版本；过期版本失败且不修改档案。
 恢复不重新上传/复制/转换原件；一次撤销仍仅作用原成功项，并按当前版本保护后续编辑。
+
+## T11 挂载别名发现
+
+GET /source-mounts需要已有认证，Cache-Control:no-store；返回{items:[{alias,status,error_code}]}，默认items=[]。
+status为ready/offline/unavailable；错误码为null、SOURCE_OFFLINE、SOURCE_NOT_READ_ONLY、SOURCE_UNREADABLE、SOURCE_UNSAFE_OR_UNAVAILABLE。
+无服务器绝对路径，不接受客户端根路径，不创建来源或扫描。ready仅代表即时根探测，子路径/后续读取仍需验证。
+本轮契约版本0.4.12、48路径；/sources及其扫描/条目接口仍待T12～T15，本轮不宣称已实现。

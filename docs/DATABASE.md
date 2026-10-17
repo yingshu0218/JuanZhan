@@ -90,3 +90,8 @@ E2E临时SQLite与随机管理员跟随一次性测试服务清理，不使用�
 
 无新增迁移。批量restore复用既有deleted_at、document_version、jobs与document_events；逐项事务清除回收标记并校验目录，递增版本且记录审计。
 无变化项不增版本；冲突不修改。恢复/撤销均保留托管字节及元数据，不恢复不可用目录引用。
+
+## T11 无数据表变更
+
+本轮仅配置挂载白名单与安全访问，无迁移，GET /source-mounts不创建sources/source_entries/documents或扫描记录。
+Source/SourceEntry访问及扫描预览留T12，复用已存在的DDL，不把挂载ready误写为last_successful_scan_at。

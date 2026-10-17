@@ -11,8 +11,12 @@ class Settings:
     upload_max_bytes: int = 64 * 1024 * 1024
     upload_timeout_seconds: float = 60
 
+    source_mounts: tuple[tuple[str, str], ...] = ()
+
     @classmethod
     def from_env(cls):
+        from .source_paths import parse_mounts
+        source_mounts = parse_mounts(os.getenv("JUANZHAN_SOURCE_MOUNTS", "{}"))
         cookie_secure = os.getenv("JUANZHAN_COOKIE_SECURE", "true").lower()
         if cookie_secure not in ("true", "false"):
             raise ValueError("JUANZHAN_COOKIE_SECURE must be true or false")
@@ -22,7 +26,7 @@ class Settings:
             raise ValueError("Invalid upload size or receive timeout")
         return cls(Path(os.getenv("JUANZHAN_DATA_DIR", ".local/archive")).resolve(),
                    os.getenv("CONVERTER_SERVICE_TOKEN", ""),
-                   cookie_secure == "true",upload_max_bytes,upload_timeout)
+                   cookie_secure == "true",upload_max_bytes,upload_timeout,source_mounts)
 
     @property
     def database(self):

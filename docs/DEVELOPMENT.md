@@ -402,3 +402,24 @@ E2E：先构建，再`JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e 
 OS文件拖到列表/目录进入真实上传队列；内部文档拖到目录/标签/回收站打开逻辑操作确认。私有页面令牌只支持同页面同空间，不接受任意路径/URL。
 关闭弹窗仍轮询任务，可从侧栏返回结果；刷新后的结果恢复留任务中心T31。网络失败不自动重试写入，避免不确定提交重复执行。
 E2E临时Archive同时启动真实worker；SIGTERM时停止线程/子进程并清理临时数据。正常实例不设置测试密码。字段编辑UI/正文/预览仍待后续。
+
+## T11 可选只读来源配置
+
+默认JUANZHAN_SOURCE_MOUNTS={}，无需额外目录、凭据或安装；正常Compose不会自动接入宿主机资料。JSON格式为{"records":"/sources/records"}，值仅由管理员配置，API和worker需同一配置与容器路径。不要把真实根路径提交到仓库。
+外部目录必须使用真正只读bind，而不是chmod。可在本地未跟踪的Compose覆盖文件中为archive和archive-worker各添加：
+
+```yaml
+volumes:
+  - type: bind
+    source: /administrator-selected/existing-directory
+    target: /sources/records
+    read_only: true
+    bind:
+      create_host_path: false
+```
+
+这段为待替换的配置示例，不是自动执行步骤；保留原有/data卷并确保容器UID10001有读取/目录遍历权限。Converter不挂载。缺目录不能通过自动创建空目录假装在线。
+匿名GET /api/v1/source-mounts拒绝，登录后只显示别名和即时状态；实际读取再次检查根及嵌套挂载只读标志。所有符号链接默认拒绝，根祖先也不能是符号链接。
+路径必须精确相对路径，无绝对路径/反斜杠/盘符/空段/./../控制字符；保留Unicode与大小写，不将不同磁盘名称合并。Linux O_PATH和/proc/self/fd为要求。
+只读bind不阻止宿主机更新原件；本层不声称提供历史快照或稳定hash，扫描一致性后续实现。Source/SourceEntry、预扫描/增量扫描尚未开放。
+验收先构建archive镜像，再运行`python scripts/smoke_sources.py`；脚本仅创建一次性测试目录/容器，校验真实RO/RW/嵌套挂载/HTTP，结束清理，不接触正常卷或管理员。

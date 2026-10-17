@@ -112,3 +112,14 @@ restore已加入批量契约，恢复保留字节/可用目录并可版本保护
 OS Files进入真实上传队列，内部拖放用页面私有令牌+同空间快照，仅改逻辑引用；跨页面/跨空间不承诺支持。
 操作结果仅本页面生命期保留，刷新恢复/任务中心留T31；写请求网络失败不自动重试，读轮询可重试，关闭弹窗不终止已接受任务。
 174项Python及8项真实E2E通过；OpenAPI0.4.11/47paths，无新迁移或依赖。构建/安装/云配置步骤不变，已有草稿仍未发布。
+
+## 当前接续点 · T11 后（优先于上文历史交接）
+
+T01～T11、T17/T18、T26/T27完成。下一切片T12：Source/SourceEntry数据访问、预扫描持久任务与独立来源健康；预扫描不创建档案，离线不批量标missing。
+source_paths.py是外部读取唯一入口；客户端只传已授权alias和严格相对路径，绝不能调用Path.resolve后直接open或复用客户端绝对路径。
+管理员JUANZHAN_SOURCE_MOUNTS是JSON别名→容器绝对根路径，默认{}，API/worker须配置同一别名及只读bind。配置坏值启动失败且不回显路径。
+逐段openat+NOFOLLOW，O_PATH先查普通文件再通过/proc/self/fd固定inode打开字节；每层fstatvfs检查ST_RDONLY，拒绝嵌套可写挂载。
+Unicode/大小写保留磁盘精确名称，不把不同规范形式合并。所有符号链接（包括内部链接）、FIFO/目录/设备、绝对/盘符/反斜杠/空段/dot/dotdot路径拒绝。
+GET /source-mounts鉴权/no-store，仅alias/status/error_code，状态是即时探测不是成功扫描证明；读取仍重新验证。
+202项Python通过；scripts/smoke_sources.py用隔离真实bind/SQLite/HTTP验证，无用户目录或正常密码改动。OpenAPI0.4.12/48paths，无新迁移/依赖；web未改。
+云环境安装/启动命令不变，不为默认开发环境自动配置用户来源；已有配置草稿未发布状态不变。

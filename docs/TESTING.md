@@ -232,3 +232,12 @@ Browser插件/skill未提供（Browser plugin not available），改用Playwrigh
 尚未验收真实转换/OCR/检索/下载/原件预览、字段编辑UI与任务结果刷新恢复，不将当前通过视为完整产品验收。
 
 T27容器验收：`DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compose build archive`及`docker compose up -d --wait --no-build`通过，Archive/worker/Converter三容器健康。`python scripts/smoke_auth.py`通过隔离容器真实HTTP、批量回收/恢复及重启持久化；`python scripts/smoke.py`通过Web/CSP/静态资源、API就绪、Converter鉴权/空能力/501和worker心跳。
+
+## T11 验收 · 2026-10-17
+
+`UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest -q`：202 passed（新增28项），仅既有Starlette/httpx弃用提示。
+新增覆盖路径遍历/绝对路径/盘符/反斜杠/控制字符/空段/Unicode代理项、重复别名/坏配置、Unicode精确保留、真实sysfs只读与chmod目录拒绝、根/叶符号链接拒绝、离线与缺文件区分、鉴权HTTP及不泄露路径。
+`DOCKER_CONFIG=/workspace/JuanZhan/.local/docker docker compose build archive`及`docker compose up -d --wait --no-build`通过，三容器健康；`python scripts/smoke.py`通过Web/CSP/API/Converter能力边界与worker心跳。
+本轮未改前端，未重复浏览器套件；上一切片8项浏览器验收保留，不将其记为本轮新运行。
+
+`python scripts/smoke_sources.py`通过：一次性容器中的真实只读/可写/嵌套可写bind，鉴权别名HTTP与SQLite；Unicode读取、根内/越界符号链接、路径遍历、FIFO/目录拒绝，内核写入返回EROFS。100轮失败探测无描述符泄漏；宿主替换已打开路径为越界符号链接后，读取仍绑定原inode。原件hash不变、无来源/条目/档案记录产生，测试容器和临时目录已清理。初次测试发现测试目录继承宿主umask导致容器无读取权，及写权限先于挂载只读检查；夹具显式设置读取/遍历与文件写权限后验证EROFS，未放宽应用检查。

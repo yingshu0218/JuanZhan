@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.11
+  version: 0.4.12
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1783,6 +1783,38 @@ paths:
         description: 使用 Cookie 会话时必填，使用 Bearer Token 时无需填写
         schema:
           type: string
+  /source-mounts:
+    get:
+      tags: [Sources]
+      summary: List administrator-approved mount aliases and current safety status
+      operationId: get_source_mounts
+      description: Requires authentication. Returns aliases only, never server paths. Does not create sources or scan files. Status is a point-in-time probe; every later read revalidates the mount.
+      responses:
+        '200':
+          description: Configured aliases (empty by default)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [alias, status, error_code]
+                      properties:
+                        alias:
+                          type: string
+                          pattern: '^[a-z][a-z0-9_-]{0,63}$'
+                        status:
+                          type: string
+                          enum: [ready, offline, unavailable]
+                        error_code:
+                          type: [string, 'null']
+                          enum: [null, SOURCE_OFFLINE, SOURCE_NOT_READ_ONLY, SOURCE_UNREADABLE, SOURCE_UNSAFE_OR_UNAVAILABLE]
+        '401':
+          description: Authentication required
   /sources:
     get:
       tags:

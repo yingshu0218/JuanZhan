@@ -6,6 +6,7 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       JUANZHAN_DATA_DIR: /data
+      JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
       JUANZHAN_COOKIE_SECURE: ${JUANZHAN_COOKIE_SECURE:-true}
       JUANZHAN_UPLOAD_MAX_BYTES: ${JUANZHAN_UPLOAD_MAX_BYTES:-67108864}
       JUANZHAN_UPLOAD_TIMEOUT_SECONDS: ${JUANZHAN_UPLOAD_TIMEOUT_SECONDS:-60}
@@ -22,6 +23,7 @@ services:
     command: ["python", "-m", "juanzhan.worker"]
     environment:
       JUANZHAN_DATA_DIR: /data
+      JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
     volumes:
       - archive_data:/data
     depends_on:

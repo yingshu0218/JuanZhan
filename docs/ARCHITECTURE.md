@@ -87,3 +87,9 @@ Docker不运行Node前端进程，构建在宿主按锁生成dist；生产仍为
 web/src/Operations.jsx集中操作草稿、持久任务提交/轮询、逐项结果与一次撤销；Workspace管理固定选择及OS/内部拖放，Library只承载选择和拖动入口。
 分类上下文随草稿固定，导航不改变已接受任务。关闭弹窗可继续浏览，完成后刷新当前资源且不清除后来产生的选择。
 复用现有REST、worker、SQLite与托管存储，无新服务/依赖/迁移；内部拖放不操作物理文件。
+
+## T11 外部读取边界
+
+source_paths.py提供SourceMounts，输入仅管理员白名单中的alias和严格相对路径；不提供写入/重命名/删除方法。source_api.py只提供鉴权别名发现，不访问业务源表。
+按目录描述符遍历并拒绝符号链接，根和每层后代检查ST_RDONLY；普通文件通过固定inode描述符读取，避免路径换成符号链接后逃逸。
+Linux的O_PATH、/proc/self/fd与fstatvfs为运行前提；无额外服务/依赖。外部来源须分别只读挂载到API和worker，Converter不挂载。
