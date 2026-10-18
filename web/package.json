@@ -9,7 +9,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test:e2e": "playwright test",
     "test:e2e:sources": "playwright test --config sources.playwright.config.mjs",
-    "test:e2e:reading": "playwright test --config reading.playwright.config.mjs"
+    "test:e2e:reading": "playwright test --config reading.playwright.config.mjs",
+    "test:e2e:search": "playwright test --config search.playwright.config.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

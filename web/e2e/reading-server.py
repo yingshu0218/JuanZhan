@@ -30,7 +30,10 @@ def main():
             stop=threading.Event();worker=Worker(settings,stop=stop)
             def work():
                 while not stop.is_set():
-                    worker.run_once();stop.wait(.05)
+                    if os.environ.get("JUANZHAN_E2E_INDEXING") == "1":
+                        from juanzhan.indexing import schedule
+                        schedule(settings,limit=1)
+                    worker.run_once(prefer_index=os.environ.get("JUANZHAN_E2E_INDEXING") == "1");stop.wait(.05)
             thread=threading.Thread(target=work,daemon=True);thread.start()
             try:uvicorn.run(create_app('archive',settings),host='127.0.0.1',port=8767,log_level='warning')
             finally:stop.set();thread.join(timeout=15)

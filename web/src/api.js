@@ -7,6 +7,16 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  CROSS_SPACE_REFERENCE: "引用项不属于当前空间，请重新选择。",
+  INVALID_SEARCH_TEXT: "请输入较短且包含文字或数字的检索词。",
+  FIELD_NOT_FILTERABLE: "所选字段已停用或不可筛选，请移除条件后重试。",
+  UNKNOWN_SEARCH_FIELD: "检索字段已不可用，请刷新并调整条件。",
+  INVALID_METADATA_VALUE: "字段筛选值的类型、精度或日期无效，请核对后重试。",
+  INVALID_SEARCH_VALUE: "筛选值或区间无效，请核对起止值与类型。",
+  SEARCH_TIMEOUT: "检索超时，请缩小范围后重试。",
+  SEARCH_STATUS_LIMIT: "实时状态核验范围过大，请先缩小目录、类型或字段范围。",
+  SEARCH_RESPONSE_LIMIT: "结果内容过大，请缩小检索范围。",
+  SEARCH_REQUEST_LIMIT: "检索条件过长，请减少条件。",
   DERIVED_CONTENT_UNAVAILABLE: "缓存文本暂时不可读，请切换结构化正文或联系管理员检查派生产物。",
   CONTENT_NOT_COMPLETED: "所选解析尚未成功，请查看其他结果。",
   CONTENT_RESPONSE_LIMIT: "内容超过读取上限，请使用结构化正文分页读取。",

@@ -294,3 +294,8 @@ POST流最大1MiB、最多32元数据条件/100标签或类型、5排序/每页1
 ## T29 前端消费范围
 
 无HTTP契约变更，Archive0.4.19/49路径、Converter0.4.3/6路径保持。生产详情使用既有content(format=blocks/text/markdown)、candidates和parse-runs分页，以及版本保护的metadata/adopt-candidate；只展示真实缓存，不执行HTML/原件、不提供派生产物下载。历史/旧Revision候选不采纳；正文暂无成功指针时直接呈现真实状态，不请求必然404的正文。
+
+
+## T30 前端消费与限制
+
+无HTTP契约变更。生产普通列表GET与提交后的POST /documents/search共用空间/目录/导航/类型范围，选择筛选结果也使用同一POST条件和page_size=100；正文读取仍T29。UI最多8条字段条件，integer只接受±9007199254740991安全整数、Decimal字符串，单选label转稳定ID、boolean false/is_null各自表达；服务端仍保留原32条件/完整64位输入能力。版本化#library URL片段是客户端状态而非新API、权限或保存视图；不含凭证。

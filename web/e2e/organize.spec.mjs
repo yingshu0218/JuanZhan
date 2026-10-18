@@ -157,15 +157,15 @@ test("tag, favorite, trash and durable batch restore retain classification on de
   });
   await page.getByRole("button", { name: "批量操作", exact: true }).click();
   await page.getByLabel("操作类型").selectOption("add_tags");
-  await page.getByLabel("重要", { exact: true }).check();
-  await page.getByLabel("参考", { exact: true }).check();
+  await page.getByRole("dialog", { name: "档案操作", exact: true }).getByLabel("重要", { exact: true }).check();
+  await page.getByRole("dialog", { name: "档案操作", exact: true }).getByLabel("参考", { exact: true }).check();
   await submit(page);
   await expect(page.locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
   await closeResult(page);
   await page.getByLabel("全选当前页", { exact: true }).check();
   await page.getByRole("button", { name: "批量操作", exact: true }).click();
   await page.getByLabel("操作类型").selectOption("remove_tags");
-  await page.getByLabel("重要", { exact: true }).check();
+  await page.getByRole("dialog", { name: "档案操作", exact: true }).getByLabel("重要", { exact: true }).check();
   await submit(page);
   await expect(page.locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
   await closeResult(page);

@@ -173,3 +173,8 @@ search.py共用GET简单与POST高级查询，复用tokenizer字面词元AND、�
 ## T29 生产阅读组件
 
 ContentReader.jsx以完整请求路径隔离结果、AbortController取消过期读取；正文/候选/历史独立并行，各自加载/错误/分页，不向全局挂载无限正文。Detail负责业务字段/版本读取和刷新，采纳复用既有CSRF ApiClient与版本保护API。React文本与语义table显示块，Markdown源文本不走HTML转换器。阅读测试使用独立临时Archive/store、真实TCP Converter与worker；生产服务/数据库未改。
+
+
+## T30 查询状态与一致范围
+
+searchState.js处理有界UI类型转换及版本化URL片段校验，SearchPanel.jsx只维护草稿，Workspace用同一fetchDocuments读取可见页/100项批量快照，Library分别展示范围摘要/结果/错误。列表条件变化Abort旧请求、清除批量选择；URL恢复先验证空间，popstate/自动页码修正replace而非产生循环历史。普通GET及高级POST复用既有ApiClient鉴权/CSRF，不改数据库或索引算法。

@@ -14,6 +14,8 @@ import {
   CaretRight,
   List,
 } from "@phosphor-icons/react";
+import { SearchPanel } from "./SearchPanel.jsx";
+import { encodedState, readLocation, searchBody } from "./searchState.js";
 import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
 import { Sources } from "./Sources.jsx";
@@ -37,8 +39,13 @@ const navIcons = {
 };
 
 export function Workspace({ api, logout, authError }) {
+  const [initial] = useState(readLocation);
+  const urlStarted = useRef(false);
+  const restoringUrl = useRef(false);
+  const [search, setSearch] = useState(initial.state.search || null);
+  const [indexState, setIndexState] = useState(null);
   const [spaces, setSpaces] = useState([]);
-  const [space, setSpace] = useState("");
+  const [space, setSpace] = useState(initial.state.space || "");
   const [catalog, setCatalog] = useState({
     folders: [],
     types: [],
@@ -47,15 +54,15 @@ export function Workspace({ api, logout, authError }) {
   });
   const [documents, setDocuments] = useState([]);
   const [total, setTotal] = useState(0);
-  const [view, setView] = useState("grid");
-  const [section, setSection] = useState("all");
-  const [folder, setFolder] = useState("");
+  const [view, setView] = useState(initial.state.view || "grid");
+  const [section, setSection] = useState(initial.state.section || "all");
+  const [folder, setFolder] = useState(initial.state.folder || "");
   const [selected, setSelected] = useState(null);
   const [mobileDetail, setMobileDetail] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState("-imported_at");
-  const [type, setType] = useState("");
+  const [page, setPage] = useState(initial.state.page || 1);
+  const [sort, setSort] = useState(initial.state.sort || "-imported_at");
+  const [type, setType] = useState(initial.state.type || "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
@@ -69,7 +76,7 @@ export function Workspace({ api, logout, authError }) {
   const [selectionMode, setSelectionMode] = useState("explicit");
   const [snapshotBusy, setSnapshotBusy] = useState(false);
   const snapshotRequest = useRef(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(initial.error || "");
   const [dropTarget, setDropTarget] = useState("");
   const [fileDrag, setFileDrag] = useState(false);
   const dragDepth = useRef(0);
@@ -85,7 +92,7 @@ export function Workspace({ api, logout, authError }) {
     setSnapshotBusy(false);
     internalDrag.current = null;
     return () => snapshotRequest.current?.abort();
-  }, [space, page, sort, type, folder, section]);
+  }, [space, page, sort, type, folder, section, search]);
   function context() {
     return {
       spaceId: space,
@@ -114,20 +121,58 @@ export function Workspace({ api, logout, authError }) {
       return next;
     });
   }
-  function query() {
-    const params = new URLSearchParams({
-      space_id: space,
-      page: "1",
-      page_size: "100",
-      sort,
-    });
+  function fetchDocuments(number, size, signal) {
+    if (search && section !== "sources") {
+      const body = { ...searchBody(search), space_id: space, page: number, page_size: size,
+        sort: [{ field: sort.replace(/^-/, ""), order: sort.startsWith("-") ? "desc" : "asc" }] };
+      if (folder) body.folder = { id: folder, include_descendants: search.descendants };
+      if (type) body.document_type_ids = [type];
+      if (section === "inbox") body.triage_status = "needs_review";
+      if (section === "favorite") body.is_favorite = true;
+      if (section === "trash") body.trash = "only";
+      return api.request("/documents/search", { method: "POST", body, signal });
+    }
+    const params = new URLSearchParams({ space_id: space, page: String(number), page_size: String(size), sort: sort === "-relevance" ? "-imported_at" : sort });
     if (folder) params.set("folder_id", folder);
     if (type) params.set("document_type_id", type);
     if (section === "inbox") params.set("triage_status", "needs_review");
     if (section === "favorite") params.set("is_favorite", "true");
     if (section === "trash") params.set("trash", "only");
-    return params;
+    return api.request("/documents?" + params, { signal });
   }
+  function applySearch(value) {
+    const nextSort = value.text ? "-relevance" : "-imported_at";
+    const nextType = value.type_ids?.length ? "" : type;
+    encodedState({ space, section, folder, type: nextType, page: 1, sort: nextSort, view, search: value });
+    setSearch(value); setType(nextType); setSort(nextSort); setPage(1); setSelected(null); setIndexState(null);
+    setRefresh((n) => n + 1);
+  }
+  function clearSearch() {
+    setSearch(null); setSort("-imported_at"); setPage(1); setSelected(null); setIndexState(null);
+  }
+  useEffect(() => {
+    if (!ready || !space) return;
+    let hash;
+    try { hash = encodedState({ space, section, folder, type, page, sort, view, search }); }
+    catch (error) { setNotice(error.message + " 当前状态未保存到链接。"); return; }
+    if (location.hash !== hash) history[urlStarted.current && !restoringUrl.current ? "pushState" : "replaceState"](null, "", hash);
+    urlStarted.current = true;
+    restoringUrl.current = false;
+  }, [ready, space, section, folder, type, page, sort, view, search]);
+  useEffect(() => {
+    function restore() {
+      restoringUrl.current = true;
+      const saved = readLocation(); const value = saved.state;
+      const available = spaces.some((item) => item.id === value.space);
+      setNotice(saved.error || (!available && value.space ? "链接中的空间不可用，已回到默认列表并清空检索。" : ""));
+      setSpace(available ? value.space : (spaces[0]?.id || ""));
+      setSection(available ? value.section : "all"); setFolder(available ? value.folder : ""); setType(available ? value.type : "");
+      setPage(available ? value.page : 1); setSort(available ? value.sort : "-imported_at"); setView(available ? value.view : "grid");
+      setSearch(available ? value.search : null); setSelected(null); setMobileDetail(false); setChecked(new Map());
+    }
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, [spaces]);
   async function selectResults() {
     const controller = new AbortController();
     snapshotRequest.current?.abort();
@@ -135,9 +180,7 @@ export function Workspace({ api, logout, authError }) {
     setSnapshotBusy(true);
     setNotice("");
     try {
-      const result = await api.request("/documents?" + query(), {
-        signal: controller.signal,
-      });
+      const result = await fetchDocuments(1, 100, controller.signal);
       if (controller.signal.aborted) return;
       if (result.total > 100) {
         setNotice("当前筛选结果超过100份，请缩小筛选范围或按当前页操作。");
@@ -260,7 +303,12 @@ export function Workspace({ api, logout, authError }) {
       .request("/spaces", { signal: controller.signal })
       .then((rows) => {
         setSpaces(rows);
-        setSpace(rows[0]?.id || "");
+        const saved = rows.some((row) => row.id === initial.state.space);
+        setSpace(saved ? initial.state.space : (rows[0]?.id || ""));
+        if (initial.state.space && !saved) {
+          setNotice("链接中的空间不可用，已回到默认列表并清空检索。");
+          setSearch(null); setSection("all"); setFolder(""); setType(""); setPage(1); setSort("-imported_at");
+        }
         setReady(true);
         setLoading(false);
       })
@@ -273,39 +321,31 @@ export function Workspace({ api, logout, authError }) {
     return () => controller.abort();
   }, [api]);
   useEffect(() => {
-    if (!space) return;
+    if (!ready || !space) return;
     const controller = new AbortController();
     setLoading(true);
     setError("");
-    const params = new URLSearchParams({
-      space_id: space,
-      page: String(page),
-      page_size: "30",
-      sort,
-    });
-    if (folder) params.set("folder_id", folder);
-    if (type) params.set("document_type_id", type);
-    if (section === "inbox") params.set("triage_status", "needs_review");
-    if (section === "favorite") params.set("is_favorite", "true");
-    if (section === "trash") params.set("trash", "only");
+    setIndexState(null);
     Promise.all([
-      api.request("/documents?" + params, { signal: controller.signal }),
-      ...["folders", "document-types", "tags", "field-definitions"].map(
+      fetchDocuments(page, 30, controller.signal),
+      ...["folders", "document-types", "tags", "field-definitions", "sources"].map(
         (path) =>
           api.request("/" + path + "?space_id=" + encodeURIComponent(space), {
             signal: controller.signal,
           }),
       ),
     ])
-      .then(([result, folders, types, tags, definitions]) => {
+      .then(([result, folders, types, tags, definitions, sources]) => {
         if (controller.signal.aborted) return;
         if (page > 1 && (page - 1) * 30 >= result.total) {
+          restoringUrl.current = true;
           setPage(Math.max(1, Math.ceil(result.total / 30)));
           return;
         }
         setDocuments(result.items);
         setTotal(result.total);
-        setCatalog({ folders, types, tags, definitions });
+        setIndexState(result.search_index || null);
+        setCatalog({ folders, types, tags, definitions, sources });
         setSelected((current) =>
           result.items.some((doc) => doc.id === current) ? current : null,
         );
@@ -321,7 +361,7 @@ export function Workspace({ api, logout, authError }) {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [api, space, page, sort, type, folder, section, refresh]);
+  }, [api, ready, space, page, sort, type, folder, section, refresh, search]);
   function chooseSection(next, nextFolder = "") {
     setSection(next);
     setFolder(nextFolder);
@@ -331,6 +371,8 @@ export function Workspace({ api, logout, authError }) {
     setNavOpen(false);
   }
   function chooseSpace(id) {
+    if (id === space) return;
+    clearSearch();
     setSpace(id);
     setCatalog({ folders: [], types: [], tags: [], definitions: [] });
     setDocuments([]);
@@ -672,6 +714,11 @@ export function Workspace({ api, logout, authError }) {
                     setSelected(id);
                     setMobileDetail(true);
                   }}
+                  searchPanel={<SearchPanel key={space + JSON.stringify(search)} applied={search} catalog={catalog} onApply={applySearch} onClear={clearSearch} />}
+                  searching={!!search}
+                  relevanceAvailable={!!search?.text}
+                  multiType={!!search?.type_ids?.length}
+                  indexState={indexState}
                   title={title}
                   loading={loading}
                   error={error}

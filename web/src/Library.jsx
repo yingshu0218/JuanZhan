@@ -7,6 +7,11 @@ import {
 } from "@phosphor-icons/react";
 import { Empty, Notice, processing, formatDate } from "./ui.jsx";
 export function Library({
+  searchPanel,
+  searching,
+  relevanceAvailable,
+  multiType,
+  indexState,
   documents,
   total,
   page,
@@ -60,16 +65,18 @@ export function Library({
           </button>
         </div>
       </div>
+      {searchPanel}
       <div className="filters">
         <label className="sr-only" htmlFor="type-filter">
           筛选文档类型
         </label>
         <select
+          disabled={multiType}
           id="type-filter"
           value={type}
           onChange={(e) => setType(e.target.value)}
         >
-          <option value="">全部类型</option>
+          <option value="">{multiType ? "高级类型范围" : "全部类型"}</option>
           {types.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
@@ -85,12 +92,17 @@ export function Library({
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
+          {searching ? <option value="-relevance" disabled={!relevanceAvailable}>按相关性排序</option> : null}
           <option value="-imported_at">最新导入</option>
           <option value="imported_at">最早导入</option>
           <option value="title">按标题排序</option>
           <option value="-document_date">业务日期</option>
         </select>
       </div>
+      {searching && indexState && !loading && !error ? <div className="search-status" aria-label="检索范围状态">
+        {indexState.incomplete ? <Notice>当前结果可能不完整：范围内{indexState.total}份档案，未建索引{indexState.missing}份、索引待更新{indexState.pending}份、索引失败{indexState.failed}份。部分正文可能仍在处理、缺少文本或来自旧版本；这些状态可能重叠。</Notice> : <p className="muted">已在所选范围 {indexState.total} 份档案中检索。</p>}
+        <button onClick={retry}>刷新检索结果</button>
+      </div> : null}
       <div className="selection-controls">
         <label className="check-label">
           <input
@@ -181,13 +193,15 @@ export function Library({
                     <span>
                       {processing[doc.processing_status] || "状态未知"}
                     </span>
+                    {doc.search_index && doc.search_index.status !== "current" ? <span>{doc.search_index.status === "failed" ? "索引更新失败" : "索引尚未更新"}</span> : null}
+                    {doc.search_index?.content_incomplete ? <span>正文可能不完整</span> : null}
                   </div>
                 </div>
               </button>
             </div>
           ))
         ) : (
-          <Empty title="这里还没有档案">
+          searching ? <Empty title={indexState?.incomplete ? "暂未找到匹配档案" : "没有匹配的档案"}><p>{indexState?.incomplete ? "处理或索引尚未完整，不能据此确认没有匹配内容。请稍后刷新。" : "请调整关键词或过滤条件，或清除搜索。"}</p></Empty> : <Empty title="这里还没有档案">
             <p>导入原文件，开始整理资料。</p>
             <button onClick={importFiles} className="text-action">
               导入文件
