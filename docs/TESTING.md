@@ -540,3 +540,11 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 新增两个library浏览器流程2 passed（18.1秒），日志`.local/batch-fields-browser-focused.log`；验证七类型批量设置、保留其他字段、清空/撤销、并发修改及浏览器不安全整数阻止提交。首次library运行原有8项通过、新增2项因getByLabel选择器超时失败，修正为有明确角色/名称的combobox定位后上述2项通过；初始日志保留于`.local/batch-fields-browser.log`。本轮未宣称全部浏览器/完整后端重新通过。
 
 桌面1440×1000和手机390×844截图`/tmp/juanzhan-batch-fields-{desktop,mobile}.png`已目视检查，内容完整、表单可读，手机无横向溢出；本机副本`/tmp/juanzhan-remote-qa/`。无Browser插件，继续使用仓库Playwright。
+
+## 历史原件下载专项 · 2026-10-19
+
+服务器标准只读sysfs容器执行tests/test_files.py：6 passed，7.05秒，1条既有客户端弃用提示。证据为`/opt/juanzhan-dev/.local/history-files-container.log`及history-files-container.xml。真实SQLite、文件和HTTP覆盖：旧版字节、鉴权、跨档案404、参数互斥、损坏拒绝、下载中新增Revision、当前原件版本保护，以及只读外部来源离线/可写/路径越界/哈希变化和PDF预览。
+
+服务器前端构建通过；原件浏览器组3 passed，13.0秒，日志`.local/history-files-browser.log`。新增真实Revision服务追加后从Web版本列表下载旧字节，并核对当前字节、中文文件名和手机无溢出；原有PDF预览/返回和恶意HTML隔离也通过。手机截图`/tmp/juanzhan-history-original-mobile.png`已目视检查，本机副本在`/tmp/juanzhan-remote-qa/`。未执行本次代码的完整全量回归或镜像重建。
+
+最终浏览器命令在进程环境指定`LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`，并沿用已有JUANZHAN_TEST_CJK_FONT和PLAYWRIGHT_BROWSERS_PATH。SSH默认POSIX字符集使初次Chromium中文下载名退化为download；已有UTF-8 locale下全部通过，未放宽断言或改变产品Blob策略。首次宿主pytest未指定字体导致PDF夹具失败，补充已有字体环境变量后通过，最终容器6项全过。初步/调试日志保留于`.local/history-*`。浏览器测试私有pointer文件只用于一次性测试卷的真实Revision夹具，退出清理，不提供生产测试API。

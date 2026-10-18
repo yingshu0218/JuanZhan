@@ -88,6 +88,7 @@ def test_readonly_external_download_offline_changed_and_boundary(source_api):
     from juanzhan.source_paths import SourceMounts
     with SourceMounts(settings.source_mounts).open(record['root_ref'],record['relative_path_norm']) as file:expected=file.read()
     assert client.get(root+'/download').content==expected
+    assert client.get(root+'/download?revision_id='+record['revision']).content==expected
     # Real unavailable and writable mount configurations must fail, without path disclosure.
     for mounts in ((('docs','/absent-readonly-source'),),(('docs',str(settings.data_dir)),)):
         with TestClient(create_app('archive',replace(settings,source_mounts=mounts)),base_url='https://archive.test') as other:
@@ -98,6 +99,52 @@ def test_readonly_external_download_offline_changed_and_boundary(source_api):
     with connect(settings.database) as db:
         db.execute("UPDATE file_revisions SET sha256=? WHERE id=?",('0'*64,record['revision']));db.commit()
     assert client.get(root+'/download').status_code==409
+    assert client.get(root+'/download?revision_id='+record['revision']).status_code==409
     with connect(settings.database) as db:
         db.execute("UPDATE source_entries SET relative_path_norm='../escape' WHERE document_id=?",(record['id'],));db.commit()
+    assert client.get(root+'/download').status_code==409
+
+
+def test_historical_download_checks_ownership_auth_integrity_and_survives_new_current(pipeline):
+    settings,client,_,_=pipeline
+    first=upload(pipeline,b'first historical bytes','old.txt')
+    root='/api/v1/documents/'+first['document_id']
+    old=client.get(root).json()['current_revision_id']
+    append(settings,first['document_id'],b'new current bytes')
+    url=root+'/download?revision_id='+old
+    response=client.get(url)
+    assert response.status_code==200 and response.content==b'first historical bytes'
+    assert response.headers['x-revision-id']==old
+    assert response.headers['content-type']=='application/octet-stream'
+    assert client.get(root+'/download').content==b'new current bytes'
+    assert client.get(url+'&expected_revision_id='+old).status_code==422
+    other=upload(pipeline,b'other document','other.txt')
+    assert client.get('/api/v1/documents/'+other['document_id']+'/download?revision_id='+old).status_code==404
+    assert client.get(root+'/download?revision_id=missing').status_code==404
+    with TestClient(create_app('archive',settings)) as stranger:
+        assert stranger.get(url).status_code==401
+    obj=rows(settings,'SELECT o.storage_key FROM managed_objects o JOIN file_revisions r ON r.managed_object_id=o.id WHERE r.id=?',old)[0]
+    path=settings.data_dir/'managed'/obj['storage_key'];path.chmod(0o600);path.write_bytes(b'corrupted')
+    assert client.get(url).status_code==409
+    assert client.get(root+'/download').content==b'new current bytes'
+
+
+def test_historical_download_stays_pinned_during_concurrent_revision_append(pipeline,monkeypatch):
+    from contextlib import contextmanager
+    from juanzhan import files
+    settings,client,_,_=pipeline
+    receipt=upload(pipeline,b'old pinned bytes','pinned.txt')
+    root='/api/v1/documents/'+receipt['document_id']
+    old=client.get(root).json()['current_revision_id']
+    real_original=files.original
+    @contextmanager
+    def concurrent(settings,revision,limit):
+        with real_original(settings,revision,limit) as file:
+            append(settings,receipt['document_id'],b'concurrent bytes')
+            yield file
+    monkeypatch.setattr(files,'original',concurrent)
+    response=client.get(root+'/download?revision_id='+old)
+    assert response.status_code==200 and response.content==b'old pinned bytes'
+    assert response.headers['x-revision-id']==old
+    # The default endpoint still rejects an original changed during preparation.
     assert client.get(root+'/download').status_code==409

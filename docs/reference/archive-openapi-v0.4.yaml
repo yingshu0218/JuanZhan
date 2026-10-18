@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.23
+  version: 0.4.24
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1834,16 +1834,24 @@ paths:
     get:
       tags:
       - Documents
-      summary: 下载当前原件
+      summary: 下载当前或指定历史原件
       operationId: get_documents_id_download
-      description: 鉴权下载当前原件；先核验完整哈希和当前Revision，将字节固定到私有临时文件后返回。外部离线/可写挂载/路径越界/版本变化或校验失败409，不回退旧字节。所有类型强制application/octet-stream附件、UTF-8文件名、no-store/nosniff及sandbox
-        CSP。最多1GiB，同时最多2个准备过程；无Range/历史原件下载。
+      description: 鉴权下载当前原件或revision_id指定的所属档案历史原件；先核验完整哈希和Revision登记，将字节固定到私有临时文件后返回。历史外部原件只在来源当前字节仍匹配历史哈希时可用，绝不以新内容替代。外部离线/可写挂载/路径越界/版本变化或校验失败409，不回退旧字节。所有类型强制application/octet-stream附件、UTF-8文件名、no-store/nosniff及sandbox
+        CSP。最多1GiB，同时最多2个准备过程；无Range。revision_id与expected_revision_id互斥，同时提供返回422。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
       - name: expected_revision_id
         in: query
         description: 期望当前Revision；不匹配返回409。预览字节请求必须提供。
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+        required: false
+      - name: revision_id
+        in: query
+        description: 指定所属档案的历史Revision；不存在或跨档案返回404。与expected_revision_id互斥。
         schema:
           type: string
           minLength: 1

@@ -32,6 +32,17 @@ def current(db, id, expected=None):
     return doc, dict(revision)
 
 
+def download_revision(db, id, revision_id=None, expected=None):
+    if revision_id is None:
+        return current(db,id,expected)[1]
+    if expected is not None:
+        fail(422,'INVALID_DOWNLOAD_PARAMETERS','Choose a historical revision or a current revision guard')
+    # Ownership is checked even for globally unique revision IDs.
+    revision=db.execute('SELECT * FROM file_revisions WHERE id=? AND document_id=?',(revision_id,id)).fetchone()
+    if revision is None:fail(404,'NOT_FOUND','Document revision not found')
+    return dict(revision)
+
+
 def previews(db, id, expected=None):
     doc, revision = current(db,id,expected)
     run = db.execute("SELECT id,revision_id,status FROM parse_runs WHERE id=? AND document_id=?",
@@ -48,13 +59,14 @@ def previews(db, id, expected=None):
 def router(settings):
     routes = APIRouter(prefix='/api/v1/documents')
     @routes.get('/{id}/download')
-    def download(id: str, expected_revision_id: str | None = Query(default=None,min_length=1,max_length=255)):
+    def download(id: str, expected_revision_id: str | None = Query(default=None,min_length=1,max_length=255),
+                 revision_id: str | None = Query(default=None,min_length=1,max_length=255)):
         if not COPIES.acquire(blocking=False): fail(429,'DOWNLOAD_CAPACITY','Download preparation is busy')
         copy = None
         try:
             with connect(settings.database) as db:
                 db.row_factory=sqlite3.Row
-                _, revision=current(db,id,expected_revision_id)
+                revision=download_revision(db,id,revision_id,expected_revision_id)
             if revision['size_bytes']>MAX_BYTES: fail(413,'DOWNLOAD_LIMIT','Original exceeds download limit')
             copy=tempfile.TemporaryFile(); digest=hashlib.sha256(); size=0
             try:
@@ -68,7 +80,10 @@ def router(settings):
             if size!=revision['size_bytes'] or digest.hexdigest()!=revision['sha256']:
                 fail(409,'ORIGINAL_UNAVAILABLE','Original no longer matches recorded revision')
             with connect(settings.database) as db:
-                db.row_factory=sqlite3.Row;current(db,id,revision['id'])
+                db.row_factory=sqlite3.Row
+                pinned_revision=download_revision(db,id,revision_id,expected_revision_id if revision_id else revision['id'])
+                if pinned_revision!=revision:
+                    fail(409,'REVISION_CONFLICT','Original registration changed; reload')
             copy.seek(0)
             pinned=copy
             def chunks():

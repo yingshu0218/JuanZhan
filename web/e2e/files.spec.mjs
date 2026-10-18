@@ -43,3 +43,30 @@ test("untrusted HTML stays a download and cannot execute in the original dialog"
   const download=await event;expect((await readFile(await download.path())).toString()).toBe(content);
   expect(await page.evaluate(()=>window.originalExecuted)).toBeUndefined();expect(requested).toEqual([]);
 });
+
+
+test("historical managed original downloads exact prior bytes from version list",async({page})=>{
+  const errors=[];page.on("pageerror",e=>errors.push(e.message));
+  await login(page);await createSpace(page,"历史原件验证");
+  const space=await page.getByLabel("当前空间").inputValue();
+  const buffer=Buffer.from("历史原件字节，不应被新版本替代");
+  const response=await page.request.post("/api/v1/documents/upload",{headers:{"X-CSRF-Token":(await api(page,"/auth/session")).data.csrf_token},multipart:{space_id:space,file:{name:"历史原件.txt",mimeType:"text/plain",buffer}}});
+  expect(response.status()).toBe(201);const receipt=await response.json();
+  await expect.poll(async()=>(await api(page,`/documents/${receipt.document_id}`)).data.processing_status).toBe("completed");
+  // Use the real revision service against this disposable test server's private store.
+  const directory=(await readFile(process.env.JUANZHAN_E2E_ARCHIVE_POINTER,"utf8")).trim();
+  execFileSync("../.venv/bin/python",["-c","import sys;from pathlib import Path;sys.path[:0]=['../tests','../services'];from test_parsing import append;from juanzhan.config import Settings;append(Settings(Path(sys.argv[1]),''),sys.argv[2],b'new current bytes')",directory,receipt.document_id]);
+  await page.reload();await page.getByLabel("当前空间").selectOption(space);
+  await page.getByRole("region",{name:"档案列表",exact:true}).getByRole("button").filter({hasText:"历史原件.txt"}).click();
+  await page.getByRole("button",{name:"关联原文件",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"关联原文件",exact:true});
+  await dialog.getByText("已登记原件版本",{exact:true}).click();
+  const event=page.waitForEvent("download");await dialog.getByRole("button",{name:"下载版本 1",exact:true}).click();
+  const downloaded=await event;expect(downloaded.suggestedFilename()).toBe("历史原件.txt");
+  expect(await readFile(await downloaded.path())).toEqual(buffer);
+  const currentEvent=page.waitForEvent("download");await dialog.getByRole("button",{name:"下载当前原件",exact:true}).click();
+  expect((await readFile(await (await currentEvent).path())).toString()).toBe("new current bytes");
+  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:"/tmp/juanzhan-history-original-mobile.png"});
+  expect(errors).toEqual([]);
+});
