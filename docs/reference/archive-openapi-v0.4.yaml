@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.24
+  version: 0.4.25
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1830,6 +1830,57 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           description: 参数无效
+  /documents/{id}/adopt:
+    post:
+      tags: [Documents]
+      summary: 校验复制外部原件并生成托管版本
+      operationId: post_documents_id_adopt
+      description: 异步核验只读来源并复制，成功后在租约围栏事务切换新托管Revision，保留Document编号、人工字段和最近成功正文；排队重新解析。外部原件零写入。入队时建立扫描排除屏障，终态失败释放，成功改为受保护的精确路径排除规则。相同request_id及参数复用原任务，参数变化409；上限沿用托管输入限制，默认64MiB。Cookie写入须CSRF。
+      parameters:
+      - $ref: '#/components/parameters/DocumentId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_document_version, expected_revision_id, request_id]
+              properties:
+                expected_document_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9223372036854775806
+                expected_revision_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                request_id:
+                  type: string
+                  pattern: '^[A-Za-z0-9_-]{1,128}$'
+      responses:
+        '202':
+          description: 返回复制任务；成功结果含document_id、revision_id和parse_job_id，解析子任务另行跟踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: ADOPTION_LIMIT，外部原件超过托管输入上限
+        '422':
+          $ref: '#/components/responses/Validation'
   /documents/{id}/download:
     get:
       tags:
@@ -3307,6 +3358,9 @@ components:
     SourceEntry:
       type: object
       properties:
+        is_managed:
+          type: boolean
+          description: 关联档案当前原件已托管，禁止通过来源取消索引
         id: *id001
         source_id: *id001
         document_id:
@@ -3335,6 +3389,9 @@ components:
     SourceExclusion:
       type: object
       properties:
+        protected:
+          type: boolean
+          description: 关联档案当前原件已托管，保留防重导规则；移除返回409 SOURCE_ENTRY_MANAGED
         id: *id001
         source_id: *id001
         relative_path:

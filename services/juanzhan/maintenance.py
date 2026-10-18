@@ -18,7 +18,7 @@ from .database import connect
 from .document_events import record_event, utc_now
 from .document_records import expected, snapshot
 from .documents import Version
-from .exclusions import add, bump
+from .exclusions import add, bump, managed_binding
 from .jobs import JobQueue, JobSpec, encoded
 from .storage import ManagedStore, directory, parse_key
 
@@ -48,6 +48,8 @@ def exclude(db,job):
     db.row_factory=sqlite3.Row
     payload=json.loads(job['payload_json'])
     entry=required(db,'source_entries',job['target_id'])
+    if managed_binding(db,entry['source_id'],entry['relative_path_norm']):
+        fail(409,'SOURCE_ENTRY_MANAGED','This entry belongs to a managed document')
     if entry['relative_path_norm']!=payload['path']:fail(409,'SOURCE_CHANGED','Source entry changed')
     timestamp=utc_now()
     if entry['document_id']:
@@ -76,7 +78,7 @@ def purge(db,job,settings):
         bump(db,entry['source_id'])
     # Fence active document handlers; future completions cannot restore purged data.
     db.execute("UPDATE jobs SET status='cancelled',retryable=0,error_json=?,lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,updated_at=? "
-               "WHERE target_type='document' AND target_id=? AND status IN ('queued','running')",
+               "WHERE target_type IN ('document','document_adoption') AND target_id=? AND status IN ('queued','running')",
                (encoded({'code':'DOCUMENT_PURGED','message':'Document was purged','retryable':False}),timestamp,id))
     db.execute('DELETE FROM document_search WHERE document_id=?',(id,))
     db.execute('UPDATE documents SET current_revision_id=NULL,current_parse_run_id=NULL WHERE id=?',(id,))
@@ -158,7 +160,8 @@ def router(settings):
     def rules(id:str):
         with transaction(settings) as db:
             required(db,'sources',id)
-            return [{'id':r['id'],'source_id':r['source_id'],'relative_path':r['relative_path_norm'],'reason':r['reason'],'created_at':r['created_at']}
+            return [{'id':r['id'],'source_id':r['source_id'],'relative_path':r['relative_path_norm'],'reason':r['reason'],'created_at':r['created_at'],
+                     'protected':managed_binding(db,id,r['relative_path_norm'])}
                     for r in db.execute('SELECT * FROM source_exclusions WHERE source_id=? ORDER BY created_at,id',(id,))]
 
     @routes.post('/sources/{id}/exclude-entry',status_code=202)
@@ -166,8 +169,12 @@ def router(settings):
         with transaction(settings,request) as db:
             required(db,'sources',id);entry=required(db,'source_entries',body.source_entry_id)
             if entry['source_id']!=id:fail(422,'CROSS_SOURCE_REFERENCE','Entry belongs to another source')
-            pending=db.execute('SELECT j.id,j.status FROM source_exclusion_intents x JOIN jobs j ON j.id=x.job_id WHERE x.source_entry_id=?',(entry['id'],)).fetchone()
-            if pending:return {'job_id':pending['id'],'status':pending['status']}
+            if managed_binding(db,id,entry['relative_path_norm']):
+                fail(409,'SOURCE_ENTRY_MANAGED','This entry belongs to a managed document')
+            pending=db.execute('SELECT j.id,j.status,j.target_type FROM source_exclusion_intents x JOIN jobs j ON j.id=x.job_id WHERE x.source_entry_id=?',(entry['id'],)).fetchone()
+            if pending:
+                if pending['target_type']!='source_exclude':fail(409,'SOURCE_ENTRY_BUSY','Source entry has another pending operation')
+                return {'job_id':pending['id'],'status':pending['status']}
             if entry['document_id']:
                 if body.expected_document_version is None:fail(422,'VERSION_REQUIRED','Expected document version required')
                 expected(db,entry['document_id'],body.expected_document_version)
@@ -183,6 +190,8 @@ def router(settings):
         with transaction(settings,request) as db:
             required(db,'sources',id);rule=required(db,'source_exclusions',exclusion_id)
             if rule['source_id']!=id:fail(422,'CROSS_SOURCE_REFERENCE','Rule belongs to another source')
+            if managed_binding(db,id,rule['relative_path_norm']):
+                fail(409,'SOURCE_ENTRY_MANAGED','Keep the exclusion while the managed document retains this source entry')
             db.execute('DELETE FROM source_exclusions WHERE id=?',(exclusion_id,));bump(db,id)
 
     @routes.post('/documents/{id}/purge',status_code=202)

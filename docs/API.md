@@ -318,6 +318,8 @@ Archive契约0.4.22，路径数和8条迁移不变。POST /documents/batch支持
 
 ## 批量业务字段 · 2026-10-19
 
+T16后续契约为Archive0.4.25/53路径：POST /documents/{id}/adopt接受expected_document_version、expected_revision_id、request_id，额外键拒绝，Cookie须CSRF。返回202复制任务；同请求ID和参数幂等复用（包括完成后重试），参数变化409。复制上限使用服务端托管输入配置，默认64MiB，超限413 ADOPTION_LIMIT。任务kind=batch、target_type=document_adoption，有限3次重试；成功结果含document_id、revision_id、parse_job_id及external_file_modified=false。父任务成功表示复制并切换完成，解析子任务另行跟踪。来源entries新增is_managed，排除规则新增protected；已托管绑定禁止取消索引或删除防重导规则，返回409 SOURCE_ENTRY_MANAGED。正在复制时取消索引返回SOURCE_ENTRY_BUSY。清理档案后旧绑定消失，规则仍保留，可再明确移除。
+
 后续历史下载契约为Archive0.4.24：GET /documents/{id}/download新增revision_id，与expected_revision_id互斥，同时提供422。指定Revision必须属于该档案，跨档案/不存在404；历史下载期间当前版本推进不影响已核验旧字节，但Revision登记变化409。历史外部文件必须仍匹配原大小和哈希，否则409 ORIGINAL_UNAVAILABLE。鉴权、附件安全头、1GiB及2个准备过程限制不变；Web历史版本按钮沿用64MiB限制，无Range。
 
 Archive契约0.4.23，路径数与8条迁移保持。POST /documents/batch的set_metadata已实现，替代此前501说明。payload为values非空字段键映射（最多1000项）与严格布尔confirm；null明确清空，其余复用单档案七类型校验，小数传字符串，false保留为有效值。既有批次序列化64KiB限制仍生效。

@@ -135,6 +135,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         app.include_router(metadata.router(settings))
         from . import files
         app.include_router(files.router(settings))
+        from . import adoptions
+        app.include_router(adoptions.router(settings))
         app.include_router(content.router(settings))
         app.include_router(jobs.router(settings))
         app.include_router(uploads.router(settings))

@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { Dialog, Notice, formatSize } from "./ui.jsx";
 import { message, ApiError } from "./api.js";
-export function Original({ api, doc, revisions, onClose }) {
+import { TaskStatus } from "./Tasks.jsx";
+export function Original({ api, doc, revisions, onClose, onRefresh }) {
   const [data,setData]=useState(null),[error,setError]=useState(""),[downloadError,setDownloadError]=useState(""),[busy,setBusy]=useState(false),[imageError,setImageError]=useState(false);
+  const [confirmed,setConfirmed]=useState(false),[adoption,setAdoption]=useState(null);
+  const [adoptionRequest]=useState(()=>crypto.randomUUID());
+  async function adopt(){
+    setBusy(true);setDownloadError("");
+    try {
+      const value=await api.request(`/documents/${doc.id}/adopt`,{method:"POST",body:{expected_document_version:doc.document_version,expected_revision_id:doc.current_revision_id,request_id:adoptionRequest}});
+      setAdoption(value.job_id);
+    }catch(e){setDownloadError(message(e));}finally{setBusy(false);}
+  }
   const current=revisions.find(r=>r.id===doc.current_revision_id);
   const query="?expected_revision_id="+encodeURIComponent(doc.current_revision_id || "");
   useEffect(()=>{
@@ -26,6 +36,14 @@ export function Original({ api, doc, revisions, onClose }) {
     {current?.size_bytes > 64 * 1024 * 1024 && <Notice>当前浏览器下载入口限64 MiB；更大原件请使用已鉴权下载API（上限1 GiB）。</Notice>}
     <button className="primary" disabled={busy || !current || current.size_bytes > 64 * 1024 * 1024} onClick={()=>download()}>{busy ? "正在核验与准备…" : "下载当前原件"}</button>
     {downloadError && <Notice error>{downloadError}</Notice>}
+    {current?.storage_kind==="external" && <section aria-label="纳入托管">
+      <h3>纳入托管</h3>
+      {adoption ? <><Notice>已受理复制任务；成功后生成新的托管原件版本，重新解析结果请跟踪解析子任务。</Notice><TaskStatus api={api} id={adoption} /><button onClick={onRefresh}>关闭并刷新档案</button></> : <>
+        <p>校验并复制外部原件，保留此档案编号、人工字段和已有正文。外部文件保持原样；复制失败时不切换原件。</p>
+        <label className="check"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} />确认将当前外部原件复制为托管版本</label>
+        <button disabled={busy || !confirmed || !!doc.deleted_at} onClick={adopt}>确认纳入托管</button>
+      </>}
+    </section>}
     <h3>安全预览</h3><p className="muted">显示当前版本已生成的缩略图，可能只覆盖部分内容；图序号不代表原件页码。原件可用性与缓存预览独立。</p>
     {error && <Notice error>{error}</Notice>}
     {imageError && <Notice error>预览暂不可用或原件版本已变化，请关闭并刷新档案。</Notice>}

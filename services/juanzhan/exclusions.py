@@ -18,6 +18,12 @@ def blocked(db, source_id, path):
         (source_id,path,source_id,path)).fetchone() is not None
 
 
+def managed_binding(db,source_id,path):
+    return db.execute('SELECT 1 FROM source_entries e JOIN documents d ON d.id=e.document_id '
+        'JOIN file_revisions r ON r.id=d.current_revision_id WHERE e.source_id=? AND e.relative_path_norm=? '
+        "AND r.storage_kind='managed' LIMIT 1",(source_id,path)).fetchone() is not None
+
+
 def verify(db, source):
     if epoch(db,source['id'])!=source.get('_exclusion_epoch',epoch(db,source['id'])):
         raise SourcePathError('SOURCE_CHANGED')
@@ -35,7 +41,7 @@ def add(db, entry, reason, timestamp):
 
 
 def failed(db, job, terminal):
-    if terminal and job['target_type']=='source_exclude':
+    if terminal and job['target_type'] in ('source_exclude','document_adoption'):
         rows=db.execute('SELECT source_id FROM source_exclusion_intents WHERE job_id=?',(job['id'],)).fetchall()
         db.execute('DELETE FROM source_exclusion_intents WHERE job_id=?',(job['id'],))
         for row in rows:bump(db,row[0])

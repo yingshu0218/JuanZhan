@@ -31,6 +31,21 @@ def _send(connection,message):
 
 def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
     try:
+        if job['kind']=='batch' and job['target_type']=='document_adoption':
+            from .adoptions import execute
+            from .parsing import ParseFailure
+            from .source_paths import SourcePathError
+            from fastapi import HTTPException
+            try:
+                execute(Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts),job)
+                _send(connection,('committed',))
+            except HTTPException as exc:
+                _send(connection,('failure',exc.detail['code'],'Adoption is no longer applicable',False))
+            except ParseFailure as exc:
+                _send(connection,('failure',exc.code,'External original could not be verified',exc.retryable))
+            except SourcePathError as exc:
+                _send(connection,('failure',exc.code,'External original could not be opened safely',exc.code in ('SOURCE_OFFLINE','SOURCE_CHANGED','SOURCE_FILE_MISSING')))
+            return
         if job['kind']=='reindex' and job['target_type']=='document_search':
             import resource
             resource.setrlimit(resource.RLIMIT_AS,(512*1024*1024,512*1024*1024))

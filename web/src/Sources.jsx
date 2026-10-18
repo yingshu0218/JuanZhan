@@ -484,6 +484,7 @@ export function Sources({
                               disabled={
                                 busy ||
                                 pending ||
+                                entry.is_managed ||
                                 excludedPaths.has(entry.relative_path)
                               }
                               onClick={() => prepareExclusion(entry)}
@@ -540,12 +541,12 @@ export function Sources({
                       <div className="source-file">
                         <strong>{rule.relative_path}</strong>
                         <small>
-                          {rule.reason || "未填写原因"} ·{" "}
+                          {rule.protected ? "已纳入托管，保留防重导规则" : rule.reason || "未填写原因"} ·{" "}
                           {formatDate(rule.created_at)}
                         </small>
                       </div>
                       <button
-                        disabled={busy || pending}
+                        disabled={busy || pending || rule.protected}
                         onClick={() =>
                           open({ kind: "remove", rule, sourceId: id })
                         }

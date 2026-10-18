@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFile, writeFile, rename, unlink, chmod } from "node:fs/promises";
 import { createSpace, api } from "./helpers.mjs";
 const root = process.env.JUANZHAN_E2E_SOURCE_ROOT;
+
 async function login(page) {
   await page.goto("/");
   await expect(page).toHaveTitle("JuanZhan · 档案库");
@@ -272,5 +273,50 @@ test("read-only source wizard, real preview/tree/flat import, pagination, absenc
   await scan(page, "initial");
   await expect(page.locator(".source-entry")).toContainText("one.txt");
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("adopt a real scanned readonly original through the managed copy dialog",async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);await createSpace(page,'托管接管验证');
+  const space=await page.getByLabel('当前空间').inputValue();
+  const source=await api(page,'/sources','POST',{space_id:space,name:'托管接管来源',kind:'external',root_alias:'adoption',initial_import_policy:'flat'});
+  expect(source.status).toBe(201);
+  const scan=await api(page,`/sources/${source.data.id}/scan`,'POST',{mode:'initial'});expect(scan.status).toBe(202);
+  await expect.poll(async()=>(await api(page,`/jobs/${scan.data.job_id}`)).data.status,{timeout:30000}).toBe('completed');
+  const entries=(await api(page,`/sources/${source.data.id}/entries`)).data.items;
+  expect(entries).toHaveLength(1);const id=entries[0].document_id;
+  const old=(await api(page,`/documents/${id}`)).data.current_revision_id;
+  const original=await readFile(root+'/adoption/one.txt');
+  await page.reload();await page.getByLabel('当前空间').selectOption(space);
+  await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:'one.txt'}).click();
+  await page.getByRole('button',{name:'关联原文件',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'关联原文件',exact:true});
+  await expect(dialog.getByRole('button',{name:'确认纳入托管',exact:true})).toBeDisabled();
+  await dialog.getByLabel('确认将当前外部原件复制为托管版本').check();
+  await dialog.getByRole('button',{name:'确认纳入托管',exact:true}).click();
+  await expect(dialog.getByRole('heading',{name:'批量操作 · 已完成',exact:true})).toBeVisible({timeout:30000});
+  const doc=(await api(page,`/documents/${id}`)).data;expect(doc.current_revision_id).not.toBe(old);
+  expect(await readFile(root+'/adoption/one.txt')).toEqual(original);
+  const bytes=await page.request.get(`/api/v1/documents/${id}/download`);expect(await bytes.body()).toEqual(original);
+  const rules=(await api(page,`/sources/${source.data.id}/exclusions`)).data;
+  expect(rules).toHaveLength(1);expect(rules[0].protected).toBe(true);
+  const incremental=await api(page,`/sources/${source.data.id}/scan`,'POST',{mode:'incremental'});
+  expect(incremental.status).toBe(202);
+  await expect.poll(async()=>(await api(page,`/jobs/${incremental.data.job_id}`)).data.status,{timeout:30000}).toBe('completed');
+  expect((await api(page,`/documents/${id}`)).data.current_revision_id).toBe(doc.current_revision_id);
+  expect((await api(page,`/sources/${source.data.id}/entries`)).data.items[0].is_managed).toBe(true);
+  // Temporarily hide this fixture file from the readonly mount; managed bytes stay usable.
+  await rename(root+'/adoption/one.txt',root+'/adoption/hidden.bin');
+  try {
+    expect(await (await page.request.get(`/api/v1/documents/${id}/download`)).body()).toEqual(original);
+    expect((await page.request.get(`/api/v1/documents/${id}/download?revision_id=${old}`)).status()).toBe(409);
+  } finally {await rename(root+'/adoption/hidden.bin',root+'/adoption/one.txt');}
+  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/juanzhan-adoption-mobile.png'});
+  await dialog.getByRole('button',{name:'关闭并刷新档案',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('button',{name:'关联原文件',exact:true}).click();
+  await expect(page.getByRole('region',{name:'纳入托管',exact:true})).toHaveCount(0);
   expect(errors).toEqual([]);
 });

@@ -7,6 +7,10 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  SOURCE_ENTRY_MANAGED: "该来源条目已纳入托管；保留排除规则以防重复导入。",
+  SOURCE_ENTRY_BUSY: "该来源条目已有操作或排除规则，请先核对。",
+  EXTERNAL_REVISION_REQUIRED: "当前原件已不再是外部版本，请刷新档案。",
+  ADOPTION_LIMIT: "外部原件超过当前托管输入限制。",
   ORIGINAL_UNAVAILABLE: "原件离线、已变化或完整性核验未通过，未提供下载。",
   ORIGINAL_NOT_AVAILABLE: "当前原件不存在。",
   PREVIEW_STALE: "预览属于旧原件，请重新解析当前版本。",

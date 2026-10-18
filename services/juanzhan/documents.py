@@ -172,7 +172,7 @@ class DocumentService:
                 current = db.execute('SELECT storage_kind FROM file_revisions WHERE id=?',
                                      (before['current_revision_id'],)).fetchone()
                 if current is not None and current['storage_kind'] != 'managed':
-                    fail(501, 'NOT_IMPLEMENTED', 'Taking external originals into managed storage is deferred')
+                    fail(409, 'EXTERNAL_ADOPTION_REQUIRED', 'Use the verified external adoption operation first')
                 object_id = self.managed_object(db, obj)
                 revision_no = db.execute('SELECT COALESCE(MAX(revision_no),0)+1 FROM file_revisions WHERE document_id=?',
                                          (document_id,)).fetchone()[0]

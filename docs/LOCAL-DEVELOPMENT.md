@@ -86,6 +86,8 @@ docker run --rm --name juanzhan-backend-tests --label io.juanzhan.dev=true \
 
 ## 批量业务字段开发增量 · 2026-10-19
 
+T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adoption-dev（dirty，仅测试）保留；既有juanzhan:0.1.0-rc.1与juanzhan-foundation:dev未改标签。报告和夹具在服务器`.local/adoption*.log/xml`、`.local/adoptions.log/xml`、`.local/pytest-adoption*`；截图服务器`/tmp/juanzhan-adoption-mobile.png`及本机`/tmp/juanzhan-remote-qa/`。来源测试随机容器/具名卷/只读fixture正常退出删除；清理镜像前先确认无实例引用，不触碰既有nginx-proxy/simple-shell服务。
+
 历史下载开发增量：无新依赖、系统locale安装或迁移。SSH默认POSIX，中文下载验收须指定进程环境LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8，使用服务器已有locale，不改变系统配置。可清理产物为服务器`.local/history-*.log/xml`、`.local/pytest-history-*`，服务器`/tmp/juanzhan-history-original-mobile.png`及本机`/tmp/juanzhan-remote-qa/`同名副本。测试pointer为/tmp/juanzhan-files-pointer-随机值.txt，正常退出删除；异常中断按具体文件核对清理。容器--rm，无新增镜像。
 
 没有安装新依赖、系统软件或数据库迁移；复用上述服务器Python/Node/Playwright。新增可清理测试产物位于`/opt/juanzhan-dev/.local/`：batch-fields*.log/xml、pytest-batch-fields*测试目录；截图位于服务器`/tmp/juanzhan-batch-fields-{desktop,mobile}.png`及本机`/tmp/juanzhan-remote-qa/`同名副本。清理前如需复查应保存证据，不删除app源码或共享服务资源。既有0.1.0-rc.1镜像尚未重建为本次代码。

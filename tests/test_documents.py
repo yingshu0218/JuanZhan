@@ -291,7 +291,8 @@ def test_external_soft_delete_never_writes_original(documents, tmp_path):
     assert restored['current_revision_id']=='external-rev'
     with pytest.raises(HTTPException) as caught:
         service.append_managed_revision('external',published(store,b'not a takeover'),revision(3))
-    assert caught.value.status_code==501
+    assert caught.value.status_code==409
+    assert caught.value.detail['code']=='EXTERNAL_ADOPTION_REQUIRED'
     assert original.read_bytes()==b'external original'
     assert original.stat().st_mtime_ns==before_stat.st_mtime_ns
     assert original.stat().st_ino==before_stat.st_ino

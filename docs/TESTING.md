@@ -543,6 +543,14 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 
 ## 历史原件下载专项 · 2026-10-19
 
+### 后续T16托管接管验证
+
+服务器默认只读sysfs容器执行test_adoptions、test_maintenance、test_sources、test_source_initial、test_source_incremental、test_documents：最终57 passed，39.87秒，1条既有客户端弃用提示。证据`/opt/juanzhan-dev/.local/adoption-final.log/xml`。7项新接管测试覆盖真实只读字节、幂等/CSRF、版本冲突、审计回滚、失效租约、哈希不匹配、旧扫描epoch失效、有限离线重试/终态释放屏障、托管绑定防重导及真实Converter重新解析/人工字段/旧成功正文保护。sysfs文件通过共享注册服务登记，明确不将无扩展名sysfs文件声称为实际扫描导入。
+
+真实扫描与Web通过独立`juanzhan:adoption-dev`开发镜像和只读bind fixture验证。来源浏览器组2 passed（1.2分钟），日志`.local/adoption-sources-browser-final.log`；追加实际增量扫描/文件暂时隐藏后focused流程1 passed（10.3秒），日志`.local/adoption-browser-enhanced.log`。验证确认前禁用、任务完成、新managed版本、原件字节不变、受保护排除、增量扫描不切回external、来源不可用时managed下载正常而历史external返回409、刷新后接管入口消失、手机无横向溢出。手机截图`/tmp/juanzhan-adoption-mobile.png`已目视检查；本机副本在`/tmp/juanzhan-remote-qa/`。
+
+浏览器进程继续使用已有UTF-8 locale及Playwright。初次将新接管测试放在全局空库断言之前导致原有测试失败；保持原有流程先执行后两个测试均通过，未放宽业务断言。前端构建通过，YAML解析确认Archive0.4.25/53路径及新adopt契约。非完整全仓库/所有浏览器/正式RC验收，开发镜像dirty，不替换既有候选镜像。
+
 服务器标准只读sysfs容器执行tests/test_files.py：6 passed，7.05秒，1条既有客户端弃用提示。证据为`/opt/juanzhan-dev/.local/history-files-container.log`及history-files-container.xml。真实SQLite、文件和HTTP覆盖：旧版字节、鉴权、跨档案404、参数互斥、损坏拒绝、下载中新增Revision、当前原件版本保护，以及只读外部来源离线/可写/路径越界/哈希变化和PDF预览。
 
 服务器前端构建通过；原件浏览器组3 passed，13.0秒，日志`.local/history-files-browser.log`。新增真实Revision服务追加后从Web版本列表下载旧字节，并核对当前字节、中文文件名和手机无溢出；原有PDF预览/返回和恶意HTML隔离也通过。手机截图`/tmp/juanzhan-history-original-mobile.png`已目视检查，本机副本在`/tmp/juanzhan-remote-qa/`。未执行本次代码的完整全量回归或镜像重建。

@@ -124,10 +124,13 @@ def router(settings):
             condition = 'source_id=? AND (? IS NULL OR relative_path_norm=? OR substr(relative_path_norm,1,length(?)+1)=?||\'/\')'
             params = (id, relative_prefix, relative_prefix, relative_prefix, relative_prefix)
             total = db.execute('SELECT count(*) FROM source_entries WHERE ' + condition, params).fetchone()[0]
-            rows = db.execute('SELECT id,source_id,document_id,relative_path_display AS relative_path,size_bytes,status,sha256 '
+            rows = db.execute('SELECT id,source_id,document_id,relative_path_display AS relative_path,size_bytes,status,sha256, '
+                'EXISTS(SELECT 1 FROM documents d JOIN file_revisions r ON r.id=d.current_revision_id '
+                "WHERE d.id=source_entries.document_id AND r.storage_kind='managed') AS is_managed "
                 'FROM source_entries WHERE ' + condition + ' ORDER BY relative_path_norm,id LIMIT ? OFFSET ?',
                 (*params, page_size, (page-1)*page_size)).fetchall()
-            return {'items': [dict(r) for r in rows], 'page': page, 'page_size': page_size, 'total': total}
+            items=[{**dict(r),'is_managed':bool(r['is_managed'])} for r in rows]
+            return {'items': items, 'page': page, 'page_size': page_size, 'total': total}
 
     @result.post('/sources/{id}/preview-scan', status_code=202)
     def preview(id: str, request: Request):

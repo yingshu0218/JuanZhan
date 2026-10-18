@@ -248,7 +248,7 @@ export function Detail({
         </aside>
       </div>
       {original ? (
-        <Original api={api} doc={doc} revisions={revisions} onClose={() => setOriginal(false)} />
+        <Original api={api} doc={doc} revisions={revisions} onClose={() => setOriginal(false)} onRefresh={() => setAttempt(value=>value+1)} />
       ) : null}
     </section>
   );
