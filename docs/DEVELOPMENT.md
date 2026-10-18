@@ -578,3 +578,13 @@ Docker内路径必须为管理员预先正确挂载且应用UID可写的私有�
 包内含业务内容和管理员密码哈希，权限必须私有（根700、DB600）；无内建加密或签名，校验只检测损坏，不证明来源可信。外部来源目录、挂载映射、.env/转换token、模型/镜像版本需独立保存和恢复；本地数据备份不是外部原件备份。新恢复实例未配来源时如实显示离线，不把业务记录存在当外部字节已恢复。
 
 无新依赖/凭证/迁移，既有安装启动命令保持；Archive0.4.21/52路径，Converter0.4.3/6路径，8条不可变迁移。云环境无需新增setup草稿。
+
+## T33 整体验收入口 · 2026-10-18
+
+完整命令与30项验收/故障映射见[ACCEPTANCE](ACCEPTANCE.md)。在既有uv冻结依赖、OCR模型和当前Compose镜像准备好后运行：
+
+```sh
+UV_CACHE_DIR=/workspace/.uv-cache JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium .venv/bin/python scripts/acceptance.py
+```
+
+默认结果写入新的私有/tmp目录，报告不进仓库；`--phase backend`/`browser`可分阶段跑，`--phase assess --reports <本次后端报告目录> <本次浏览器报告目录>`核验全部证据。后端所有参数都需通过；浏览器六套件全部项需通过，未跑的映射明确not_run。测试无新增依赖/初始化/服务配置，不需要新的云setup草稿。只读来源fixture使用随机容器/卷，不复用正常Compose业务卷；勿把fixture准备与其他Chromium导航并发，运行器已串行隔离。

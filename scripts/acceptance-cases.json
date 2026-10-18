@@ -1,0 +1,300 @@
+[
+  {
+    "id": "UX-01",
+    "assertion": "重名及同哈希不同来源不误合并",
+    "python": [
+      "tests/test_uploads.py::test_duplicate_reject_and_explicit_keep_separate"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-02",
+    "assertion": "逻辑目录不写回磁盘",
+    "python": [
+      "tests/test_source_initial.py::test_atomic_metadata_registration_and_independent_same_hash_documents"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-03",
+    "assertion": "增量新增入收件箱且不持续镜像",
+    "python": [
+      "tests/test_source_incremental.py::test_new_files_needs_review_use_new_target_and_never_recreate_tree"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-04",
+    "assertion": "有Folder仍可待整理",
+    "python": [
+      "tests/test_document_api.py::test_upload_to_detail_list_properties_triage_and_recycle"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "UX-05",
+    "assertion": "系统文件拖入与内部拖动分开",
+    "python": [
+      "tests/test_uploads.py::test_real_upload_atomic_registration_and_truthful_parse_job"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "UX-06",
+    "assertion": "标签增删及逐项失败",
+    "python": [
+      "tests/test_batches.py::test_snapshot_partial_results_restart_and_guarded_undo"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "UX-07",
+    "assertion": "改名谨慎重关联且歧义暂停",
+    "python": [
+      "tests/test_source_incremental.py::test_duplicate_hash_move_is_ambiguous_and_does_not_create_or_merge_documents"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-08",
+    "assertion": "离线不直接判永久丢失",
+    "python": [
+      "tests/test_source_incremental.py::test_failure_breaks_missing_evidence_without_changing_entries"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-09",
+    "assertion": "取消索引阻止再导入",
+    "python": [
+      "tests/test_exclusions.py::test_external_purge_keeps_rule_prevents_reimport_and_removal_allows_new_document"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "UX-10",
+    "assertion": "回收恢复保留分类字段标签",
+    "python": [
+      "tests/test_batches.py::test_restore_batch_is_scoped_versioned_and_undoable"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "UX-11",
+    "assertion": "中文正文标题字段日期联合筛选",
+    "python": [
+      "tests/test_search.py::test_real_fts_get_post_joint_filters_stale_failure_and_trash"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "UX-12",
+    "assertion": "OCR未完成不称完整正文",
+    "python": [
+      "tests/test_search.py::test_scanned_pdf_without_requested_ocr_reports_limited_content",
+      "tests/test_acceptance.py::test_pending_ocr_never_claims_complete_text_then_real_ocr_publishes"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "UX-13",
+    "assertion": "并发409而非静默覆盖",
+    "python": [
+      "tests/test_metadata.py::test_version_csrf_inactive_cross_space_trash_and_concurrent_writes"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "UX-14",
+    "assertion": "不能通过UI物理删除外部原件",
+    "python": [
+      "tests/test_exclusions.py::test_external_purge_keeps_rule_prevents_reimport_and_removal_allows_new_document"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "META-01",
+    "assertion": "业务类型和MIME正交",
+    "python": [
+      "tests/test_catalog.py::test_document_type_fields_are_atomic_scoped_and_preserve_values"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  },
+  {
+    "id": "META-02",
+    "assertion": "人工编号不被OCR覆盖",
+    "python": [
+      "tests/test_content.py::test_actual_candidate_adoption_and_reprocess_never_erase_confirmed_fields",
+      "tests/test_acceptance.py::test_pending_ocr_never_claims_complete_text_then_real_ocr_publishes"
+    ],
+    "browser_suites": [
+      "reading"
+    ]
+  },
+  {
+    "id": "META-03",
+    "assertion": "重解析保留业务字段标签",
+    "python": [
+      "tests/test_acceptance.py::test_converter_outage_keeps_manual_data_old_content_then_recovers_same_job"
+    ],
+    "browser_suites": [
+      "jobs"
+    ]
+  },
+  {
+    "id": "META-04",
+    "assertion": "ISO日期与范围",
+    "python": [
+      "tests/test_search.py::test_exact_typed_filters_false_absence_and_literal_contains"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "META-05",
+    "assertion": "Decimal固定缩放精确比较",
+    "python": [
+      "tests/test_metadata.py::test_decimal_boundaries_and_failed_audit_roll_back_values_and_version"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "META-06",
+    "assertion": "false与null不同",
+    "python": [
+      "tests/test_metadata.py::test_seven_types_exact_storage_null_false_noop_and_audit"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "META-07",
+    "assertion": "key及type身份不可静默修改",
+    "python": [
+      "tests/test_fields.py::test_auth_unknown_scope_and_immutable_identity"
+    ],
+    "browser_suites": []
+  },
+  {
+    "id": "META-08",
+    "assertion": "六格式统一schema及真实定位",
+    "python": [
+      "tests/test_conversion_formats.py::test_six_real_formats_uniform_result_and_verified_artifacts"
+    ],
+    "browser_suites": [
+      "reading"
+    ]
+  },
+  {
+    "id": "META-09",
+    "assertion": "离线仍可读明确标记的缓存",
+    "python": [
+      "tests/test_acceptance.py::test_offline_readonly_source_keeps_actual_cached_content"
+    ],
+    "browser_suites": [
+      "sources"
+    ]
+  },
+  {
+    "id": "META-10",
+    "assertion": "解析失败保留最近成功正文",
+    "python": [
+      "tests/test_parsing.py::test_failed_new_revision_retains_successful_content_and_business_fields"
+    ],
+    "browser_suites": [
+      "reading"
+    ]
+  },
+  {
+    "id": "META-11",
+    "assertion": "HTML及脚本不执行",
+    "python": [
+      "tests/test_conversion_formats.py::test_markdown_asset_contains_no_active_markup_or_links"
+    ],
+    "browser_suites": [
+      "files"
+    ]
+  },
+  {
+    "id": "META-12",
+    "assertion": "元数据版本冲突409",
+    "python": [
+      "tests/test_metadata.py::test_version_csrf_inactive_cross_space_trash_and_concurrent_writes"
+    ],
+    "browser_suites": [
+      "reading"
+    ]
+  },
+  {
+    "id": "META-13",
+    "assertion": "拒绝跨空间字段Tag类型",
+    "python": [
+      "tests/test_document_api.py::test_scope_validation_tag_deltas_and_atomic_conflict"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "META-14",
+    "assertion": "重复重建不重复当前FTS记录",
+    "python": [
+      "tests/test_indexing.py::test_rebuild_same_inputs_never_duplicates_and_repairs_duplicate_rows"
+    ],
+    "browser_suites": []
+  },
+  {
+    "id": "META-15",
+    "assertion": "中英混排编号两字词检索",
+    "python": [
+      "tests/test_indexing.py::test_real_chinese_short_words_traditional_mixed_ascii_and_fts_operators"
+    ],
+    "browser_suites": [
+      "search"
+    ]
+  },
+  {
+    "id": "META-16",
+    "assertion": "改类型保留旧值",
+    "python": [
+      "tests/test_metadata.py::test_optional_values_are_still_typed_and_template_change_preserves_history"
+    ],
+    "browser_suites": [
+      "library"
+    ]
+  }
+]

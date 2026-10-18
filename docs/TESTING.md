@@ -464,3 +464,17 @@ Browser plugin not available，使用现有Playwright/Chromium，不增加依赖
 - 1440×1000 / 390×844最终截图实看：`/tmp/juanzhan-t32-desktop.png`、`/tmp/juanzhan-t32-mobile.png`。标题/精确本地URL、非空、无框架覆盖层、页面与控制台无相关错误、真实交互均通过。
 - 最终Vite生产构建通过；Archive OpenAPI0.4.21/52路径可解析，既有download之外所有旧路径与所有components语义保持；git diff --check通过。Compose离线wheelhouse镜像重建、保留原卷up --wait --no-build、scripts/smoke.py通过（Web/CSP/静态资源、Archive健康、Converter鉴权/格式/OCR能力/multipart边界、worker心跳）。原.env/管理员/数据卷/8条迁移未改变，未恢复覆盖现有实例。
 - 本轮未重跑专用来源/阅读/搜索/任务浏览器套件、完整格式/OCR质量及并发大文件/断电测试；下一T33做整体验收与故障注入。预览是有限PNG缩略图，非完整原生PDF阅读器。浏览器下载64MiB/HTTP1GiB，不提供Range/历史原件。管理员备份不含外部原件/.env/模型/镜像，未实现Web恢复、加密签名、远端调度或真实业务数据卷切换。可以安装Browser插件改善后续交互诊断，不是本次依赖。
+
+## T33 · 2026-10-18
+
+本次验收证据以[ACCEPTANCE](ACCEPTANCE.md)及`scripts/acceptance-cases.json`的UX-01～14/META-01～16共30条映射为准；复用实际业务测试，不为凑数量复制30份镜像测试。
+
+- 首轮未新增用例的全量`uv run --frozen pytest -q --junitxml=/tmp/juanzhan-t33-python.xml`：406 passed、0 failed/skip，201.64s。新增两条跨功能后通过真实入口`scripts/acceptance.py --phase backend --output /tmp/juanzhan-t33-backend`再次全量：408 passed、0 failed/skip，240.86s；随后补充真实OCR排队/人工合同编号保护用例单独运行1 passed到`/tmp/juanzhan-t33-ocr/backend.xml`。当前409个参数化后端测试全部有本次通过证据（408全量+1补验，不把重复回归相加或虚称409项同一次全量）。只有既有Starlette/httpx弃用警告，未修改锁定依赖绕过。
+- 新`tests/test_acceptance.py`实际连接到TCP Converter、真实SQLite与存储：先形成成功正文，再对新Revision制造真实端口连接拒绝，确认同Job尝试1/3且可重试、人工字段/标签/旧正文保留、当前原件仍可下载；恢复真实Converter并显式唤醒，尝试2成功、历史正文仍可读、重复索引仅一行。只读来源实际sysfs字节通过共享登记/真实转换后，换成真实不存在挂载配置；缓存可读并标stale/离线、下载409。明确不把无支持扩展名的sysfs登记当真实扫描验收。真实扫描PDF先不启用OCR形成无文字结果，再排队OCR：queued时不称text_available，实际识别后才发布英文正文，人工合同编号保持。
+- 新测试初稿的FTS表名和离线缓存stale预期与现行契约不符，核对SQL/投影后修正并通过；不把测试断言修正描述为修复生产故障。故障注入不伪造成功业务响应。既有全套覆盖实际worker退出/超时、租约过期、磁盘写入失败、事务回滚/晚到结果、索引代次、损坏备份与新目录恢复。
+- `scripts/acceptance.py --phase browser --output /tmp/juanzhan-t33-browser`：Vite构建通过，sources1 + library8 + reading3 + search4 + jobs2 + files2 = **20 passed，0 failed/skip**。sources只用自身随机Docker容器/卷，完成清理后再串行跑其他浏览器；正常Compose数据卷/管理员/.env未改。实际源扫描/增量/缺失及歧义/排除、拖放/逐项失败/撤销、正文/候选/历史、中文/类型过滤/URL恢复、真实任务/重解析、附件下载及恶意HTML隔离全部执行。
+- Browser plugin not available；使用已有Playwright/`/usr/bin/chromium`，未安装新浏览器依赖。页面标题/精确测试URL、非空、无框架覆盖层、相关控制台/页面错误、真实交互检查通过；1440×1000与390×844截图实看。测试入口为本地8767，来源8768；截图沿用套件路径，例如`/tmp/juanzhan-t30-desktop.png`、`/tmp/juanzhan-t30-mobile.png`（均为本次重跑生成）。
+- 最终只读汇总：`scripts/acceptance.py --phase assess --reports /tmp/juanzhan-t33-backend /tmp/juanzhan-t33-ocr /tmp/juanzhan-t33-browser --output /tmp/juanzhan-t33-final`，实际JUnit判定 **30/30 passed**，报告`/tmp/juanzhan-t33-final/summary.json`。另外以不存在报告目录验证assess：0/30通过、30 not_run、退出1，不把缺证据判通过。所有ID/真实函数引用校验、py_compile与git diff --check通过；生成报告不进仓库。
+- 现有镜像`scripts/smoke.py`通过（Web/CSP/资源、Archive健康、Converter鉴权/六格式/OCR能力/multipart边界、worker心跳）；正常库8条迁移、0档案、0外键违规保持。无应用/接口/迁移/依赖变更，未因测试重建或发布镜像，Archive0.4.21/52路径和Converter0.4.3/6路径保持；无新增云配置需求。
+
+T33不替代T34性能基线/版本化镜像与升级恢复运维手册；测试时长不当作性能承诺。未覆盖真实手机/Firefox/WebKit、硬件断电、网络文件系统、大规模压力及真实业务数据卷切换。只读外部字节仍需独立备份，T16托管接管与批量reprocess/set_metadata等明确未实现。可选安装Browser插件改善后续页面导航、截图与诊断，不是当前验收前置依赖。
