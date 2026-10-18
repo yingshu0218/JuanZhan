@@ -1,5 +1,6 @@
 """Small valid binary documents generated from their public formats, never fake parse JSON."""
 from io import BytesIO
+import os
 import zipfile
 
 
@@ -82,7 +83,8 @@ def chinese_pdf():
 def raster_sample(format='PNG',text='Real scanned archive 2026',pages=1):
     from PIL import Image, ImageDraw, ImageFont
     image=Image.new('RGB',(1600,500),'white')
-    font=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',58)
+    font=ImageFont.truetype(os.environ.get('JUANZHAN_TEST_CJK_FONT',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'),58)
     ImageDraw.Draw(image).text((60,160),text,font=font,fill='black')
     result=BytesIO()
     if format in ('PDF','TIFF'):

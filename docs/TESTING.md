@@ -501,3 +501,14 @@ macOS Apple M5 arm64 / CPython3.12.11，既有uv.lock冻结安装34包，无依�
 新增真实Converter测试保留，须在支持的Linux环境执行通过后才能标记批量重解析完整验收。未运行完整全仓库/浏览器/容器/OCR验收；本轮不宣称这些通过。依赖与测试夹具清理见LOCAL-DEVELOPMENT。
 
 补充基础测试`tests/test_foundation.py`：7 passed、1 failed；失败项test_converter_boundary固定要求ocr_available=true，而本轮未安装OCR模型，服务如实报告false。日志`.local/foundation-tests.log`。不计入上述53项成功结果。
+
+## 用户授权Linux服务器复验 · 2026-10-19
+
+devtest / Alibaba Cloud Linux4 x86_64 / CPython3.12.13；沿用原锁文件，通过阿里云PyPI镜像与require-hashes安装；官方固定中英文OCR模型再次验证。专用源码目录`/opt/juanzhan-dev/app`，报告及缓存位于其同级`.local/`，未改变服务器既有服务。
+
+- 批量及正文：`pytest -q tests/test_batches.py tests/test_content.py --basetemp=/opt/juanzhan-dev/.local/pytest-batch --junitxml=/opt/juanzhan-dev/.local/batch-content.xml`：38 passed，42.87秒。真实TCP Converter、SQLite、文件存储、worker及六格式正文均通过，新增批量重解析force保护/实际生成第二条成功历史通过。
+- 服务器`npm run build --prefix web`通过；`PLAYWRIGHT_BROWSERS_PATH=/opt/juanzhan-dev/.local/playwright npm run test:e2e:jobs --prefix web`：3 passed，19.9秒。新增批量流程验证固定选择、OCR默认关闭/语言选择、确认前禁用提交、父批次排队提示、无撤销按钮、子任务成功及两份档案各两条真实解析历史。
+- 1440×1000及390×844截图已目视检查，弹窗可滚动且无横向溢出；页面标题/URL由login helper检查，无框架错误覆盖层；新增流程无pageerror，既有任务流程额外检查console error。截图服务器`/tmp/juanzhan-batch-reprocess-{desktop,mobile}.png`，本机副本`/tmp/juanzhan-remote-qa/`。
+- 本机原8项library/整理浏览器流程通过，日志`.local/browser-library.log`。
+
+Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回退浏览器，以上实际流程已通过。新增测试字体环境变量JUANZHAN_TEST_CJK_FONT，复用服务器已有Noto简中字体验证，不安装新系统字体。完整后端与全部浏览器/容器验收另记录，不以专项结果宣称全部通过。

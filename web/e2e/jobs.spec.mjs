@@ -1,6 +1,46 @@
 import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { login, createSpace, api } from "./helpers.mjs";
+
+test("batch reprocessing confirms options and tracks actual child tasks", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await login(page); await createSpace(page, "批量解析验证");
+  const space = await page.getByLabel("当前空间").inputValue();
+  const csrf = (await api(page, "/auth/session")).data.csrf_token;
+  const ids = [];
+  for (let index = 0; index < 2; index++) {
+    const response = await page.request.post("/api/v1/documents/upload", {
+      headers: { "X-CSRF-Token": csrf },
+      multipart: { space_id: space, file: { name: `批量原件${index}.txt`, mimeType: "text/plain", buffer: Buffer.from(`Batch original ${index}`) } },
+    });
+    expect(response.status()).toBe(201); ids.push((await response.json()).document_id);
+  }
+  for (const id of ids) await expect.poll(async () => (await api(page, `/documents/${id}`)).data.processing_status, { timeout: 30000 }).toBe("completed");
+  await page.reload();
+  await page.getByLabel("全选当前页", { exact: true }).check();
+  await page.getByRole("button", { name: "批量操作", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "档案操作", exact: true });
+  await dialog.getByLabel("操作类型").selectOption("reprocess");
+  await expect(dialog.getByLabel("启用 OCR（耗时较长）")).not.toBeChecked();
+  await expect(dialog.getByRole("button", { name: "确认提交", exact: true })).toBeDisabled();
+  await dialog.getByLabel("启用 OCR（耗时较长）").check();
+  await dialog.getByLabel("OCR 语言").selectOption("chi_sim");
+  await dialog.getByLabel("启用 OCR（耗时较长）").uncheck();
+  await dialog.getByLabel("确认重新处理所选原件，包括已有成功结果").check();
+  await dialog.getByRole("button", { name: "确认提交", exact: true }).click();
+  const result = page.getByRole("dialog", { name: "操作结果", exact: true });
+  await expect(result.locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
+  await expect(result.getByText("成功表示已排入解析队列", { exact: false })).toBeVisible();
+  await expect(result.getByRole("button", { name: "撤销本次成功变更" })).toHaveCount(0);
+  await result.getByRole("button", { name: "查看解析任务", exact: true }).first().click();
+  await expect(result.getByRole("heading", { name: "解析 · 已完成", exact: true })).toBeVisible({ timeout: 30000 });
+  for (const id of ids) expect((await api(page, `/documents/${id}/parse-runs`)).data.total).toBe(2);
+  await page.screenshot({ path: "/tmp/juanzhan-batch-reprocess-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/juanzhan-batch-reprocess-mobile.png" });
+  expect(errors).toEqual([]);
+});
 test("durable tasks and explicit real reprocessing on desktop and mobile", async ({ page }) => {
   const errors = []; page.on("pageerror", e => errors.push(e.message));
   page.on("console", e => { if(e.type()==="error") errors.push(e.text()); });

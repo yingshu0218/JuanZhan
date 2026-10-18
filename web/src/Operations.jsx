@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
+import { TaskStatus } from "./Tasks.jsx";
 const labels = {
   move_folder: "移动目录",
   add_tags: "添加标签",
@@ -10,6 +11,7 @@ const labels = {
   set_favorite: "设置收藏",
   trash: "加入回收站",
   restore: "恢复档案",
+  reprocess: "重新解析 / OCR",
 };
 const reasons = {
   VERSION_CONFLICT: "档案已被更新，本项未修改，请刷新后重新选择。",
@@ -21,6 +23,9 @@ const reasons = {
   DOCUMENT_TRASHED: "档案已在回收站，请先恢复。",
   CROSS_SPACE_REFERENCE: "目标不属于原空间。",
   NOT_FOUND: "档案或目标已不存在。",
+  PARSE_ALREADY_RUNNING: "当前原件已有解析任务，请在任务中心查看。",
+  ALREADY_PARSED: "当前原件已有成功正文；确认重新处理后再提交。",
+  REVISION_CONFLICT: "原件版本已变化，请刷新后重新选择。",
   INTEGRITY_CONFLICT: "引用或审计冲突，本项已回滚。",
 };
 export function useOperations(api, onChanged) {
@@ -30,6 +35,7 @@ export function useOperations(api, onChanged) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const delivered = useRef(new Set());
+  const [tracking, setTracking] = useState(null);
   const changed = useRef(onChanged);
   changed.current = onChanged;
   const pending =
@@ -40,6 +46,7 @@ export function useOperations(api, onChanged) {
       return;
     }
     setError("");
+    setTracking(null);
     setDraft({
       items: items.map((item) => ({ ...item })),
       ...context,
@@ -141,6 +148,7 @@ export function useOperations(api, onChanged) {
     if (!busy) setDraft(null);
   }
   return {
+    api,
     close,
     draft,
     receipt,
@@ -152,6 +160,8 @@ export function useOperations(api, onChanged) {
     busy,
     pending,
     error,
+    tracking,
+    setTracking,
   };
 }
 
@@ -195,6 +205,7 @@ export function Operations({ state, catalog }) {
                   ? "逐项处理已结束。"
                   : "任务未完成，请核对档案后再操作。"}
           </p>
+          {state.receipt?.operation === "reprocess" && <Notice>成功表示已排入解析队列，不代表正文已更新。请查看每份档案的解析任务；此操作不能撤销。</Notice>}
           {state.receipt?.result ? (
             <>
               <div className="result-counts">
@@ -216,6 +227,7 @@ export function Operations({ state, catalog }) {
                           ? "无变化"
                           : "失败"}
                     </span>
+                    {row.parse_job_id && <button onClick={() => state.setTracking(row.parse_job_id)}>查看解析任务</button>}
                     {row.status === "failed" ? (
                       <p>
                         {reasons[row.error_code] ||
@@ -225,7 +237,8 @@ export function Operations({ state, catalog }) {
                   </li>
                 ))}
               </ul>
-              {!state.receipt.isUndo && state.receipt.result.succeeded > 0 ? (
+              {state.tracking && <TaskStatus key={state.tracking} api={state.api} id={state.tracking} />}
+              {!state.receipt.isUndo && state.receipt.operation !== "reprocess" && state.receipt.result.succeeded > 0 ? (
                 <button
                   className="primary"
                   disabled={state.busy}
@@ -253,6 +266,9 @@ function OperationForm({ draft, catalog, submit, busy }) {
   const [favorite, setFavorite] = useState(
     draft.payload?.is_favorite === false ? "false" : "true",
   );
+  const [ocr, setOcr] = useState(false);
+  const [language, setLanguage] = useState("eng,chi_sim");
+  const [confirmed, setConfirmed] = useState(false);
   const trashed = draft.items.every((i) => i.deleted_at);
   const options = trashed
     ? ["restore"]
@@ -268,6 +284,9 @@ function OperationForm({ draft, catalog, submit, busy }) {
     if (operation === "set_triage") payload = { triage_status: triage };
     if (operation === "set_favorite")
       payload = { is_favorite: favorite === "true" };
+    if (operation === "reprocess") payload = {
+      force: true, ocr, ocr_languages: ocr ? language : "", generate_preview: true,
+    };
     submit(operation, payload);
   }
   return (
@@ -280,6 +299,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
             setOperation(e.target.value);
             setTarget("__choose__");
             setTags([]);
+            setConfirmed(false);
           }}
         >
           {options.map((key) => (
@@ -369,6 +389,15 @@ function OperationForm({ draft, catalog, submit, busy }) {
           </select>
         </label>
       ) : null}
+      {operation === "reprocess" && <fieldset disabled={busy}>
+        <legend>解析选项</legend>
+        <label className="check-label"><input type="checkbox" checked={ocr} onChange={e => setOcr(e.target.checked)} />启用 OCR（耗时较长）</label>
+        {ocr && <label>OCR 语言<select value={language} onChange={e => setLanguage(e.target.value)}>
+          <option value="eng,chi_sim">英文与简体中文</option><option value="chi_sim">简体中文</option><option value="eng">英文</option>
+        </select></label>}
+        <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />确认重新处理所选原件，包括已有成功结果</label>
+        <p className="muted">保留人工字段和最近成功正文；每份档案独立排队，解析结果可在任务中心找回。提交后不能撤销。</p>
+      </fieldset>}
       <Notice>
         {operation === "trash"
           ? `确认将这 ${draft.items.length} 份档案加入回收站？只改变逻辑状态，保留原件。`
@@ -381,6 +410,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
           className="primary"
           disabled={
             busy ||
+            (operation === "reprocess" && !confirmed) ||
             (["move_folder", "set_type"].includes(operation) &&
               target === "__choose__") ||
             (["add_tags", "remove_tags"].includes(operation) && !tags.length)
