@@ -56,6 +56,8 @@ def run_with_token(*args):
 
 external_mode='--external' in sys.argv
 if external_mode and '--persist' not in sys.argv:raise SystemExit('--external requires --persist')
+if external_mode and '--ocr' in sys.argv:
+    raise SystemExit('Run --persist --index --daemon --external and --persist --index --ocr separately: source scans accept six document formats, while OCR fixtures also include standalone images.')
 source_fixture=tempfile.TemporaryDirectory(prefix='juanzhan-parse-source-') if external_mode else None
 mount_args=[]
 if source_fixture:
