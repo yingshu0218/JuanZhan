@@ -83,3 +83,7 @@ docker run --rm --name juanzhan-backend-tests --label io.juanzhan.dev=true \
 最终占用快照：本机`.local/`约287MiB、`.venv/`约65MiB、`web/node_modules/`约115MiB、`ocr-models/`约6.3MiB；不含Homebrew工具本体。服务器专用目录约1.8GiB（含依赖/浏览器/测试夹具和报告），Docker镜像及构建缓存另计，服务器根分区仍约50GiB可用。测试容器与本轮具名卷均已自动清理，现有nginx-proxy/simple-shell未改动。
 
 最终证据在服务器`.local/reports/838fa07/`；各阶段调试日志在`.local/`。浏览器截图与发布工具原始输出还位于本轮创建的服务器`/tmp/juanzhan-*`，构建manifest原目录`/tmp/juanzhan-release-dyc8vvfn/`，恢复报告原目录`/tmp/juanzhan-release-drill-qy3u2v7y/`；关键JSON已复制到项目报告目录。清理/tmp时只移除确认属于本轮的文件，不泛删其他项目目录。本机截图副本在`/tmp/juanzhan-remote-qa/`。
+
+## 批量业务字段开发增量 · 2026-10-19
+
+没有安装新依赖、系统软件或数据库迁移；复用上述服务器Python/Node/Playwright。新增可清理测试产物位于`/opt/juanzhan-dev/.local/`：batch-fields*.log/xml、pytest-batch-fields*测试目录；截图位于服务器`/tmp/juanzhan-batch-fields-{desktop,mobile}.png`及本机`/tmp/juanzhan-remote-qa/`同名副本。清理前如需复查应保存证据，不删除app源码或共享服务资源。既有0.1.0-rc.1镜像尚未重建为本次代码。

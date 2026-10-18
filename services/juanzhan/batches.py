@@ -15,7 +15,10 @@ from .document_events import record_event, utc_now
 from .document_records import expected, snapshot
 from .documents import Version
 from .jobs import JobQueue, JobSpec, encoded, row
+from .metadata import MetadataPatch, save_values
+from .metadata_values import validate
 
+MAX_METADATA_SNAPSHOT_BYTES=2*1024*1024
 
 class BatchRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -37,6 +40,10 @@ class BatchRequest(BaseModel):
 
 def changes(body):
     """Validate operation-specific payloads before enqueue; scopes are checked per item."""
+    if body.operation=='set_metadata':
+        if set(body.payload)!={'values','confirm'}:
+            fail(422,'INVALID_BATCH_PAYLOAD','Metadata requires values and explicit confirmation state')
+        return MetadataPatch(expected_document_version=1,**body.payload).model_dump(exclude={'expected_document_version'})
     if body.operation=='reprocess':
         if set(body.payload)-{'ocr','ocr_languages','force','generate_preview'}:
             fail(422,'INVALID_BATCH_PAYLOAD','Only parse options are allowed')
@@ -48,7 +55,7 @@ def changes(body):
     keys = {'move_folder':'folder_id', 'add_tags':'tag_ids', 'remove_tags':'tag_ids',
             'set_type':'document_type_id', 'set_triage':'triage_status', 'set_favorite':'is_favorite', 'trash':None, 'restore':None}
     if body.operation not in keys:
-        fail(501, 'BATCH_OPERATION_NOT_IMPLEMENTED', 'This operation awaits its business handler')
+        fail(422, 'INVALID_BATCH_OPERATION', 'Unknown batch operation')
     key = keys[body.operation]
     if set(body.payload) != ({key} if key else set()):
         fail(422, 'INVALID_BATCH_PAYLOAD', 'Payload must match the selected operation')
@@ -67,6 +74,19 @@ def audit(db, id, kind, before, after, job_id):
     record_event(db, id, kind, before, after, batch_job_id=job_id)
 
 
+def metadata_snapshot(db,doc,keys):
+    where=' FROM metadata_values m JOIN field_definitions f ON f.id=m.field_definition_id WHERE m.document_id=? AND f.field_key IN ('+','.join('?' for _ in keys)+')'
+    params=(doc['id'],*keys)
+    size=db.execute('SELECT COALESCE(sum(COALESCE(length(CAST(m.value_text AS BLOB)),0)+512),0)'+where,params).fetchone()[0]
+    if size>MAX_METADATA_SNAPSHOT_BYTES:
+        fail(413,'BATCH_METADATA_SNAPSHOT_LIMIT','Selected fields exceed the undo snapshot budget')
+    rows=[dict(r) for r in db.execute('SELECT m.*'+where+' ORDER BY f.field_key',params)]
+    result={**doc,'metadata_keys':list(keys),'metadata_rows':rows}
+    if len(json.dumps(result,ensure_ascii=False).encode())>MAX_METADATA_SNAPSHOT_BYTES:
+        fail(413,'BATCH_METADATA_SNAPSHOT_LIMIT','Selected fields exceed the undo snapshot budget')
+    return result
+
+
 def apply(db, id, version, body):
     before = expected(db,id,version)
     if before['space_id'] != body['space_id']:
@@ -82,6 +102,11 @@ def apply(db, id, version, body):
     if before['deleted_at'] is not None:
         if operation=='trash':return before,before
         fail(409,'DOCUMENT_TRASHED','Restore before editing')
+    if operation=='set_metadata':
+        keys=sorted(values['values'])
+        before=metadata_snapshot(db,before,keys)
+        save_values(db,before,values['values'],values['confirm'])
+        return before,metadata_snapshot(db,snapshot(db,id),keys)
     if operation in ('move_folder','set_type'):
         key = 'folder_id' if operation=='move_folder' else 'document_type_id'
         value = values[key]
@@ -113,6 +138,28 @@ def apply(db, id, version, body):
 def undo_item(db, event):
     before,after=json.loads(event['before_json']),json.loads(event['after_json'])
     current=expected(db,event['document_id'],after['document_version'])
+    if 'metadata_keys' in before:
+        keys=before['metadata_keys']
+        current=metadata_snapshot(db,current,keys)
+        fields={}
+        for key in keys:
+            field=db.execute('SELECT * FROM field_definitions WHERE space_id=? AND field_key=?',
+                             (current['space_id'],key)).fetchone()
+            if field is None:fail(422,'UNKNOWN_FIELD','An original field no longer exists')
+            if not field['is_active']:fail(422,'INACTIVE_FIELD','An original field was disabled')
+            fields[field['id']]=field
+        from .metadata_values import value
+        for saved in before['metadata_rows']:
+            validate(fields[saved['field_definition_id']],value(fields[saved['field_definition_id']],saved))
+        for field_id in fields:
+            db.execute('DELETE FROM metadata_values WHERE document_id=? AND field_definition_id=?',(current['id'],field_id))
+        for saved in before['metadata_rows']:
+            columns=list(saved)
+            db.execute('INSERT INTO metadata_values('+','.join(columns)+') VALUES ('+','.join('?' for _ in columns)+')',
+                       tuple(saved[k] for k in columns))
+        restored=snapshot(db,current['id'])
+        if restored['triage_status']=='filed':filing(db,restored)
+        return current,metadata_snapshot(db,restored,keys)
     # Revalidate all restored references; catalog entries may have been removed since execution.
     for key,table in (('folder_id','folders'),('document_type_id','document_types')):
         if before[key] is not None:same_space(db,table,before[key],before['space_id'])
@@ -156,7 +203,8 @@ def execute(db,job,settings=None):
             status='skipped'
             if before!=after:
                 db.execute('UPDATE documents SET document_version=document_version+1,updated_at=? WHERE id=?',(utc_now(),id))
-                after=snapshot(db,id)
+                # Retain the affected field/provenance snapshot in the audit used for undo.
+                after={**after,**snapshot(db,id)}
                 audit(db,id,'batch_undone' if undo else 'batch_changed',before,after,job['id'])
                 status='succeeded'
             item={'document_id':id,'status':status,'document_version':after['document_version']}

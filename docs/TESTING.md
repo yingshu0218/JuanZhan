@@ -532,3 +532,11 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 所有证据路径以`/opt/juanzhan-dev/`为根。完整后端在宿主直接运行先得到386 passed/32 failed：失败均涉及宿主可写sysfs与只读夹具前提；未关闭只读保护，改在标准容器中全部通过。首次把external与OCR两套不兼容样本参数合并造成smoke脚本失败，已按上述文档命令分别通过；脚本现提前拒绝该组合，错误信息与非零退出已验证，不把它记录为业务解析失败。
 
 候选镜像ID`sha256:fbceee03458f533592860783f86c3363a74dece2557184b92e740248f9d26bc7`；该构建仅在测试服务器存在，无Git标签、GitHub Release、镜像仓库推送或正常实例切换。最后核对仅服务器原有nginx-proxy/simple-shell运行，无本轮遗留测试容器或具名卷。开发依赖、报告、测试夹具、镜像与清理边界见LOCAL-DEVELOPMENT。
+
+## 批量业务字段专项 · 2026-10-19
+
+服务器当前工作副本：tests/test_batches.py、tests/test_metadata.py、tests/test_content.py合计73 passed（46.59秒，1条测试客户端弃用提示），日志/报告为`/opt/juanzhan-dev/.local/batch-fields-final.log`及batch-fields-final.xml。覆盖七类型、64位整数、Decimal、false、清空必填保护、逐项版本冲突、撤销来源保真/规则变化、审计与租约回滚、快照大小限制，以及既有真实Converter正文回归。
+
+新增两个library浏览器流程2 passed（18.1秒），日志`.local/batch-fields-browser-focused.log`；验证七类型批量设置、保留其他字段、清空/撤销、并发修改及浏览器不安全整数阻止提交。首次library运行原有8项通过、新增2项因getByLabel选择器超时失败，修正为有明确角色/名称的combobox定位后上述2项通过；初始日志保留于`.local/batch-fields-browser.log`。本轮未宣称全部浏览器/完整后端重新通过。
+
+桌面1440×1000和手机390×844截图`/tmp/juanzhan-batch-fields-{desktop,mobile}.png`已目视检查，内容完整、表单可读，手机无横向溢出；本机副本`/tmp/juanzhan-remote-qa/`。无Browser插件，继续使用仓库Playwright。

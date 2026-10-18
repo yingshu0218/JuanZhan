@@ -64,6 +64,16 @@ def editable(db,id,version):
     return doc
 
 
+def save_values(db,doc,values,confirm):
+    """Same scoped field rules for single edits and durable batch edits."""
+    for key,raw in values.items():
+        field=db.execute('SELECT * FROM field_definitions WHERE space_id=? AND field_key=?',
+                         (doc['space_id'],key)).fetchone()
+        if field is None:fail(422,'UNKNOWN_FIELD','Field key does not belong to the document space')
+        save(db,doc,field,raw,confirm)
+    if doc['triage_status']=='filed':filing(db,doc)
+
+
 def router(settings):
     routes=APIRouter(prefix='/api/v1/documents')
 
@@ -77,10 +87,7 @@ def router(settings):
     def patch(id: str,body: MetadataPatch,request: Request):
         with request.app.state.documents.write(request) as db:
             doc=editable(db,id,body.expected_document_version);previous=entries(db,id)
-            for key,raw in body.values.items():
-                field=db.execute('SELECT * FROM field_definitions WHERE space_id=? AND field_key=?',(doc['space_id'],key)).fetchone()
-                if field is None:fail(422,'UNKNOWN_FIELD','Field key does not belong to the document space')
-                save(db,doc,field,raw,body.confirm)
+            save_values(db,doc,body.values,body.confirm)
             return finish(db,doc,previous,'metadata_updated')
 
     @routes.post('/{id}/metadata/adopt-candidate')

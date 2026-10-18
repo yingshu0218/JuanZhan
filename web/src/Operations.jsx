@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
 import { TaskStatus } from "./Tasks.jsx";
+import { MetadataInput, metadataValue } from "./MetadataInput.jsx";
 const labels = {
   move_folder: "移动目录",
   add_tags: "添加标签",
@@ -12,6 +13,7 @@ const labels = {
   trash: "加入回收站",
   restore: "恢复档案",
   reprocess: "重新解析 / OCR",
+  set_metadata: "设置业务字段",
 };
 const reasons = {
   VERSION_CONFLICT: "档案已被更新，本项未修改，请刷新后重新选择。",
@@ -26,6 +28,8 @@ const reasons = {
   PARSE_ALREADY_RUNNING: "当前原件已有解析任务，请在任务中心查看。",
   ALREADY_PARSED: "当前原件已有成功正文；确认重新处理后再提交。",
   REVISION_CONFLICT: "原件版本已变化，请刷新后重新选择。",
+  UNKNOWN_FIELD: "业务字段不属于当前空间或已不可用。",
+  BATCH_METADATA_SNAPSHOT_LIMIT: "所选字段的撤销快照过大，请减少本次修改的字段。",
   INTEGRITY_CONFLICT: "引用或审计冲突，本项已回滚。",
 };
 export function useOperations(api, onChanged) {
@@ -269,12 +273,19 @@ function OperationForm({ draft, catalog, submit, busy }) {
   const [ocr, setOcr] = useState(false);
   const [language, setLanguage] = useState("eng,chi_sim");
   const [confirmed, setConfirmed] = useState(false);
+  const [fieldId, setFieldId] = useState("");
+  const [fieldAction, setFieldAction] = useState("set");
+  const [rawValue, setRawValue] = useState("");
+  const [formError, setFormError] = useState("");
+  const fields = catalog.definitions.filter(field => field.is_active);
+  const field = fields.find(item => item.id === fieldId);
   const trashed = draft.items.every((i) => i.deleted_at);
   const options = trashed
     ? ["restore"]
     : Object.keys(labels).filter((key) => key !== "restore");
   function save(e) {
     e.preventDefault();
+    setFormError("");
     let payload = {};
     if (operation === "move_folder") payload = { folder_id: target || null };
     if (operation === "set_type")
@@ -287,6 +298,11 @@ function OperationForm({ draft, catalog, submit, busy }) {
     if (operation === "reprocess") payload = {
       force: true, ocr, ocr_languages: ocr ? language : "", generate_preview: true,
     };
+    if (operation === "set_metadata") {
+      if (!field || !confirmed) return;
+      try { payload = { values: { [field.key]: fieldAction === "clear" ? null : metadataValue(field, rawValue) }, confirm: true }; }
+      catch (error) { setFormError(error.message); return; }
+    }
     submit(operation, payload);
   }
   return (
@@ -300,6 +316,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
             setTarget("__choose__");
             setTags([]);
             setConfirmed(false);
+            setFormError("");
           }}
         >
           {options.map((key) => (
@@ -389,6 +406,22 @@ function OperationForm({ draft, catalog, submit, busy }) {
           </select>
         </label>
       ) : null}
+      {operation === "set_metadata" && <fieldset disabled={busy}>
+        <legend>仅修改选定的业务字段</legend>
+        <label>业务字段<select value={fieldId} onChange={e => { setFieldId(e.target.value); setRawValue(""); setConfirmed(false); setFormError(""); }}>
+          <option value="" disabled>请选择字段</option>{fields.map(item => <option key={item.id} value={item.id}>{item.label} · {item.type}</option>)}
+        </select></label>
+        {!fields.length && <p className="muted">当前空间没有可编辑字段，请先创建字段定义。</p>}
+        {field && <>
+          <label>字段操作<select value={fieldAction} onChange={e => { setFieldAction(e.target.value); setConfirmed(false); setFormError(""); }}>
+            <option value="set">设置值</option><option value="clear">清空此字段</option>
+          </select></label>
+          {fieldAction === "set" && <MetadataInput field={field} value={rawValue} onChange={setRawValue} />}
+          <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />确认对所选档案{fieldAction === "clear" ? "清空" : "设置"}此字段</label>
+          <p className="muted">其他业务字段保持原值。每份档案独立校验版本与归档规则；成功项可撤销，后续编辑冲突时不会覆盖。</p>
+        </>}
+      </fieldset>}
+      {formError && <Notice error>{formError}</Notice>}
       {operation === "reprocess" && <fieldset disabled={busy}>
         <legend>解析选项</legend>
         <label className="check-label"><input type="checkbox" checked={ocr} onChange={e => setOcr(e.target.checked)} />启用 OCR（耗时较长）</label>
@@ -411,6 +444,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
           disabled={
             busy ||
             (operation === "reprocess" && !confirmed) ||
+            (operation === "set_metadata" && (!field || !confirmed)) ||
             (["move_folder", "set_type"].includes(operation) &&
               target === "__choose__") ||
             (["add_tags", "remove_tags"].includes(operation) && !tags.length)

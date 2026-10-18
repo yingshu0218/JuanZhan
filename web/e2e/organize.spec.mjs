@@ -68,6 +68,83 @@ async function createTag(page, name) {
   ).toBeVisible();
 }
 
+test("seven typed business fields set, clear and undo without losing other values", async ({ page }) => {
+  const errors=[]; page.on("pageerror", error => errors.push(error.message));
+  await login(page); await createSpace(page, "字段编辑-"+randomUUID().slice(0,5));
+  const space=await page.getByLabel("当前空间").inputValue();
+  const fields=[
+    {key:"short",label:"简述",type:"text",value:"保留其他字段"},
+    {key:"long",label:"说明",type:"long_text",value:"第一行\n第二行"},
+    {key:"number",label:"数量",type:"integer",value:9007199254740991},
+    {key:"money",label:"金额",type:"decimal",value:"2.0001"},
+    {key:"date",label:"日期",type:"date",value:"2026-10-19"},
+    {key:"flag",label:"复核",type:"boolean",value:false},
+    {key:"choice",label:"选项",type:"single_select",value:"stable-a",constraints:{options:[{id:"stable-a",label:"选项甲"}]}},
+  ];
+  for(const field of fields){
+    const response=await api(page,"/field-definitions","POST",{space_id:space,key:field.key,label:field.label,type:field.type,constraints:field.constraints||{}});
+    expect(response.status).toBe(201); field.id=response.data.id;
+  }
+  const docs=await seed(page,["字段甲.txt","字段乙.txt"]);
+  const expected={};
+  for(const field of fields){
+    await page.getByLabel("全选当前页",{exact:true}).check();
+    await page.getByRole("button",{name:"批量操作",exact:true}).click();
+    await page.getByLabel("操作类型").selectOption("set_metadata");
+    await page.getByRole("combobox",{name:"业务字段",exact:true}).selectOption(field.id);
+    await expect(page.getByRole("button",{name:"确认提交",exact:true})).toBeDisabled();
+    if(["boolean","single_select"].includes(field.type)) await page.getByLabel(/^字段值/).selectOption(String(field.value));
+    else await page.getByLabel(/^字段值/).fill(String(field.value));
+    await page.getByLabel("确认对所选档案设置此字段",{exact:true}).check();
+    await submit(page);
+    await expect(page.locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
+    expected[field.key]=field.value;
+    for(const doc of docs) expect(Object.fromEntries((await api(page,`/documents/${doc.document_id}/metadata`)).data.map(row=>[row.key,row.value]))).toEqual(expected);
+    await closeResult(page);
+  }
+  await page.getByLabel("全选当前页",{exact:true}).check();
+  await page.getByRole("button",{name:"批量操作",exact:true}).click();
+  await page.getByLabel("操作类型").selectOption("set_metadata");
+  await page.getByRole("combobox",{name:"业务字段",exact:true}).selectOption(fields[5].id);
+  await page.getByRole("combobox",{name:"字段操作",exact:true}).selectOption("clear");
+  await page.getByLabel("确认对所选档案清空此字段",{exact:true}).check();
+  await page.screenshot({path:"/tmp/juanzhan-batch-fields-desktop.png"});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:"/tmp/juanzhan-batch-fields-mobile.png"});
+  await submit(page);
+  await expect(page.locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
+  for(const doc of docs) expect((await api(page,`/documents/${doc.document_id}/metadata`)).data.some(row=>row.key==="flag")).toBe(false);
+  await page.getByRole("button",{name:"撤销本次成功变更",exact:true}).click();
+  await expect(page.getByRole("dialog",{name:"撤销结果",exact:true}).locator(".result-counts")).toHaveText(/成功 2.*失败 0/);
+  for(const doc of docs) expect(Object.fromEntries((await api(page,`/documents/${doc.document_id}/metadata`)).data.map(row=>[row.key,row.value]))).toEqual(expected);
+  expect(errors).toEqual([]);
+});
+
+test("metadata batch preserves concurrent edits and rejects unsafe browser integers", async ({ page }) => {
+  await login(page); await createSpace(page,"字段冲突-"+randomUUID().slice(0,5));
+  const space=await page.getByLabel("当前空间").inputValue();
+  const definition=await api(page,"/field-definitions","POST",{space_id:space,key:"count",label:"数量",type:"integer"});
+  const docs=await seed(page,["并发甲.txt","并发乙.txt"]);
+  await page.getByLabel("全选当前页",{exact:true}).check();
+  await page.getByRole("button",{name:"批量操作",exact:true}).click();
+  await page.getByLabel("操作类型").selectOption("set_metadata");
+  await page.getByRole("combobox",{name:"业务字段",exact:true}).selectOption(definition.data.id);
+  await page.getByLabel(/^字段值/).fill("9007199254740992");
+  await page.getByLabel("确认对所选档案设置此字段",{exact:true}).check();
+  await page.getByRole("button",{name:"确认提交",exact:true}).click();
+  await expect(page.getByRole("alert")).toContainText("安全整数");
+  expect((await api(page,`/documents/${docs[0].document_id}/metadata`)).data).toEqual([]);
+  await page.getByLabel(/^字段值/).fill("42");
+  expect((await api(page,`/documents/${docs[1].document_id}`,"PATCH",{expected_document_version:1,title:"并发保留"})).status).toBe(200);
+  await submit(page);
+  await expect(page.locator(".result-counts")).toHaveText(/成功 1.*失败 1/);
+  await page.getByRole("button",{name:"撤销本次成功变更",exact:true}).click();
+  await expect(page.getByRole("dialog",{name:"撤销结果",exact:true}).locator(".result-counts")).toHaveText(/成功 1.*失败 0/);
+  expect((await api(page,`/documents/${docs[0].document_id}/metadata`)).data).toEqual([]);
+  expect((await api(page,`/documents/${docs[1].document_id}`)).data.title).toBe("并发保留");
+});
+
 test("frozen batch versions produce partial results and guarded undo", async ({
   page,
 }) => {

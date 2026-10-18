@@ -79,15 +79,126 @@ def test_reject_bad_operation_payloads(api,operation,payload):
     assert submit(client,headers,space,['id'],operation,payload).status_code==422
 
 
-def test_selection_limits_auth_and_unimplemented_operations(api):
+def test_selection_limits_auth_and_metadata_payload(api):
     _,_,client,headers,space=api
     assert submit(client,{},space,['id']).status_code==403
     assert submit(client,headers,space,[]).status_code==422
     assert submit(client,headers,space,['id','id']).status_code==422
     assert submit(client,headers,space,['id'],versions={}).status_code==422
     assert submit(client,headers,space,[str(i) for i in range(101)]).status_code==422
-    for operation in ('set_metadata',):
-        assert submit(client,headers,space,['id'],operation,{}).status_code==501
+    assert submit(client,headers,space,['id'],'set_metadata',{}).status_code==422
+
+
+def test_batch_metadata_seven_types_clear_noop_and_guarded_undo(api):
+    from test_metadata import field,write
+    _,settings,client,headers,space=api
+    ids=[upload(client,headers,space,str(n).encode())['document_id'] for n in range(2)]
+    kinds={'text':'text','notes':'long_text','count':'integer','amount':'decimal',
+           'date':'date','flag':'boolean','choice':'single_select','keep':'text'}
+    for key,kind in kinds.items():
+        field(client,headers,space,key,kind,**({'options':[{'id':'a','label':'A'}]} if kind=='single_select' else {}))
+    for id in ids:assert write(client,headers,id,1,{'keep':'unchanged'}).status_code==200
+    values={'text':'Title','notes':'Long\ntext','count':9223372036854775807,
+            'amount':'2.0001','date':'2026-10-19','flag':False,'choice':'a'}
+    job=submit(client,headers,space,ids,'set_metadata',{'values':values,'confirm':True},{id:2 for id in ids}).json()['job_id']
+    assert finish(settings,job)['succeeded']==2
+    for id in ids:
+        saved=client.get('/api/v1/documents/'+id+'/metadata').json()
+        assert {v['key']:v['value'] for v in saved}=={**values,'keep':'unchanged'}
+        assert detail(client,id)['document_version']==3
+    noop=submit(client,headers,space,ids,'set_metadata',{'values':values,'confirm':True},{id:3 for id in ids}).json()['job_id']
+    assert finish(settings,noop)['skipped']==2
+    assert patch(client,headers,ids[1],3,title='Later edit').status_code==200
+    undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
+    result=finish(settings,undo)
+    assert result['succeeded']==1
+    assert {r['document_id']:r for r in result['items']}[ids[1]]['error_code']=='VERSION_CONFLICT'
+    assert {v['key']:v['value'] for v in client.get('/api/v1/documents/'+ids[0]+'/metadata').json()}=={'keep':'unchanged'}
+    assert detail(client,ids[1])['title']=='Later edit'
+
+
+def test_metadata_clear_preserves_false_provenance_and_filing_failure_is_per_item(api):
+    from test_metadata import field,write
+    _,settings,client,headers,space=api
+    flag=field(client,headers,space,'flag','boolean')
+    ids=[upload(client,headers,space,str(n).encode())['document_id'] for n in range(2)]
+    for id in ids:assert write(client,headers,id,1,{'flag':False},confirm=False).status_code==200
+    with connect(settings.database) as db:
+        db.execute("UPDATE metadata_values SET origin='imported',updated_by='importer' WHERE document_id=?",(ids[0],));db.commit()
+    type_id=client.post('/api/v1/document-types',headers=headers,json={'space_id':space,'key':'required',
+        'label':'Required','fields':[{'field_definition_id':flag,'required_for_filing':True}]}).json()['id']
+    patch(client,headers,ids[1],2,document_type_id=type_id)
+    client.post('/api/v1/documents/'+ids[1]+'/triage',headers=headers,json={'expected_document_version':3,'triage_status':'filed'})
+    job=submit(client,headers,space,ids,'set_metadata',{'values':{'flag':None},'confirm':True},{ids[0]:2,ids[1]:4}).json()['job_id']
+    result=finish(settings,job)
+    assert result['succeeded']==1 and result['items'][1]['error_code']=='MISSING_REQUIRED_FIELDS'
+    assert client.get('/api/v1/documents/'+ids[0]+'/metadata').json()==[]
+    assert client.get('/api/v1/documents/'+ids[1]+'/metadata').json()[0]['value'] is False
+    undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
+    assert finish(settings,undo)['succeeded']==1
+    with connect(settings.database) as db:
+        assert tuple(db.execute('SELECT value_bool,origin,is_confirmed,updated_by FROM metadata_values WHERE document_id=?',(ids[0],)).fetchone())==(0,'imported',0,'importer')
+
+
+@pytest.mark.parametrize('payload',[{}, {'values':{} ,'confirm':True},{'values':{'x':1},'confirm':'true'},
+    {'values':{'x':1}}, {'values':{'x':1},'confirm':True,'extra':1}])
+def test_batch_metadata_rejects_ambiguous_payload(api,payload):
+    _,_,client,headers,space=api
+    assert submit(client,headers,space,['missing'],'set_metadata',payload).status_code==422
+
+
+def test_batch_metadata_undo_revalidates_changed_field_rules(api):
+    from test_metadata import field,write
+    _,settings,client,headers,space=api
+    definition=field(client,headers,space,'code','text')
+    id=upload(client,headers,space)['document_id']
+    write(client,headers,id,1,{'code':'old'})
+    job=submit(client,headers,space,[id],'set_metadata',{'values':{'code':'new'},'confirm':True},{id:2}).json()['job_id']
+    finish(settings,job)
+    assert client.patch('/api/v1/field-definitions/'+definition,headers=headers,json={'constraints':{'regex':'new'}}).status_code==200
+    undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
+    assert finish(settings,undo)['items'][0]['error_code']=='INVALID_METADATA_VALUE'
+    assert client.get('/api/v1/documents/'+id+'/metadata').json()[0]['value']=='new'
+    assert detail(client,id)['document_version']==3
+
+
+def test_batch_metadata_audit_and_lease_failures_rollback_actual_values(api):
+    from test_metadata import field
+    _,settings,client,headers,space=api
+    field(client,headers,space,'code','text')
+    ids=[upload(client,headers,space,str(n).encode())['document_id'] for n in range(2)]
+    with connect(settings.database) as db:
+        db.execute("CREATE TRIGGER reject_metadata_batch BEFORE INSERT ON document_events WHEN NEW.batch_job_id IS NOT NULL AND NEW.document_id='"+ids[1]+"' BEGIN SELECT RAISE(ABORT,'fixture audit failure'); END")
+        db.commit()
+    job=submit(client,headers,space,ids,'set_metadata',{'values':{'code':'saved'},'confirm':True}).json()['job_id']
+    result=finish(settings,job)
+    assert result['succeeded']==1 and result['items'][1]['error_code']=='INTEGRITY_CONFLICT'
+    assert client.get('/api/v1/documents/'+ids[1]+'/metadata').json()==[]
+    next_job=submit(client,headers,space,[ids[0]],'set_metadata',{'values':{'code':None},'confirm':True},{ids[0]:2}).json()['job_id']
+    queue=JobQueue(settings);claim=queue.claim('lease-fixture')
+    assert claim['id']==next_job
+    def expired(db,owned):
+        result=execute(db,owned,settings)
+        db.execute('UPDATE jobs SET lease_expires_at=0 WHERE id=?',(owned['id'],))
+        return result
+    with pytest.raises(LostLease):queue.complete(next_job,claim['lease_token'],expired)
+    assert client.get('/api/v1/documents/'+ids[0]+'/metadata').json()[0]['value']=='saved'
+    assert detail(client,ids[0])['document_version']==2
+
+
+def test_batch_metadata_snapshot_budget_fails_only_oversized_item(api,monkeypatch):
+    from test_metadata import field,write
+    import juanzhan.batches as batches
+    _,settings,client,headers,space=api
+    field(client,headers,space,'notes','long_text')
+    ids=[upload(client,headers,space,str(n).encode())['document_id'] for n in range(2)]
+    assert write(client,headers,ids[0],1,{'notes':'x'*8192}).status_code==200
+    monkeypatch.setattr(batches,'MAX_METADATA_SNAPSHOT_BYTES',4096)
+    job=submit(client,headers,space,ids,'set_metadata',{'values':{'notes':'new'},'confirm':True},{ids[0]:2,ids[1]:1}).json()['job_id']
+    result=finish(settings,job)
+    assert result['succeeded']==1 and result['items'][0]['error_code']=='BATCH_METADATA_SNAPSHOT_LIMIT'
+    assert client.get('/api/v1/documents/'+ids[0]+'/metadata').json()[0]['value']=='x'*8192
+    assert detail(client,ids[0])['document_version']==2
 
 
 def test_item_scope_failure_and_audit_failure_roll_back_only_that_item(api):
