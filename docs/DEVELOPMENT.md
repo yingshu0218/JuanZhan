@@ -588,3 +588,8 @@ UV_CACHE_DIR=/workspace/.uv-cache JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium .venv
 ```
 
 默认结果写入新的私有/tmp目录，报告不进仓库；`--phase backend`/`browser`可分阶段跑，`--phase assess --reports <本次后端报告目录> <本次浏览器报告目录>`核验全部证据。后端所有参数都需通过；浏览器六套件全部项需通过，未跑的映射明确not_run。测试无新增依赖/初始化/服务配置，不需要新的云setup草稿。只读来源fixture使用随机容器/卷，不复用正常Compose业务卷；勿把fixture准备与其他Chromium导航并发，运行器已串行隔离。
+
+
+## T34 本地候选与运维 · 2026-10-18
+
+开发继续用根compose.yaml；deploy/compose.yaml是独立发布配置，不自动改变现有云安装/启动说明。build_release.py从现有冻结依赖/哈希wheelhouse与模型构建本地候选，release_drill.py只操作随机fixture项目/卷；benchmark.py仅临时合成库，候选容器可用--stdout将JSON直接保存到私有宿主报告目录，避免tmpfs停机后报告丢失。安装、权限、TLS、外部来源只读override、备份导出与新卷恢复及回退见RELEASE，实际性能见PERFORMANCE。本轮无新增依赖/凭证/迁移，不需要新的云setup草稿。

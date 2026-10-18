@@ -89,10 +89,12 @@ def run(count,samples):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--counts',type=int,nargs='+',default=[10000,100000]);parser.add_argument('--samples',type=int,default=20)
+    parser.add_argument("--stdout",action="store_true",help="Emit JSON for ephemeral container capture")
     args=parser.parse_args()
     if any(n<1 or n>100000 for n in args.counts) or not 5<=args.samples<=100:parser.error('Invalid bounded workload')
     report={'environment':{'python':platform.python_version(),'sqlite':sqlite3.sqlite_version,'platform':platform.platform(),
                 'logical_cpus':os.cpu_count(),'tokenizer':VERSION},'scope':'Synthetic metadata/FTS, real single-client warm TCP HTTP; no originals, OCR or ingestion throughput',
             'results':[run(n,args.samples) for n in args.counts]}
+    if args.stdout:print(json.dumps(report,ensure_ascii=False,indent=2));return
     output=Path(tempfile.mkdtemp(prefix='juanzhan-performance-'))/'baseline.json';output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');print(str(output))
 if __name__=='__main__':main()

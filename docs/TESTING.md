@@ -478,3 +478,13 @@ Browser plugin not available，使用现有Playwright/Chromium，不增加依赖
 - 现有镜像`scripts/smoke.py`通过（Web/CSP/资源、Archive健康、Converter鉴权/六格式/OCR能力/multipart边界、worker心跳）；正常库8条迁移、0档案、0外键违规保持。无应用/接口/迁移/依赖变更，未因测试重建或发布镜像，Archive0.4.21/52路径和Converter0.4.3/6路径保持；无新增云配置需求。
 
 T33不替代T34性能基线/版本化镜像与升级恢复运维手册；测试时长不当作性能承诺。未覆盖真实手机/Firefox/WebKit、硬件断电、网络文件系统、大规模压力及真实业务数据卷切换。只读外部字节仍需独立备份，T16托管接管与批量reprocess/set_metadata等明确未实现。可选安装Browser插件改善后续页面导航、截图与诊断，不是当前验收前置依赖。
+
+## T34 本地发行候选 · 2026-10-18
+
+- build_release.py首次工作区构建如实记录dirty=true；实现提交cf6a8f7后重新构建，最终manifest在/tmp/juanzhan-release-o5gxvq5r/manifest.json，明确source_dirty=false、source_revision=cf6a8f7a2f9e8bd609b56e059e4c0a122402698f、Linux/amd64。OCI标签实际核验0.1.0-rc.1；最终本地image ID为sha256:48841d0012f536a14005ff59d458c87aeca60776c15b5b1ce8dbc81b95411996。基础FROM固定已验证digest，pip哈希离线安装、eng/chi_sim模型校验及生产Web构建通过。未推镜像/Git标签/GitHub Release，不把本地ID称registry digest。
+- release_drill.py对最终干净候选完整实跑，报告/tmp/juanzhan-release-drill-7ku467tz/result.json：初装旧dev镜像（8迁移）→随机管理员→真实TXT上传/Converter解析/worker索引与中文HTTP检索→换candidate，身份/数据保留→暂停worker→持久卷备份→恢复新目录→独立项目挂恢复卷→拒绝旧会话/原密码重新登录→下载字节、正文与中文搜索/SQLite完整性通过。8迁移、integrity=ok、FK0；UID10001、readonly_root=true、cap_drop_all=true及真实Web shell/编译资源/CSP通过。67.13s只是一轮功能演练时长，不是吞吐基线。预演58.24s同样通过，但不把未提交镜像当最终候选证据。
+- 发布Compose初稿tmpfs flow-list逗号未加引号，Docker拒绝非法挂载；修正后完整演练通过，没有放宽只读/权限规则。fixture随机项目/卷/凭证与正常Compose隔离；清理仅本次project label卷，无down -v。正常开发实例未替换，原.env/管理员/8迁移/数据卷保留。
+- benchmark.py实测1万/10万合成档案、真实词元/SQLite/鉴权TCP HTTP，4种查询各20计时+预热、命中总数验证及integrity/FK通过；开发报告/tmp/juanzhan-performance-s0lv0m1s/baseline.json。最终候选容器以只读根和512MiB测试tmpfs同样执行，JSON在宿主私有/tmp/juanzhan-t34-container-baseline/baseline.json，160计时请求全部通过。开发Python3.12.14/SQLite3.53.1与容器Python3.12.15/SQLite3.46.1分别记录；最终容器10万条中文常见词p50/p95=616.42/659.86ms，列表47.01/54.36ms。完整表及范围见PERFORMANCE；不是十万份原件导入/解析、并发或OCR吞吐。
+- 容器基线首次只输出tmpfs报告路径，退出后无法复制，未把丢失的报告当交付证据；增加--stdout后对最终镜像重测，在宿主成功保存/解析JSON。绑定脚本曾因云umask077导致UID10001不可读，调整公开测试源码为644，不改变私有数据/凭证权限。播种初稿spaces列数经SQL核对修正，完整命中断言未放宽。
+- pytest tests/test_foundation.py tests/test_backup.py：17 passed（1条既有Starlette/httpx弃用警告）；脚本py_compile与git diff --check通过。无应用HTTP/数据库/依赖变化，未重复T33全量409/浏览器20验收。正常Compose smoke.py通过（Web/CSP/资源、Archive、Converter鉴权/能力、worker心跳），三服务健康；正常库8迁移/0档案/0外键违规保持。
+- 构建、首装、私有env/HTTPS、只读来源override、持久备份导出、新卷恢复、同schema升级及匹配旧备份回退见RELEASE。当前只实测Linux/amd64与8→8迁移镜像替换；未发布registry/稳定版、未切真实业务卷，未承诺arm64/多用户/冷缓存/大规模OCR/任意跨版本升级。RC精确追溯cf6a8f7；后续提交只补运维记录和外部benchmark输出工具，不改变已测镜像应用源码。既有云开发安装/启动路径不变，无需新setup草稿。

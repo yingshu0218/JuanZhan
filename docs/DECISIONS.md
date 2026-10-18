@@ -306,3 +306,13 @@ URL使用版本化#library=百分号编码JSON片段，保存空间、导航/目
 执行入口scripts/acceptance.py默认全后端→构建→六组浏览器，sources Docker网络fixture先独立结束，其余同端口套件串行。报告默认私有/tmp且拒绝仓库内输出，保留首个非零退出并停止，无测试/JUnit缺失/跳过均不算阶段成功。支持backend/browser分阶段及assess只读汇总实际JUnit；不安装依赖、不修改正常Compose数据/.env/管理员，不启用多agent或推送Git。原件/缓存/索引/人工字段保护通过真实连接拒绝后恢复、实际只读来源离线缓存、真实OCR排队→完成强化；既有实际worker退出/超时、磁盘/事务/租约/过期发布、备份损坏与恢复覆盖故障矩阵。
 
 本轮不变更产品HTTP/数据库/应用代码/依赖，Archive0.4.21/52路径，Converter0.4.3/6路径及8迁移保持。功能验收不能替代T34性能、发布镜像和升级恢复运维流程；真实手机、其他浏览器、硬件断电与大规模压力不在本次通过范围。已声明未实现的T16及批量reprocess/set_metadata等仍保持，不把可用功能验收写成全部产品范围发布承诺。
+
+## ADR-046 · T34 本地发行候选与运维验证 · 2026-10-18
+
+实施候选编号为VERSION中的0.1.0-rc.1；内部Python包0.1.0和两个HTTP版本不随候选标签改变。Docker基础镜像固定到已实际构建的digest，原有pip哈希/模型校验保留；OCI记录版本、源码commit和dirty标志。构建器只产生本地tag与仓库外manifest，不自动推Git/GitHub Release/镜像仓库。正式分发候选要求干净提交，tag可重建覆盖，不以tag代替完整image ID或registry digest。对外发布仍需明确目标仓库与授权，不在本地候选验证中假称完成。
+
+独立deploy/compose.yaml无build路径、要求明确JUANZHAN_IMAGE/私有service token；三服务与maintenance profile，共享数据、持久备份/恢复卷，UID10001/根只读/cap_drop ALL/no-new-privileges。默认仅本机Archive端口，Secure Cookie true，外部TLS代理由管理员提供；外部源需单独只读override。默认/tmp预算与下载上限共同约束有效体积。开发Compose与现有云启动路径保持，不自动替换正常实例/管理员/数据卷。
+
+最小性能工作负载为1万/10万合成元数据+真实词元FTS、单客户端热TCP HTTP、每类20样本并核对命中；开发环境及候选容器分别测量，不把手工播种索引当原件导入/解析吞吐量，不建立未确认SLA。真实Compose演练使用随机项目/卷/凭证，完成初装/真实TXT导入与检索/同8迁移镜像升级/备份/新目录恢复/旧会话拒绝与重新登录/下载正文检索和完整性；只清本次label卷，不触碰正常卷。回退必须匹配旧镜像与备份迁移集合，不直接把旧程序连新版库。
+
+交付范围是本地可验证RC、性能观测、发布Compose和升级恢复手册；不是外部已发布稳定版或已部署生产服务。T16及批量reprocess/set_metadata等缺口保持；后续由实际使用与明确发布目标推进，不把拓扑路线任务结束等同全部产品功能/所有平台均完成。

@@ -188,3 +188,8 @@ T31在既有JobQueue之上增加全局鉴权分页清单和生产任务中心；
 ## T32 更新 · 2026-10-18
 
 T32 files路由复用已验证ManagedStore/SourceMounts/original通道；复制核验后附件下载，预览限定PNG。管理员backup模块按存储锁→SQLite写屏障创建DB及引用对象快照，恢复新目录并撤旧凭证/租约；无新服务/迁移，见ADR-044。
+
+
+## T34 发布拓扑 · 2026-10-18
+
+发布用deploy/compose.yaml与开发项目/卷分离，固定候选镜像/外部digest、非root与只读根、内部Converter/worker及显式maintenance备份/恢复卷；外部源和HTTPS由管理员明确配置。现有三服务协议不变，无新运行服务或迁移。实际same-schema升级/新卷恢复验证与限制见RELEASE/ADR-046。
