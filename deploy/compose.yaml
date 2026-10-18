@@ -1,0 +1,67 @@
+# Explicit version/digest required. Separate project/volumes from development Compose.
+x-runtime: &runtime
+  image: ${JUANZHAN_IMAGE:?Set a tested version tag or immutable registry digest}
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  restart: unless-stopped
+services:
+  archive:
+    <<: *runtime
+    ports: ["127.0.0.1:${JUANZHAN_PORT:-8000}:8000"]
+    environment:
+      JUANZHAN_DATA_DIR: ${JUANZHAN_DATA_DIR:-/data}
+      JUANZHAN_COOKIE_SECURE: ${JUANZHAN_COOKIE_SECURE:-true}
+      JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
+      JUANZHAN_UPLOAD_MAX_BYTES: ${JUANZHAN_UPLOAD_MAX_BYTES:-67108864}
+      JUANZHAN_UPLOAD_TIMEOUT_SECONDS: ${JUANZHAN_UPLOAD_TIMEOUT_SECONDS:-60}
+    volumes: [archive_data:/data]
+    tmpfs: ["/tmp:size=256m,mode=1777"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+  converter:
+    <<: *runtime
+    command: [python, -m, uvicorn, juanzhan.converter:app, --host, 0.0.0.0, --port, "8000"]
+    environment:
+      CONVERTER_SERVICE_TOKEN: ${CONVERTER_SERVICE_TOKEN:?Configure private service token}
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+  archive-worker:
+    <<: *runtime
+    command: [python, -m, juanzhan.worker]
+    environment:
+      JUANZHAN_DATA_DIR: ${JUANZHAN_DATA_DIR:-/data}
+      CONVERTER_URL: http://converter:8000
+      CONVERTER_SERVICE_TOKEN: ${CONVERTER_SERVICE_TOKEN:?Configure private service token}
+      JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
+    volumes: [archive_data:/data]
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    depends_on:
+      archive: {condition: service_healthy}
+      converter: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -m, juanzhan.worker, --healthcheck]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    stop_grace_period: 10s
+  maintenance:
+    <<: *runtime
+    profiles: [maintenance]
+    restart: "no"
+    environment:
+      JUANZHAN_DATA_DIR: ${JUANZHAN_DATA_DIR:-/data}
+    volumes: [archive_data:/data, archive_backups:/backups, archive_recovery:/recovery]
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    command: [python, -m, juanzhan.backup, --help]
+volumes:
+  archive_data:
+  archive_backups:
+  archive_recovery:
