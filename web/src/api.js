@@ -7,6 +7,12 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  ORIGINAL_UNAVAILABLE: "原件离线、已变化或完整性核验未通过，未提供下载。",
+  ORIGINAL_NOT_AVAILABLE: "当前原件不存在。",
+  PREVIEW_STALE: "预览属于旧原件，请重新解析当前版本。",
+  PREVIEW_UNAVAILABLE: "缓存预览完整性核验未通过。",
+  DOWNLOAD_CAPACITY: "下载准备繁忙，请稍后重试。",
+  DOWNLOAD_LIMIT: "原件超过当前下载上限。",
   REVISION_CONFLICT: "原件版本已改变，请刷新档案。",
   PARSE_ALREADY_RUNNING: "当前版本已有解析任务，请在任务中心查看。",
   DOCUMENT_TRASHED: "请先恢复回收站中的档案。",

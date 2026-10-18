@@ -555,3 +555,26 @@ reading专项验证真实DOCX正文/表格/候选显式采纳/冲突保护、历
 ## T31 更新 · 2026-10-18
 
 任务中心列表手动刷新，打开单项最多轮询两分钟，网络错误停止；重试不重置预算。重新解析需确认，OCR默认关闭；网络重发沿用被冻结的request_id/版本/选项，冲突关闭并刷新。结束后刷新档案读取新正文。新增npm run test:e2e:jobs，真实Converter/SQLite/文件环境；无依赖/启动/配置变化，沿用现有冻结安装及Compose构建。
+
+## T32 原件访问与管理员备份恢复 · 2026-10-18
+
+当前原件下载为鉴权GET `/api/v1/documents/{id}/download?expected_revision_id=...`，核验后固定字节；不支持Range/历史原件/内嵌HTML。安全预览仅已生成的PNG缩略图，旧Revision预览拒绝；无图不等于原件不存在。HTTP最多1GiB，生产浏览器为控制Blob内存限64MiB；超限可使用已鉴权API客户端下载。不要把API token放URL或提交到仓库。新增`npm run test:e2e:files`，真实TCP Converter/Archive/worker。
+
+备份为管理员本地目录包，不经过Web上传、归档解压或在线原库替换。必须使用私有可信本地POSIX目录，父目录由管理员预先建立，输出目录必须不存在，且不得位于现有data_dir内。示例（在同版本镜像/依赖环境，选择实际数据/私有备份目录）：
+
+```sh
+JUANZHAN_DATA_DIR=/data python -m juanzhan.backup create --output /private-backups/archive-20261018
+python -m juanzhan.backup restore --input /private-backups/archive-20261018 --output /private-recovery/archive-20261018
+```
+
+Docker内路径必须为管理员预先正确挂载且应用UID可写的私有目录；当前Compose没有额外备份挂载，不能把容器层当持久备份。需要传出时由管理员安全复制目录包，保留完整内容和COMPLETE；不自动修改Compose卷、.env或绑定任意宿主路径。
+
+1. 推荐维护窗口暂停归档写入和worker。CLI也会按managed→derived排他存储锁和DB写屏障取得一致副本，包含WAL已提交事实；忙则失败，不转成不一致成功。
+2. 备份DB和所有被Revision引用的托管对象、被ParseRun引用的派生产物。清单核验存储身份，最后落盘COMPLETE；无完整标记不可恢复。不复制staging、无引用孤儿或外部来源字节。
+3. 恢复只写全新不存在目录；校验哈希、引用、SQLite integrity/外键和精确迁移版本。不支持自动升级旧包、不覆盖现有库。运行中留RESTORE_IN_PROGRESS，进程被强杀/断电遗留标记时Archive启动拒绝；保留包并删除/隔离失败的新恢复目录，再选择全新目录重做，不手工删标记冒充完成。
+4. 完成后先以恢复目录启动隔离实例，使用原管理员密码重新登录；所有旧Cookie和API token已撤销，需要重发token。运行中任务清旧租约，沿原预算重试，已完成任务不重跑。不要让原实例和恢复实例同时扫描同一业务来源并对外服务。
+5. 校验档案/人工字段、下载哈希、正文/预览、中文搜索与任务后，再由管理员计划切换服务数据卷。原库、.env和原件始终保留；本命令不执行切换。
+
+包内含业务内容和管理员密码哈希，权限必须私有（根700、DB600）；无内建加密或签名，校验只检测损坏，不证明来源可信。外部来源目录、挂载映射、.env/转换token、模型/镜像版本需独立保存和恢复；本地数据备份不是外部原件备份。新恢复实例未配来源时如实显示离线，不把业务记录存在当外部字节已恢复。
+
+无新依赖/凭证/迁移，既有安装启动命令保持；Archive0.4.21/52路径，Converter0.4.3/6路径，8条不可变迁移。云环境无需新增setup草稿。

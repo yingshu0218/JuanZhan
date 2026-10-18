@@ -1,3 +1,4 @@
+import { Original } from "./Original.jsx";
 import { Reprocess } from "./Tasks.jsx";
 import { useEffect, useState } from "react";
 import {
@@ -247,28 +248,7 @@ export function Detail({
         </aside>
       </div>
       {original ? (
-        <Dialog title="关联原文件" onClose={() => setOriginal(false)}>
-          <p className="muted">
-            原件预览与下载尚未开放。以下为已保存的原件信息。
-          </p>
-          <div className="revisions">
-            {revisions.map((rev) => (
-              <section key={rev.id}>
-                <FileText size={26} />
-                <div>
-                  <strong>{rev.original_filename}</strong>
-                  <p>
-                    版本 {rev.revision_no} · {formatSize(rev.size_bytes)}
-                  </p>
-                  <small>
-                    {rev.mime_type} ·{" "}
-                    {rev.binary_available ? "原件可用" : "原件待核验或不可用"}
-                  </small>
-                </div>
-              </section>
-            ))}
-          </div>
-        </Dialog>
+        <Original api={api} doc={doc} revisions={revisions} onClose={() => setOriginal(false)} />
       ) : null}
     </section>
   );

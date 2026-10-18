@@ -183,3 +183,8 @@ searchState.js处理有界UI类型转换及版本化URL片段校验，SearchPane
 ## T31 更新 · 2026-10-18
 
 T31在既有JobQueue之上增加全局鉴权分页清单和生产任务中心；任务仍以SQLite为真源。单项有限串行轮询，无独立队列/推送服务或新依赖，重解析沿用T23。见ADR-043。
+
+
+## T32 更新 · 2026-10-18
+
+T32 files路由复用已验证ManagedStore/SourceMounts/original通道；复制核验后附件下载，预览限定PNG。管理员backup模块按存储锁→SQLite写屏障创建DB及引用对象快照，恢复新目录并撤旧凭证/租约；无新服务/迁移，见ADR-044。

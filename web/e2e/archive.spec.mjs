@@ -88,7 +88,7 @@ test("real login, first space, upload, duplicate decision, details, responsive a
   await page.getByRole("button", { name: "关联原文件", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "关联原文件" })).toBeVisible();
   await expect(
-    page.getByText("原件预览与下载尚未开放。", { exact: false }),
+    page.getByText("暂无可用缩略图", { exact: false }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toContainText("text/plain");
   await page.keyboard.press("Escape");

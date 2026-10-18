@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 process.env.JUANZHAN_E2E_PASSWORD ||= randomBytes(24).toString("base64url");
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: ["sources.spec.mjs", "reading.spec.mjs", "search.spec.mjs", "jobs.spec.mjs"],
+  testIgnore: ["sources.spec.mjs", "reading.spec.mjs", "search.spec.mjs", "jobs.spec.mjs", "files.spec.mjs"],
   fullyParallel: false,
   workers: 1,
   timeout: 60000,

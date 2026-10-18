@@ -455,3 +455,12 @@ Browser plugin not available，使用现有Playwright/Chromium，不增加依赖
 - 1440×1000及390×844截图实看；页面标题/URL、非空、无Vite覆盖层、无页面/控制台错误、手机无横向溢出均通过。任务自动跟踪最多两分钟；手机选中详情置于列表前。截图`/tmp/juanzhan-t31-desktop.png`、`/tmp/juanzhan-t31-mobile.png`。
 - 最终镜像构建、保留卷的Compose up --wait --no-build及scripts/smoke.py通过：Web/CSP/真实静态资源、Archive健康、Converter鉴权/六格式/OCR能力和multipart边界、worker心跳。未改.env/管理员/既有迁移，无需新云配置。
 - 本轮未重跑来源/搜索/阅读专用浏览器套件或新增OCR识别质量验收；可重试写入与预算由既有真实后端HTTP测试验证，浏览器验证终态不可重试。来源扫描/批量任务深层逐项结果沿用既有后端，不宣称本轮全部格式/来源已重验。可选安装Browser插件便于后续诊断，不影响本轮完成。
+
+## T32 · 2026-10-18
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest tests/test_backup.py tests/test_files.py tests/test_content.py tests/test_web.py -q`：28 passed；最终备份清单/中断标记与启动守护调整后再跑backup/files为13 passed（同一批子集，不另加测试数）。真实SQLite/文件/TCP Converter/HTTP：下载附件与字节匹配、未授权/错Revision/坏字节拒绝、当前PNG与跨档案/过期/损坏隔离；实际只读sysfs字节通过共享登记服务接入，下载核验、来源离线/可写挂载/路径越界/哈希变化均拒绝，不宣称sysfs无扩展名被扫描导入成功。
+- 真实备份恢复演练：已提交WAL数据库、托管原件/派生资产、正文及中文FTS在独立新目录恢复后可用；所有已完成记录不重跑，已claim任务旧租约失效且累计次数保持，原库租约仍running未被改写。验证已有目标拒绝、锁忙/缺原件失败、不完整/损坏/软链/遍历包拒绝与失败新目录清理；真实CLI子进程create/restore及重放拒绝通过，根700/DB600。RESTORE_IN_PROGRESS阻止Archive启动，worker/管理员初始化同用Settings.prepare_archive保护。
+- Browser plugin not available；使用已有Playwright及`JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium`，未新增依赖。默认套件首轮7 passed/1 failed（旧“尚未开放”占位断言），按真实新空预览行为更新且保留MIME信息后原失败用例单独重跑1 passed，合计默认8项通过；新增`npm run test:e2e:files`最终2 passed。真实PDF预览自然尺寸、下载事件/中文文件名及下载字节与原上传完全一致、关闭回结构化详情、手机无横向溢出；HTML恶意script/远端img仅可下载，弹窗无iframe/object/embed/script，不执行脚本且没有远端请求。
+- 1440×1000 / 390×844最终截图实看：`/tmp/juanzhan-t32-desktop.png`、`/tmp/juanzhan-t32-mobile.png`。标题/精确本地URL、非空、无框架覆盖层、页面与控制台无相关错误、真实交互均通过。
+- 最终Vite生产构建通过；Archive OpenAPI0.4.21/52路径可解析，既有download之外所有旧路径与所有components语义保持；git diff --check通过。Compose离线wheelhouse镜像重建、保留原卷up --wait --no-build、scripts/smoke.py通过（Web/CSP/静态资源、Archive健康、Converter鉴权/格式/OCR能力/multipart边界、worker心跳）。原.env/管理员/数据卷/8条迁移未改变，未恢复覆盖现有实例。
+- 本轮未重跑专用来源/阅读/搜索/任务浏览器套件、完整格式/OCR质量及并发大文件/断电测试；下一T33做整体验收与故障注入。预览是有限PNG缩略图，非完整原生PDF阅读器。浏览器下载64MiB/HTTP1GiB，不提供Range/历史原件。管理员备份不含外部原件/.env/模型/镜像，未实现Web恢复、加密签名、远端调度或真实业务数据卷切换。可以安装Browser插件改善后续交互诊断，不是本次依赖。

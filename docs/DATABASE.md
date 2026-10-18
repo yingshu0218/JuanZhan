@@ -161,3 +161,8 @@ parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)
 ## T25 无新增迁移
 
 继续8条不可变迁移；SELECT真实FTS与业务表，不引入搜索缓存库或新增来源写入。integer/decimal/date/boolean/text比较使用既有ix_metadata_* typed列索引；Decimal固定4位缩放、日期ISO，is_null为没有metadata_values行。当前业务条件/计数/分页同一SQLite读快照，索引状态比较search_dirty.generation与document_search_state.generation/tokenizer_version，不以Job completed冒充新鲜。FTS正文可能来自旧Revision，结果保持content_stale及原件可用性独立。
+
+
+## T32 更新 · 2026-10-18
+
+T32无新迁移。备份通过SQLite Backup API包含WAL已提交事实，冻结期间复制Revision/ParseRun引用对象；恢复校验完整性/外键/引用及精确migration_checksums，撤销旧会话/API token/心跳，running Job沿原预算处理，不修改原库。只读外部字节不在包内。

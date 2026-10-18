@@ -1,0 +1,45 @@
+import {test,expect} from "@playwright/test";
+import {execFileSync} from "node:child_process";
+import {readFile} from "node:fs/promises";
+import {login,createSpace,api} from "./helpers.mjs";
+test("real original download, passive preview and return on desktop and mobile",async({page})=>{
+  const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on("console",e=>{if(e.type()==="error")errors.push(e.text());});
+  await login(page);await createSpace(page,"原件安全验证");
+  const space=(await api(page,"/spaces")).data.find(s=>s.name==="原件安全验证").id;
+  const buffer=execFileSync("../.venv/bin/python",["-c","import sys;sys.path.insert(0,'../tests');from format_samples import raster_sample;sys.stdout.buffer.write(raster_sample('PDF'))"]);
+  const receipt=await page.request.post("/api/v1/documents/upload",{headers:{"X-CSRF-Token":(await api(page,"/auth/session")).data.csrf_token},multipart:{space_id:space,file:{name:"安全原件.pdf",mimeType:"application/pdf",buffer}}});
+  expect(receipt.status()).toBe(201);const document=await receipt.json();
+  await expect.poll(async()=>(await api(page,`/documents/${document.document_id}`)).data.processing_status,{timeout:30000}).toBe("completed");
+  await page.reload();await page.getByLabel("当前空间").selectOption(space);
+  await page.getByRole("region",{name:"档案列表",exact:true}).getByRole("button").filter({hasText:"安全原件"}).click();
+  await page.getByRole("button",{name:"关联原文件",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"关联原文件",exact:true});
+  await expect(dialog.getByRole("img",{name:"原件预览图 1",exact:true})).toBeVisible();
+  await expect.poll(()=>dialog.getByRole("img",{name:"原件预览图 1",exact:true}).evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  const downloadEvent=page.waitForEvent("download");await dialog.getByRole("button",{name:"下载当前原件",exact:true}).click();
+  const download=await downloadEvent;expect(download.suggestedFilename()).toBe("安全原件.pdf");expect(await readFile(await download.path())).toEqual(buffer);
+  await page.screenshot({path:"/tmp/juanzhan-t32-desktop.png"});
+  await page.setViewportSize({width:390,height:844});await expect(dialog).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:"/tmp/juanzhan-t32-mobile.png"});
+  await dialog.getByRole("button",{name:"关闭关联原文件"}).click();
+  await expect(page.getByRole("heading",{name:"正文内容",exact:true})).toBeVisible();
+  await expect(page.locator("vite-error-overlay")).toHaveCount(0);expect(errors).toEqual([]);
+});
+
+test("untrusted HTML stays a download and cannot execute in the original dialog",async({page})=>{
+  await login(page);await createSpace(page,"恶意HTML隔离");
+  const space=(await api(page,"/spaces")).data.find(s=>s.name==="恶意HTML隔离").id;
+  const content='<html><script>window.originalExecuted=true</script><img src="https://invalid.example/track"></html>';
+  const requested=[];page.on("request",request=>{if(request.url().includes("invalid.example"))requested.push(request.url());});
+  const response=await page.request.post("/api/v1/documents/upload",{headers:{"X-CSRF-Token":(await api(page,"/auth/session")).data.csrf_token},multipart:{space_id:space,file:{name:"隔离原件.html",mimeType:"text/html",buffer:Buffer.from(content)}}});
+  expect(response.status()).toBe(201);await page.reload();await page.getByLabel("当前空间").selectOption(space);
+  await page.getByRole("region",{name:"档案列表",exact:true}).getByRole("button").filter({hasText:"隔离原件"}).click();
+  await page.getByRole("button",{name:"关联原文件",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"关联原文件",exact:true});
+  await expect(dialog.getByText("暂无可用缩略图",{exact:false})).toBeVisible();
+  await expect(dialog.locator("iframe,object,embed,script")).toHaveCount(0);
+  const event=page.waitForEvent("download");await dialog.getByRole("button",{name:"下载当前原件",exact:true}).click();
+  const download=await event;expect((await readFile(await download.path())).toString()).toBe(content);
+  expect(await page.evaluate(()=>window.originalExecuted)).toBeUndefined();expect(requested).toEqual([]);
+});

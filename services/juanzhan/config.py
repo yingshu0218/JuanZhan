@@ -33,5 +33,7 @@ class Settings:
         return self.data_dir / "database" / "archive.sqlite3"
 
     def prepare_archive(self):
+        if (self.data_dir / "RESTORE_IN_PROGRESS").exists():
+            raise RuntimeError("Incomplete restore; use a new destination and repeat verified recovery")
         for directory in ("database", "managed", "derived"):
             (self.data_dir / directory).mkdir(parents=True, exist_ok=True)

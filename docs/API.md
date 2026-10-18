@@ -304,3 +304,8 @@ POST流最大1MiB、最多32元数据条件/100标签或类型、5排序/每页1
 ## T31 更新 · 2026-10-18
 
 GET /api/v1/jobs 为全局鉴权持久清单：page1..1000000、page_size1..100默认20、可选status五状态；返回items/total/page/page_size。列表省略result，error仅code；Job新增target_type/target_id/can_retry/available_at。详情/重试沿用既有接口，can_retry不替代提交时核验。Archive0.4.20/50路径，详见OpenAPI及ADR-043。
+
+
+## T32 更新 · 2026-10-18
+
+当前download已实现，expected_revision_id可选；附件octet-stream，核验原件哈希/只读来源及当前Revision，失败409，最多1GiB/两个准备过程，无Range。新增GET preview清单和preview/{asset_id}当前PNG字节（必须expected_revision_id），仅当前成功Run/当前Revision，4MiB/1024×1024/最多100图；鉴权/no-store/nosniff/sandbox CSP。Archive0.4.21/52路径，精确契约见OpenAPI及ADR-044。
