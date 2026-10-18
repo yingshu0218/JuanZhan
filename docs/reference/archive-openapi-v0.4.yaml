@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.19
+  version: 0.4.20
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2287,6 +2287,49 @@ paths:
           $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
+  /jobs:
+    get:
+      tags:
+      - Jobs
+      summary: 分页查询全部空间与系统维护任务
+      operationId: get_jobs
+      description: 全局鉴权任务清单，按created_at/id降序；列表不返回结果正文，错误仅包含code。并发新增时偏移分页可能移动。
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - cancelled
+      responses:
+        '200':
+          description: 任务清单
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: 无效分页或状态
   /jobs/{id}:
     get:
       tags:
@@ -2529,6 +2572,16 @@ components:
           type: string
           format: date-time
         updated_at: *id006
+        target_type:
+          type: string
+        target_id:
+          type: [string, 'null']
+        can_retry:
+          type: boolean
+          description: 与写接口相同的当前资格；不增加尝试预算，提交时重新验证。
+        available_at:
+          type: string
+          format: date-time
       required:
       - id
       - kind
@@ -3785,6 +3838,68 @@ components:
       - page_size
       - total
       - search_index
+    JobPage:
+      type: object
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/JobSummary'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+      required:
+      - items
+      - total
+      - page
+      - page_size
+    JobSummary:
+      description: Job公开进度与目标字段，省略result，error仅code。
+      type: object
+      properties:
+        id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
+        kind:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - completed
+          - failed
+          - cancelled
+        attempts: &job_summary_001
+          type: integer
+        max_attempts: *job_summary_001
+        progress_done: *job_summary_001
+        progress_total:
+          type:
+          - integer
+          - 'null'
+        error:
+          description: 任意合法 JSON 值
+        created_at: &job_summary_002
+          type: string
+          format: date-time
+        updated_at: *job_summary_002
+        target_type:
+          type: string
+        target_id:
+          type:
+          - string
+          - 'null'
+        can_retry:
+          type: boolean
+          description: 与写接口相同的当前资格；不增加尝试预算，提交时重新验证。
+        available_at:
+          type: string
+          format: date-time
   responses:
     Unauthorized:
       description: 未登录或 Token 无效

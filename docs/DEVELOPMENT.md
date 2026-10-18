@@ -550,3 +550,8 @@ reading专项验证真实DOCX正文/表格/候选显式采纳/冲突保护、历
 无新依赖/迁移/环境凭证，沿用npm ci/build --prefix web及Compose镜像构建/启动。npm run test:e2e:search --prefix web使用search.playwright.config.mjs：复用隔离reading-server，只有此配置注入JUANZHAN_E2E_INDEXING=1让测试worker自动排真实FTS，真实TCP Converter/SQLite/store保持，不改生产worker。search、reading和默认库/整理套件共享8767端口须顺序运行，sources用独立8768。
 
 当前Browser plugin not available，以已安装/usr/bin/chromium配合JUANZHAN_CHROMIUM_PATH运行仓库Playwright。截图/日志在/tmp；不使用正常管理员/卷。URL片段最多16000字符、最多8字段/标签100/类型100，整数只安全范围，不要用浮点绕过验证。未知空间/非法链接明确恢复默认范围；字段停用/HTTP预算/网络失败显示错误，不静默扩大条件或返回假空结果。现有安装/启动草稿不需更改。
+
+
+## T31 更新 · 2026-10-18
+
+任务中心列表手动刷新，打开单项最多轮询两分钟，网络错误停止；重试不重置预算。重新解析需确认，OCR默认关闭；网络重发沿用被冻结的request_id/版本/选项，冲突关闭并刷新。结束后刷新档案读取新正文。新增npm run test:e2e:jobs，真实Converter/SQLite/文件环境；无依赖/启动/配置变化，沿用现有冻结安装及Compose构建。

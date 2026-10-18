@@ -446,3 +446,12 @@ Browser plugin not available，使用现有Playwright/Chromium，不增加依赖
 正常Compose三服务healthy、smoke.py验证Web/CSP/编译资源、Archive、Converter鉴权/能力和worker心跳。容器与工作区前端JS/CSS的SHA-256逐项相同；不重复构建相同产物。正常.env/管理员/卷保留，实际8迁移且foreign_key_check=0。临时夹具只清理自身资源；安装/启动步骤无变化，不另改环境草稿、不声称已发布。
 
 稳定网络环境最终再验搜索4 passed（25.3秒），重新生成并人工核对桌面/手机截图；无额外控制台或页面错误。浏览器用例分别为搜索4+库/整理8+阅读3+来源1，共16项；与50项后端相关测试分开计数。临时目录清理后重新验证了smoke.py、8迁移/零外键错误及容器/工作区前端资产SHA-256一致。
+
+## T31 · 2026-10-18
+
+- `UV_CACHE_DIR=/workspace/.uv-cache uv run --frozen pytest tests/test_jobs.py tests/test_content.py tests/test_web.py -q`：32 passed；列表摘要优化后再跑test_jobs为17 passed（不是新增17项）。覆盖真实SQLite/HTTP、认证、分页边界/状态过滤、结果/私密字段不泄露、重试预算与资格及既有正文保护。
+- `npm run build --prefix web`：最终构建通过；OpenAPI解析/旧49路径语义一致及除Job外旧schema一致、50路径/0.4.20校验通过；git diff --check通过。
+- Browser plugin not available；使用现有Playwright及`JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium`，未安装浏览器依赖。`npm run test:e2e`：8 passed；`npm run test:e2e:jobs`：最终2 passed。真实临时Archive/SQLite/文件/TCP Converter/worker，DOCX上传及显式重解析成功、勾选确认/OCR默认关与语言选择、任务编号重载找回、状态筛选与无任务、损坏PDF实际解析失败/无终态重试、原件Revision保留。最初固定任务总数断言不符合真实GC附带任务，改用真实受理ID查询后通过，未伪造业务成功。
+- 1440×1000及390×844截图实看；页面标题/URL、非空、无Vite覆盖层、无页面/控制台错误、手机无横向溢出均通过。任务自动跟踪最多两分钟；手机选中详情置于列表前。截图`/tmp/juanzhan-t31-desktop.png`、`/tmp/juanzhan-t31-mobile.png`。
+- 最终镜像构建、保留卷的Compose up --wait --no-build及scripts/smoke.py通过：Web/CSP/真实静态资源、Archive健康、Converter鉴权/六格式/OCR能力和multipart边界、worker心跳。未改.env/管理员/既有迁移，无需新云配置。
+- 本轮未重跑来源/搜索/阅读专用浏览器套件或新增OCR识别质量验收；可重试写入与预算由既有真实后端HTTP测试验证，浏览器验证终态不可重试。来源扫描/批量任务深层逐项结果沿用既有后端，不宣称本轮全部格式/来源已重验。可选安装Browser插件便于后续诊断，不影响本轮完成。

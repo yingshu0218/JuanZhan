@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import authorize, fail
@@ -51,10 +51,16 @@ def row(db,id):
     return dict(zip([column[0] for column in cursor.description],result))
 
 
-def public(job):
+def public(job, *, summary=False):
     result = {key:job[key] for key in ('id','kind','status','attempts','max_attempts','progress_done',
                                       'progress_total','created_at','updated_at')}
-    result['result'] = json.loads(job['result_json']) if job['result_json'] is not None else None
+    result['target_type'] = job['target_type']
+    result['target_id'] = job['target_id']
+    result['can_retry'] = bool(job['retryable'] and job['attempts'] < job['max_attempts'] and
+                               (job['status'] == 'failed' or (job['status'] == 'queued' and job['attempts'] > 0)))
+    result['available_at'] = stamp(job['available_at'])
+    if not summary:
+        result['result'] = json.loads(job['result_json']) if job['result_json'] is not None else None
     result['error'] = json.loads(job['error_json']) if job['error_json'] is not None else None
     return result
 
@@ -216,6 +222,24 @@ class JobQueue:
 def router(settings):
     routes = APIRouter(prefix='/api/v1/jobs')
     queue = JobQueue(settings)
+    @routes.get('')
+    def list_jobs(page: int = Query(default=1, ge=1, le=1000000),
+                  page_size: int = Query(default=20, ge=1, le=100),
+                  status: Literal['queued','running','completed','failed','cancelled'] | None = None):
+        # Global authenticated task inventory. List responses deliberately omit result bodies.
+        where = ' WHERE status=?' if status else ''
+        values = (status,) if status else ()
+        with connect(settings.database) as db:
+            db.execute('BEGIN')
+            total = db.execute('SELECT count(*) FROM jobs'+where, values).fetchone()[0]
+            ids = db.execute('SELECT id FROM jobs'+where+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+                             (*values,page_size,(page-1)*page_size)).fetchall()
+            items = []
+            for (id,) in ids:
+                item = public(row(db,id), summary=True)
+                item['error'] = {'code':item['error'].get('code')} if item['error'] else None
+                items.append(item)
+            return {'items':items,'total':total,'page':page,'page_size':page_size}
     @routes.get('/{id}')
     def get_job(id: str):
         return queue.get(id)

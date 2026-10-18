@@ -1,3 +1,4 @@
+import { Reprocess } from "./Tasks.jsx";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -145,6 +146,7 @@ export function Detail({
             {doc.content_stale ? (
               <Notice>当前处理未替代最近成功正文：可能是原件已更新或最近一次解析失败。</Notice>
             ) : null}
+            <Reprocess key={doc.id} api={api} doc={doc} />
             <ContentReader api={api} doc={doc} definitions={definitions} onChanged={() => setAttempt((n) => n + 1)} />
             <section className="business-fields">
               <h3>业务字段</h3>

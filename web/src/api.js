@@ -7,6 +7,9 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  REVISION_CONFLICT: "原件版本已改变，请刷新档案。",
+  PARSE_ALREADY_RUNNING: "当前版本已有解析任务，请在任务中心查看。",
+  DOCUMENT_TRASHED: "请先恢复回收站中的档案。",
   CROSS_SPACE_REFERENCE: "引用项不属于当前空间，请重新选择。",
   INVALID_SEARCH_TEXT: "请输入较短且包含文字或数字的检索词。",
   FIELD_NOT_FILTERABLE: "所选字段已停用或不可筛选，请移除条件后重试。",

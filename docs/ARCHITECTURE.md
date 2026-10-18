@@ -178,3 +178,8 @@ ContentReader.jsx以完整请求路径隔离结果、AbortController取消过期
 ## T30 查询状态与一致范围
 
 searchState.js处理有界UI类型转换及版本化URL片段校验，SearchPanel.jsx只维护草稿，Workspace用同一fetchDocuments读取可见页/100项批量快照，Library分别展示范围摘要/结果/错误。列表条件变化Abort旧请求、清除批量选择；URL恢复先验证空间，popstate/自动页码修正replace而非产生循环历史。普通GET及高级POST复用既有ApiClient鉴权/CSRF，不改数据库或索引算法。
+
+
+## T31 更新 · 2026-10-18
+
+T31在既有JobQueue之上增加全局鉴权分页清单和生产任务中心；任务仍以SQLite为真源。单项有限串行轮询，无独立队列/推送服务或新依赖，重解析沿用T23。见ADR-043。

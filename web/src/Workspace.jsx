@@ -1,3 +1,4 @@
+import { TaskCenter } from "./Tasks.jsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   HardDrives,
@@ -39,6 +40,7 @@ const navIcons = {
 };
 
 export function Workspace({ api, logout, authError }) {
+  const [tasksOpen, setTasksOpen] = useState(false);
   const [initial] = useState(readLocation);
   const urlStarted = useRef(false);
   const restoringUrl = useRef(false);
@@ -495,6 +497,8 @@ export function Workspace({ api, logout, authError }) {
           <span>{title}</span>
         </div>
         <div className="header-actions">
+          <button onClick={() => setTasksOpen(true)}>任务中心</button>
+          {tasksOpen && <TaskCenter api={api} onClose={() => setTasksOpen(false)} />}
           <button className="primary" disabled={!space} onClick={importFiles}>
             <UploadSimple size={18} />
             <span>导入文件</span>

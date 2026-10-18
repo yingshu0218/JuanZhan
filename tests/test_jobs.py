@@ -326,3 +326,36 @@ def test_worker_child_can_finish_after_parent_closes_result_pipe(tmp_path):
     # An actual closed OS pipe must not cause a second failed send/traceback.
     _handler({'kind':'parse','target_type':'document'},str(tmp_path),send)
     assert send.closed
+
+
+def test_public_inventory_pagination_and_retry_projection(queue):
+    jobs, clock, settings, store = queue
+    first = jobs.enqueue(spec('inventory-private', payload={'secret':'never-public'}))
+    claimed = jobs.claim('private-worker')
+    jobs.failure(claimed['id'],claimed['lease_token'],'TEST_TRANSIENT','private error context',retryable=True)
+    projection = jobs.get(first['id'])
+    assert projection['can_retry'] is True
+    assert projection['target_type']=='managed_staging'
+    second = jobs.enqueue(spec('inventory-second'))
+    set_password(settings,'job-test-password')
+    with TestClient(create_app('archive',settings),base_url='https://archive.test') as client:
+        assert client.get('/api/v1/jobs').status_code==401
+        csrf = client.get('/api/v1/auth/session').json()['csrf_token']
+        client.post('/api/v1/auth/login',json={'username':'admin','password':'job-test-password'},headers={'X-CSRF-Token':csrf})
+        result = client.get('/api/v1/jobs?page_size=1').json()
+        assert result['total']==2 and len(result['items'])==1
+        other = client.get('/api/v1/jobs?page_size=1&page=2').json()
+        assert result['items'][0]['id']!=other['items'][0]['id']
+        text = json.dumps(client.get('/api/v1/jobs').json())
+        for private in ('never-public','private-worker','private error context','payload_json','lease_token','idempotency_key','"result"'):
+            assert private not in text
+        assert client.get('/api/v1/jobs?status=failed').json()['total']==0
+        for query in ('page=0','page_size=101','status=invalid'):
+            assert client.get('/api/v1/jobs?'+query).status_code==422
+        assert client.get('/api/v1/jobs?page=100').json()['items']==[]
+    jobs.retry(first['id'])
+    claimed = jobs.claim('worker')
+    jobs.failure(claimed['id'],claimed['lease_token'],'PERMANENT','Not retryable',retryable=False)
+    assert jobs.get(claimed['id'])['can_retry'] is False
+    with connect(settings.database) as db:
+        assert db.execute('PRAGMA foreign_key_check').fetchall()==[]

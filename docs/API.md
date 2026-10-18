@@ -299,3 +299,8 @@ POST流最大1MiB、最多32元数据条件/100标签或类型、5排序/每页1
 ## T30 前端消费与限制
 
 无HTTP契约变更。生产普通列表GET与提交后的POST /documents/search共用空间/目录/导航/类型范围，选择筛选结果也使用同一POST条件和page_size=100；正文读取仍T29。UI最多8条字段条件，integer只接受±9007199254740991安全整数、Decimal字符串，单选label转稳定ID、boolean false/is_null各自表达；服务端仍保留原32条件/完整64位输入能力。版本化#library URL片段是客户端状态而非新API、权限或保存视图；不含凭证。
+
+
+## T31 更新 · 2026-10-18
+
+GET /api/v1/jobs 为全局鉴权持久清单：page1..1000000、page_size1..100默认20、可选status五状态；返回items/total/page/page_size。列表省略result，error仅code；Job新增target_type/target_id/can_retry/available_at。详情/重试沿用既有接口，can_retry不替代提交时核验。Archive0.4.20/50路径，详见OpenAPI及ADR-043。
