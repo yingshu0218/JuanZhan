@@ -157,3 +157,29 @@ def test_response_budget_checked_in_sql_before_materializing_pages(pipeline,monk
     root='/api/v1/documents/'+a['document_id']
     for route in ('content','parse-runs','candidates'):
         assert client.get(root+'/'+route).status_code==413
+
+
+def test_batch_reprocess_real_converter_and_force_guard(pipeline):
+    settings,client,headers,space=pipeline
+    uploaded=upload(pipeline,b'Batch actual converter text')
+    worker=Worker(settings)
+    worker.run_once()
+    id=uploaded['document_id']
+    body={'space_id':space,'document_ids':[id],'selection_mode':'explicit',
+          'expected_versions':{id:1},'operation':'reprocess','payload':{}}
+    response=client.post('/api/v1/documents/batch',headers=headers,json=body)
+    assert response.status_code==202,response.text
+    worker.run_once()
+    result=client.get('/api/v1/jobs/'+response.json()['job_id']).json()['result']
+    assert result['items'][0]['error_code']=='ALREADY_PARSED'
+    body['payload']={'force':True}
+    response=client.post('/api/v1/documents/batch',headers=headers,json=body)
+    worker.run_once()
+    result=client.get('/api/v1/jobs/'+response.json()['job_id']).json()['result']
+    assert result['succeeded']==1
+    child=result['items'][0]['parse_job_id']
+    worker.run_once()
+    assert client.get('/api/v1/jobs/'+child).json()['status']=='completed'
+    history=client.get('/api/v1/documents/'+id+'/parse-runs').json()
+    assert history['total']==2
+    assert client.get('/api/v1/documents/'+id+'/content?format=text').json()['body']=='Batch actual converter text'

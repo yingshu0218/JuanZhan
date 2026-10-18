@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.21
+  version: 0.4.22
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1996,7 +1996,7 @@ paths:
         document_ids和expected_versions为固定选择快照，不重新执行动态筛选；explicit表示显式选择，snapshot表示调用者已枚举的完整选择集。
         当前每批1至100项且序列化任务不超过64KiB，全部通过持久任务异步执行。
         每项独立检查空间、版本和目标引用，失败项回滚而不撤销其他成功项，无变化标skipped。
-        reprocess和set_metadata等待其业务实现，提交返回501。结果通过GET /jobs/{id}的result读取BatchResult。
+        reprocess逐项排解析子任务，succeeded只表示排队成功，parse_job_id用于追踪解析结果，不支持撤销；set_metadata仍返回501。结果通过GET /jobs/{id}的result读取BatchResult。
         Cookie写操作须CSRF，Bearer无需CSRF。
       x-roadmap-phase: MVP
       requestBody:
@@ -3579,7 +3579,7 @@ components:
           description: >-
             严格匹配operation。move_folder为{folder_id: ID或null}，add_tags/remove_tags为{tag_ids: ID数组}，
             set_type为{document_type_id: ID或null}，set_triage为{triage_status: needs_review或filed}，
-            set_favorite为{is_favorite: 布尔}，trash/restore为{}；不允许额外字段。
+            set_favorite为{is_favorite: 布尔}，trash/restore为{}；reprocess仅允许ocr、force、generate_preview严格布尔与ocr_languages（eng、chi_sim或两者逗号连接），默认false、false、true与空串。语言要求ocr=true。不允许额外字段。
           type: object
           additionalProperties: true
       required:
@@ -3618,6 +3618,9 @@ components:
                 type: integer
                 minimum: 1
                 description: 成功或跳过项的执行后版本
+              parse_job_id:
+                type: string
+                description: reprocess成功项的持久解析子任务ID；排队成功不表示解析完成
               error_code:
                 type: string
             required:

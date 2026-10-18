@@ -13,6 +13,7 @@
 | [UI/UX](UI-UX.md) | 结构化内容优先交互与原型差距 |
 | [决策记录](DECISIONS.md) | 已确认、基线、建议和待定分开 |
 | [开发任务](TASKS.md) | 按依赖实施，逐项验收 |
+| [本机依赖与清理](LOCAL-DEVELOPMENT.md) | 本机安装、缓存、测试夹具与安全清理边界 |
 | [验证](TESTING.md) | 本次规格检查及生产测试要求 |
 | [项目状态](STATUS.md) | 已有成果与未实现能力 |
 | [Codex 交接](CODEX-HANDOFF.md) | 可直接执行的首轮工作指令 |

@@ -7,6 +7,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .content import Reprocess, enqueue_reprocess
 from .auth import fail
 from .catalog import ID, required, same_space
 from .document_api import DocumentPatch, Triage, filing
@@ -36,6 +37,14 @@ class BatchRequest(BaseModel):
 
 def changes(body):
     """Validate operation-specific payloads before enqueue; scopes are checked per item."""
+    if body.operation=='reprocess':
+        if set(body.payload)-{'ocr','ocr_languages','force','generate_preview'}:
+            fail(422,'INVALID_BATCH_PAYLOAD','Only parse options are allowed')
+        options=Reprocess(expected_document_version=1,expected_revision_id='validate',
+                          request_id='validate',**body.payload)
+        if options.ocr_languages and not options.ocr:
+            fail(422,'OCR_DISABLED','Languages require OCR')
+        return options.model_dump(exclude={'expected_document_version','expected_revision_id','request_id'})
     keys = {'move_folder':'folder_id', 'add_tags':'tag_ids', 'remove_tags':'tag_ids',
             'set_type':'document_type_id', 'set_triage':'triage_status', 'set_favorite':'is_favorite', 'trash':None, 'restore':None}
     if body.operation not in keys:
@@ -118,7 +127,7 @@ def undo_item(db, event):
     return current,restored
 
 
-def execute(db,job):
+def execute(db,job,settings=None):
     db.row_factory=sqlite3.Row
     body=json.loads(job['payload_json'])
     undo=body.get('undo_of')
@@ -130,6 +139,19 @@ def execute(db,job):
     for id in body['document_ids']:
         db.execute('SAVEPOINT batch_item')
         try:
+            if not undo and body['operation']=='reprocess':
+                doc=expected(db,id,body['expected_versions'][id])
+                if doc['space_id']!=body['space_id']:
+                    fail(422,'CROSS_SPACE_REFERENCE','Document belongs to another space')
+                if not doc['current_revision_id']:
+                    fail(409,'REVISION_CONFLICT','No current revision')
+                options=Reprocess(expected_document_version=doc['document_version'],
+                    expected_revision_id=doc['current_revision_id'],request_id='batch_'+job['id'],**body['changes'])
+                queued=enqueue_reprocess(db,settings,id,options)
+                items.append({'document_id':id,'status':'succeeded',
+                              'document_version':doc['document_version'],'parse_job_id':queued['job_id']})
+                db.execute('RELEASE batch_item')
+                continue
             before,after=undo_item(db,events[id]) if undo else apply(db,id,body['expected_versions'][id],body)
             status='skipped'
             if before!=after:

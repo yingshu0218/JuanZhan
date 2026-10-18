@@ -488,3 +488,16 @@ T33不替代T34性能基线/版本化镜像与升级恢复运维手册；测试�
 - 容器基线首次只输出tmpfs报告路径，退出后无法复制，未把丢失的报告当交付证据；增加--stdout后对最终镜像重测，在宿主成功保存/解析JSON。绑定脚本曾因云umask077导致UID10001不可读，调整公开测试源码为644，不改变私有数据/凭证权限。播种初稿spaces列数经SQL核对修正，完整命中断言未放宽。
 - pytest tests/test_foundation.py tests/test_backup.py：17 passed（1条既有Starlette/httpx弃用警告）；脚本py_compile与git diff --check通过。无应用HTTP/数据库/依赖变化，未重复T33全量409/浏览器20验收。正常Compose smoke.py通过（Web/CSP/资源、Archive、Converter鉴权/能力、worker心跳），三服务健康；正常库8迁移/0档案/0外键违规保持。
 - 构建、首装、私有env/HTTPS、只读来源override、持久备份导出、新卷恢复、同schema升级及匹配旧备份回退见RELEASE。当前只实测Linux/amd64与8→8迁移镜像替换；未发布registry/稳定版、未切真实业务卷，未承诺arm64/多用户/冷缓存/大规模OCR/任意跨版本升级。RC精确追溯cf6a8f7；后续提交只补运维记录和外部benchmark输出工具，不改变已测镜像应用源码。既有云开发安装/启动路径不变，无需新setup草稿。
+
+## 本机P1批量重新解析 · 2026-10-19
+
+macOS Apple M5 arm64 / CPython3.12.11，既有uv.lock冻结安装34包，无依赖变更。
+
+- `pytest -q tests/test_batches.py tests/test_auth.py tests/test_jobs.py --basetemp=.local/pytest-core-final`：53 passed，6.96秒。真实SQLite/托管文件/HTTP及worker，覆盖严格选项、OCR子任务参数、跨空间/回收/并发版本、活动解析拒绝、父任务租约失效对子任务与parse_requests的原子回滚、不可撤销。
+- 首次批量/正文组合执行：24 passed、13 failed；12项原有正文用例与新增真实Converter批量用例均未得到成功解析。日志`.local/targeted-tests.log`。之后新增的OCR参数测试另在上述53项内通过。
+- 从HEAD导出原始services/tests/docs到`.local/baseline`，单跑原始`test_public_three_content_formats_and_bounded_history[txt]`同样失败；日志`.local/baseline-tests.log`，证明该转换故障在变更前存在。
+- 本机最小`resource.setrlimit(resource.RLIMIT_AS,(512*1024*1024,512*1024*1024))`抛`ValueError: current limit exceeds maximum limit`，现有conversion_child在转换前使用该设置；任务报CONVERSION_FAILED。未放松生产资源边界。
+
+新增真实Converter测试保留，须在支持的Linux环境执行通过后才能标记批量重解析完整验收。未运行完整全仓库/浏览器/容器/OCR验收；本轮不宣称这些通过。依赖与测试夹具清理见LOCAL-DEVELOPMENT。
+
+补充基础测试`tests/test_foundation.py`：7 passed、1 failed；失败项test_converter_boundary固定要求ocr_available=true，而本轮未安装OCR模型，服务如实报告false。日志`.local/foundation-tests.log`。不计入上述53项成功结果。

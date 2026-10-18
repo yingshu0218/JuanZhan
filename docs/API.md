@@ -309,3 +309,9 @@ GET /api/v1/jobs 为全局鉴权持久清单：page1..1000000、page_size1..100�
 ## T32 更新 · 2026-10-18
 
 当前download已实现，expected_revision_id可选；附件octet-stream，核验原件哈希/只读来源及当前Revision，失败409，最多1GiB/两个准备过程，无Range。新增GET preview清单和preview/{asset_id}当前PNG字节（必须expected_revision_id），仅当前成功Run/当前Revision，4MiB/1024×1024/最多100图；鉴权/no-store/nosniff/sandbox CSP。Archive0.4.21/52路径，精确契约见OpenAPI及ADR-044。
+
+## P1 批量重新解析 · 2026-10-19
+
+Archive契约0.4.22，路径数和8条迁移不变。POST /documents/batch支持reprocess，payload仅ocr/force/generate_preview严格布尔及ocr_languages；默认OCR关闭，语言要求OCR启用。沿用单档案重解析校验及最多100项固定ID/版本快照，每项执行时校验空间、版本、非回收及当前Revision；有活动解析或成功缓存未force时该项失败。
+
+成功项返回parse_job_id，表示持久解析子任务排队成功，不表示转换已完成；以子任务查询结果为准。父批次、子任务及parse_requests在同一租约围栏事务提交，失败项savepoint回滚，租约失效整体回滚。排队不递增业务版本、不改人工字段或最近成功正文；不提供撤销。相同批次/档案使用稳定内部request_id防重复排队；重新POST仍是新批次。set_metadata仍501，生产Web尚无批量重解析入口。

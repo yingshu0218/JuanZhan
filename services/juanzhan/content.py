@@ -145,27 +145,34 @@ def router(settings):
     @routes.post('/{id}/reprocess',status_code=202)
     def reprocess(id: str,body: Reprocess,request: Request,response: Response):
         headers(response)
-        if body.ocr_languages and not body.ocr:fail(422,'OCR_DISABLED','Languages require OCR')
         with transaction(settings,request) as db:
-            doc=expected(db,id,body.expected_document_version)
-            if doc['deleted_at'] is not None:fail(409,'DOCUMENT_TRASHED','Restore before reprocessing')
-            if not doc['current_revision_id'] or doc['current_revision_id']!=body.expected_revision_id:
-                fail(409,'REVISION_CONFLICT','Original revision changed; reload before reprocessing')
-            payload={'revision_id':doc['current_revision_id'],'ocr_enabled':body.ocr,
-                     'ocr_languages':body.ocr_languages,'generate_preview':body.generate_preview}
-            key='reprocess:'+hashlib.sha256((id+':'+body.request_id).encode()).hexdigest()
-            existing=db.execute('SELECT id FROM jobs WHERE idempotency_key=?',(key,)).fetchone()
-            if existing:
-                job=row(db,existing[0])
-                if json.loads(job['payload_json'])!=payload:fail(409,'IDEMPOTENCY_CONFLICT','Request ID was used for different options')
-                return {'job_id':job['id'],'status':job['status']}
-            active=db.execute("SELECT 1 FROM jobs WHERE target_type='document' AND target_id=? AND kind IN('parse','ocr') "
-                "AND status IN('queued','running') AND json_extract(payload_json,'$.revision_id')=? LIMIT 1",(id,doc['current_revision_id'])).fetchone()
-            if active:fail(409,'PARSE_ALREADY_RUNNING','This revision already has an active parse request')
-            view=project(db,id,originals,mounts)
-            if not body.force and view['processing_status']=='completed' and not view['content_stale']:
-                fail(409,'ALREADY_PARSED','Set force=true to explicitly reprocess successful content')
-            job=JobQueue(settings).enqueue(JobSpec(kind='ocr' if body.ocr else 'parse',target_type='document',target_id=id,
-                payload=payload,idempotency_key=key),db=db)
-            return {'job_id':job['id'],'status':job['status']}
+            return enqueue_reprocess(db,settings,id,body)
     return routes
+
+
+def enqueue_reprocess(db,settings,id,body):
+    """Share version, active-request and force guards with batch scheduling."""
+    if body.ocr_languages and not body.ocr:fail(422,'OCR_DISABLED','Languages require OCR')
+    originals=ManagedStore(settings.data_dir/'managed')
+    mounts=SourceMounts(settings.source_mounts)
+    doc=expected(db,id,body.expected_document_version)
+    if doc['deleted_at'] is not None:fail(409,'DOCUMENT_TRASHED','Restore before reprocessing')
+    if not doc['current_revision_id'] or doc['current_revision_id']!=body.expected_revision_id:
+        fail(409,'REVISION_CONFLICT','Original revision changed; reload before reprocessing')
+    payload={'revision_id':doc['current_revision_id'],'ocr_enabled':body.ocr,
+             'ocr_languages':body.ocr_languages,'generate_preview':body.generate_preview}
+    key='reprocess:'+hashlib.sha256((id+':'+body.request_id).encode()).hexdigest()
+    existing=db.execute('SELECT id FROM jobs WHERE idempotency_key=?',(key,)).fetchone()
+    if existing:
+        job=row(db,existing[0])
+        if json.loads(job['payload_json'])!=payload:fail(409,'IDEMPOTENCY_CONFLICT','Request ID was used for different options')
+        return {'job_id':job['id'],'status':job['status']}
+    active=db.execute("SELECT 1 FROM jobs WHERE target_type='document' AND target_id=? AND kind IN('parse','ocr') "
+        "AND status IN('queued','running') AND json_extract(payload_json,'$.revision_id')=? LIMIT 1",(id,doc['current_revision_id'])).fetchone()
+    if active:fail(409,'PARSE_ALREADY_RUNNING','This revision already has an active parse request')
+    view=project(db,id,originals,mounts)
+    if not body.force and view['processing_status']=='completed' and not view['content_stale']:
+        fail(409,'ALREADY_PARSED','Set force=true to explicitly reprocess successful content')
+    job=JobQueue(settings).enqueue(JobSpec(kind='ocr' if body.ocr else 'parse',target_type='document',target_id=id,
+        payload=payload,idempotency_key=key),db=db)
+    return {'job_id':job['id'],'status':job['status']}

@@ -98,8 +98,8 @@ def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
             return
         if job['kind']=='batch' and job['target_type'] in ('document_batch','document_batch_undo'):
             from .batches import execute
-            settings = Settings(data_dir=Path(data_dir),converter_token='')
-            JobQueue(settings).complete(job['id'],job['lease_token'],execute)
+            settings = Settings(data_dir=Path(data_dir),converter_token='',source_mounts=source_mounts)
+            JobQueue(settings).complete(job['id'],job['lease_token'],lambda db,owned: execute(db,owned,settings))
             _send(connection, ('committed',))
             return
         if job['kind']!='gc' or job['target_type']!='managed_staging':

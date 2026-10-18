@@ -22,7 +22,7 @@ def finish(settings,id):
     while True:
         job=queue.claim('test')
         assert job is not None
-        if job['kind']=='batch':queue.complete(job['id'],job['lease_token'],execute)
+        if job['kind']=='batch':queue.complete(job['id'],job['lease_token'],lambda db,owned: execute(db,owned,settings))
         else:queue.failure(job['id'],job['lease_token'],'HANDLER_NOT_AVAILABLE','Not implemented',retryable=False)
         if job['id']==id:return queue.get(id)['result']
 
@@ -86,7 +86,7 @@ def test_selection_limits_auth_and_unimplemented_operations(api):
     assert submit(client,headers,space,['id','id']).status_code==422
     assert submit(client,headers,space,['id'],versions={}).status_code==422
     assert submit(client,headers,space,[str(i) for i in range(101)]).status_code==422
-    for operation in ('reprocess','set_metadata'):
+    for operation in ('set_metadata',):
         assert submit(client,headers,space,['id'],operation,{}).status_code==501
 
 
@@ -224,3 +224,66 @@ def test_restore_batch_conflict_does_not_restore_other_versions(api):
     job=submit(client,headers,space,[id],'restore',{}, {id:1}).json()['job_id']
     assert finish(settings,job)['items'][0]['error_code']=='VERSION_CONFLICT'
     assert detail(client,id)['deleted_at'] is not None
+
+
+@pytest.mark.parametrize('payload',[
+    {'ocr':'true'},{'ocr_languages':'eng'},{'ocr':True,'ocr_languages':'fra'},
+    {'request_id':'injected'},{'expected_document_version':1},{'force':1},
+])
+def test_reprocess_rejects_invalid_options(api,payload):
+    _,_,client,headers,space=api
+    assert submit(client,headers,space,['id'],'reprocess',payload).status_code==422
+
+
+def test_batch_reprocess_partial_results_no_undo_and_fenced_enqueue(api):
+    _,settings,client,headers,space=api
+    a=upload(client,headers,space,b'reparse-a')['document_id']
+    b=upload(client,headers,space,b'reparse-b')['document_id']
+    # Finish initial uploads with explicit failure so a fresh parse can be queued.
+    queue=JobQueue(settings)
+    for _ in range(2):
+        claim=queue.claim('initial')
+        queue.failure(claim['id'],claim['lease_token'],'TEST_INITIAL_FAILURE','fixture',retryable=False)
+    job=submit(client,headers,space,[a,b,'missing'],'reprocess',{}).json()['job_id']
+    patch(client,headers,b,1,title='Concurrent edit')
+    claim=queue.claim('batch')
+    def expires(db,owned):
+        result=execute(db,owned,settings)
+        db.execute('UPDATE jobs SET lease_expires_at=0 WHERE id=?',(job,))
+        return result
+    with pytest.raises(LostLease):queue.complete(job,claim['lease_token'],expires)
+    with connect(settings.database) as db:
+        assert db.execute("SELECT count(*) FROM jobs WHERE kind='parse'").fetchone()[0]==2
+    queue.complete(job,claim['lease_token'],lambda db,owned: execute(db,owned,settings))
+    result=queue.get(job)['result']
+    assert result['succeeded']==1 and result['failed']==2
+    child=result['items'][0]['parse_job_id']
+    assert queue.get(child)['status']=='queued'
+    assert detail(client,a)['document_version']==1
+    assert {i.get('error_code') for i in result['items']}=={None,'VERSION_CONFLICT','NOT_FOUND'}
+    assert client.post('/api/v1/jobs/'+job+'/undo',headers=headers).status_code==409
+    another=submit(client,headers,space,[a],'reprocess',{}).json()['job_id']
+    running=queue.claim('parse')
+    assert running['id']==child
+    claimed=queue.claim('batch')
+    queue.complete(another,claimed['lease_token'],lambda db,owned: execute(db,owned,settings))
+    assert queue.get(another)['result']['items'][0]['error_code']=='PARSE_ALREADY_RUNNING'
+
+
+def test_batch_ocr_options_and_trashed_cross_space_guards(api):
+    _,settings,client,headers,space=api
+    a=upload(client,headers,space,b'ocr-options')['document_id']
+    b=upload(client,headers,space,b'trashed-options')['document_id']
+    other=client.post('/api/v1/spaces',headers=headers,json={'name':'Batch other'}).json()['id']
+    c=upload(client,headers,other,b'other-options')['document_id']
+    client.post('/api/v1/documents/'+b+'/trash',headers=headers,json={'expected_document_version':1})
+    queued=submit(client,headers,space,[a,b,c],'reprocess',
+        {'ocr':True,'ocr_languages':'eng,chi_sim','generate_preview':False},{a:1,b:2,c:1}).json()['job_id']
+    result=finish(settings,queued)
+    assert result['succeeded']==1 and result['failed']==2
+    assert {i.get('error_code') for i in result['items']}=={None,'DOCUMENT_TRASHED','CROSS_SPACE_REFERENCE'}
+    with connect(settings.database) as db:
+        child=db.execute('SELECT kind,payload_json FROM jobs WHERE id=?',(result['items'][0]['parse_job_id'],)).fetchone()
+        assert child[0]=='ocr'
+        assert json.loads(child[1])['ocr_languages']=='chi_sim,eng'
+        assert json.loads(child[1])['generate_preview'] is False
