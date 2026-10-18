@@ -512,3 +512,23 @@ devtest / Alibaba Cloud Linux4 x86_64 / CPython3.12.13；沿用原锁文件，�
 - 本机原8项library/整理浏览器流程通过，日志`.local/browser-library.log`。
 
 Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回退浏览器，以上实际流程已通过。新增测试字体环境变量JUANZHAN_TEST_CJK_FONT，复用服务器已有Noto简中字体验证，不安装新系统字体。完整后端与全部浏览器/容器验收另记录，不以专项结果宣称全部通过。
+
+## 第一版当前范围完整Linux验收 · 2026-10-19
+
+运行时代码提交`838fa0796be4aef5ace51f8ca97c66eab7aa4890`。本轮实际结果：
+
+| 验证 | 结果 | 服务器证据 |
+|---|---|---|
+| 完整后端，默认只读sysfs的隔离容器 | 418 passed，212.67秒；1条测试客户端弃用提示 | `.local/backend-container.log`、`.local/reports/838fa07/backend.xml` |
+| 六组真实浏览器 | sources 1、library 8、reading 3、search 4、jobs 3、files 2，共21 passed，无跳过 | `.local/reports/838fa07/browser/`中的6份JUnit及summary.json |
+| 30项原验收机器汇总 | 30/30 passed | `.local/reports/838fa07/assessment/summary.json` |
+| 最新UX-15～18 | 对应完整后端及reading/files真实交互通过；结构化阅读、搜索桌面与原件手机截图已目视检查 | 对应JUnit及`/tmp/juanzhan-t29-*`、`juanzhan-t30-*`、`juanzhan-t32-*` |
+| 候选镜像构建 | linux/amd64；source_dirty=false；模型/许可证/离线哈希依赖检查通过 | `.local/reports/838fa07/release-manifest.json` |
+| 生产镜像六格式/只读来源/自动增量索引/离线缓存 | `smoke_formats.py --persist --index --daemon --external`退出0 | `.local/production-external-smoke.log` |
+| 生产镜像真实OCR/正文/历史/候选/中文检索 | `smoke_formats.py --persist --index --ocr`退出0 | `.local/production-ocr-smoke.log` |
+| 实际Compose初装→镜像替换→一致备份→新卷恢复 | passed，42.26秒；重新登录/下载/正文/搜索通过；8迁移、integrity=ok、外键错误0 | `.local/reports/838fa07/release-drill.json` |
+| 当前候选1万/10万合成库HTTP基线 | 160次计时请求及预热核验通过 | `.local/reports/838fa07/benchmark.json`，见PERFORMANCE |
+
+所有证据路径以`/opt/juanzhan-dev/`为根。完整后端在宿主直接运行先得到386 passed/32 failed：失败均涉及宿主可写sysfs与只读夹具前提；未关闭只读保护，改在标准容器中全部通过。首次把external与OCR两套不兼容样本参数合并造成smoke脚本失败，已按上述文档命令分别通过；脚本现提前拒绝该组合，错误信息与非零退出已验证，不把它记录为业务解析失败。
+
+候选镜像ID`sha256:fbceee03458f533592860783f86c3363a74dece2557184b92e740248f9d26bc7`；该构建仅在测试服务器存在，无Git标签、GitHub Release、镜像仓库推送或正常实例切换。最后核对仅服务器原有nginx-proxy/simple-shell运行，无本轮遗留测试容器或具名卷。开发依赖、报告、测试夹具、镜像与清理边界见LOCAL-DEVELOPMENT。

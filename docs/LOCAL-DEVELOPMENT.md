@@ -48,6 +48,7 @@ macOS当前无法通过现有Converter子进程的RLIMIT_AS设置：最小复现
 - 清理服务器项目前先停止该项目测试进程和容器，核对未存业务数据，再删除专用目录；不清理其他`/opt`项目、系统Docker镜像或全局缓存。后续新增模型、镜像与测试数据继续追加记录。
 - Python3.12.13已下载到服务器专用目录。PyPI直连下载慢，改用阿里云PyPI镜像安装；输入为`uv export --frozen --no-emit-project`生成的完整版本/哈希清单，再执行`uv pip sync --require-hashes`，未改动uv.lock。
 - 服务器前端依赖位于`app/web/node_modules/`，npm缓存位于`.local/npm-cache/`；前端生产构建已通过。
+- 初始uv工具安装使用服务器原有pip，可能写入共享`/root/.cache/pip/`；该共享目录不属于项目可整体删除范围。后续生产wheelhouse下载已明确no-cache-dir。
 - Playwright Chromium下载到服务器`.local/playwright/`，不覆盖系统浏览器。该Alibaba Cloud Linux平台使用Playwright的Ubuntu回退构建，是否可运行需另行实测。
 - 中英文OCR模型约6.3MiB；服务器GitHub连接重置后在本机通过官方锁定脚本下载并校验，再传入服务器`app/ocr-models/`并重新校验。本机`ocr-models/`及`.local/ocr-models.tar.gz`可清理；两端模型均可按清单重新获取。
 - 复用服务器已有`/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf`绘制OCR验收样本，设置`JUANZHAN_TEST_CJK_FONT`；不新增系统字体或替换默认字体。
@@ -55,8 +56,30 @@ macOS当前无法通过现有Converter子进程的RLIMIT_AS设置：最小复现
 远程验证示例（在服务器项目源码目录执行）：
 
 ```sh
-JUANZHAN_TEST_CJK_FONT=/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf .venv/bin/python -m pytest -q
+JUANZHAN_TEST_CJK_FONT=/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf .venv/bin/python -m pytest -q tests/test_batches.py tests/test_content.py
 PLAYWRIGHT_BROWSERS_PATH=/opt/juanzhan-dev/.local/playwright npm run test:e2e:jobs --prefix web
 ```
 
 原有8项本机library浏览器测试、服务器38项批量/正文测试及3项任务浏览器测试已通过；完整验收另以TESTING后续执行记录为准。
+
+完整后端使用专用`juanzhan-backend-tests`容器（退出自动删除），复用项目锁定的`python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1`基础镜像；容器内只读sysfs满足来源边界夹具，不改宿主挂载。容器内存上限1.5GiB、CPU上限2核。基础镜像进入服务器Docker存储，清理前需确认无其他项目引用。生产wheelhouse位于`app/wheelhouse/`约22MiB，浏览器目录`.local/playwright/`约924MiB。
+
+宿主机完整pytest的32项来源测试因`/sys`可写而失败；不能关闭只读检查来适配。完整后端在容器中执行418项全部通过。重现命令（服务器上执行）：
+
+```sh
+docker run --rm --name juanzhan-backend-tests --label io.juanzhan.dev=true \
+  --memory=1536m --cpus=2 \
+  --mount type=bind,src=/opt/juanzhan-dev,dst=/opt/juanzhan-dev \
+  --mount type=bind,src=/usr/share/fonts/google-noto-cjk,dst=/usr/share/fonts/google-noto-cjk,readonly \
+  -w /opt/juanzhan-dev/app \
+  -e JUANZHAN_TEST_CJK_FONT=/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Regular.otf \
+  python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 \
+  /opt/juanzhan-dev/app/.venv/bin/python -m pytest -q \
+  --basetemp=/opt/juanzhan-dev/.local/pytest-container
+```
+
+本次候选镜像为`juanzhan:0.1.0-rc.1`及开发标签`juanzhan-foundation:dev`；均只在该服务器Docker存储中构建，无推送发布。源码与Git历史同步在专用app目录，当前源提交838fa07；后续文档提交不改变该构建追溯。项目专用镜像清理前需先核对有无后续正常实例引用。
+
+最终占用快照：本机`.local/`约287MiB、`.venv/`约65MiB、`web/node_modules/`约115MiB、`ocr-models/`约6.3MiB；不含Homebrew工具本体。服务器专用目录约1.8GiB（含依赖/浏览器/测试夹具和报告），Docker镜像及构建缓存另计，服务器根分区仍约50GiB可用。测试容器与本轮具名卷均已自动清理，现有nginx-proxy/simple-shell未改动。
+
+最终证据在服务器`.local/reports/838fa07/`；各阶段调试日志在`.local/`。浏览器截图与发布工具原始输出还位于本轮创建的服务器`/tmp/juanzhan-*`，构建manifest原目录`/tmp/juanzhan-release-dyc8vvfn/`，恢复报告原目录`/tmp/juanzhan-release-drill-qy3u2v7y/`；关键JSON已复制到项目报告目录。清理/tmp时只移除确认属于本轮的文件，不泛删其他项目目录。本机截图副本在`/tmp/juanzhan-remote-qa/`。
