@@ -17,7 +17,7 @@ import uvicorn
 
 def main():
     with TemporaryDirectory(prefix='juanzhan-browser-') as temp:
-        settings=Settings(Path(temp),'',cookie_secure=False,upload_max_bytes=32768)
+        settings=Settings(Path(temp)/'archive','',cookie_secure=False,upload_max_bytes=32768,backup_dir=Path(temp)/'backups')
         settings.prepare_archive()
         migrate(settings.database)
         set_password(settings,os.environ['JUANZHAN_E2E_PASSWORD'])

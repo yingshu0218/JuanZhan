@@ -1620,3 +1620,14 @@ select {
 .original-previews img { display:block; max-width:100%; max-height:65dvh; object-fit:contain; margin:auto; }
 .original-previews figure { margin:16px 0; padding:8px; border:1px solid var(--line); }
 .original-previews figcaption { text-align:center; color:var(--muted); margin-top:8px; }
+
+.settings-choices { display:flex; flex-direction:column; gap:12px; margin:20px 0; }
+.backup-section { border-top:1px solid var(--line); margin-top:20px; padding-top:12px; }
+.backup-section label { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+.backup-list { list-style:none; padding:0; }
+.backup-list li { margin:12px 0; padding:12px; border:1px solid var(--line); border-radius:8px; overflow-wrap:anywhere; }
+.backup-list small { display:block; margin-top:6px; }
+.backup-list time { margin-left:12px; color:var(--muted); }
+.backup-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.backup-actions a { display:inline-flex; align-items:center; padding:8px 12px; border:1px solid var(--line); border-radius:6px; color:var(--green); }
+.backup-confirm { padding:12px; border:1px solid var(--green); border-radius:8px; margin-top:16px; overflow-wrap:anywhere; }

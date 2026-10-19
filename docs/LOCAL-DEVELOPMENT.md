@@ -109,3 +109,11 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 没有新增依赖、系统安装或数据库迁移，使用服务器现有Node/Python/Playwright。可清理证据：服务器.local/catalog-*.log/xml、catalog-library*.log、catalog-reading*.log及pytest-catalog*目录；截图在服务器/tmp/juanzhan-catalog-*.png和本机/tmp/juanzhan-remote-qa/同名副本。确认无需复查后按具体文件删除，不泛删共享/tmp、依赖或其他项目资源。本机没有为本轮运行安装包，生产候选镜像未替换。
 
 备份传输基础增量：复用Python标准库zipfile，无新包/服务/镜像/迁移。服务器可清理.local/backup-archive*.log/xml、backup-transport-final.log/xml及pytest-backup-archive*/pytest-backup-transport-final夹具；其中包含测试备份数据库，只存私有测试目录。正常业务数据与现有实例未改变。
+
+## Web备份管理开发增量 · 2026-10-20
+
+无新Python/Node包、系统软件、字体、cron或常驻服务。新增0010迁移和独立私有备份卷配置；仅仓库配置已变，未实际替换现有Compose实例或业务卷。服务器juanzhan:backup-dev为本轮独立dirty测试镜像，旧RC/foundation及其他开发镜像未覆盖。确认无容器引用且无需复查后可删除该标签；不要全局docker prune或删除共享镜像/卷。
+
+可清理测试报告/夹具在/opt/juanzhan-dev/.local：backup-management*.log/xml、backup-release-ready.log/xml、backup-*-web*.log、backup-*-library.log、backup-*-jobs.log、backup-*-build.log、backup-*-browser.log、backup-runtime-drill.log、pytest-backup-management*/pytest-backup-release-ready目录。浏览器原生下载测试ZIP在服务器/tmp/juanzhan-backup-browser.zip，含测试数据库，确认无需复查后删除；截图服务器/tmp/juanzhan-backup-{desktop,mobile}.png和本机/tmp/juanzhan-remote-qa/同名副本。运行脚本.local/run-backup-runtime.sh、各backup-*-work.tar.gz、本机.local/update-backup-openapi.py/minimize-backup-openapi.py/base-openapi.yaml也属开发中间文件，可按具体文件清理。不要泛删.local、/tmp或测试之外的备份目录。
+
+独立运行时演练只创建随机juanzhan-backup-check-*容器和带本轮标签的三只测试卷，退出自动删除；既有nginx-proxy/simple-shell服务未改。首轮tar带入macOS ._旁文件，已按本轮tar清单逐个删除，之后使用COPYFILE_DISABLE=1；不是忽略未知迁移。业务备份卷的文件保留/恢复目录清理参照RELEASE及backup_admin，不按测试产物处理。

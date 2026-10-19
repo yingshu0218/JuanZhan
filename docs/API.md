@@ -333,3 +333,9 @@ Archive契约0.4.23，路径数与8条迁移保持。POST /documents/batch的set
 ## 字段/类型管理界面接入 · 2026-10-19
 
 生产Web已接现有field-definitions/document-types查询、创建和PATCH，限定当前space_id。编辑未改变约束或模板时省略对应属性；不改变既有API。当前Archive0.4.27/56路径，Converter0.4.3/6路径、9迁移保持。七类型和归档必填由既有服务验证，管理界面不能绕过CSRF、空间或类型规则。
+
+## Web备份恢复与自动计划 · 2026-10-20
+
+Archive契约0.4.28、63个path，新增/system/backups查询/创建、单记录查询/删除、附件下载、恢复任务、原始ZIP上传、/system/recoveries及/system/backup-schedule。严格结构见OpenAPI；所有读写鉴权，Cookie写入CSRF，request_id支持受理后幂等重试。上传第一次成功受理后同request_id返回原任务；校验完成前不可下载或恢复。不得传入服务器路径或URL。
+
+状态ready仅说明备份可用或新恢复目录已验证；恢复不自动切换当前实例。计划expected_version防并发覆盖；0关闭，已受理任务继续运行。ZIP输入与资源限额沿用ADR-056/057；恢复只支持精确迁移集合。Converter0.4.3/6路径不变，无新依赖。

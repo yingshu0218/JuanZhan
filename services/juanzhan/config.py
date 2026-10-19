@@ -12,6 +12,7 @@ class Settings:
     upload_timeout_seconds: float = 60
 
     source_mounts: tuple[tuple[str, str], ...] = ()
+    backup_dir: Path | None = None
 
     @classmethod
     def from_env(cls):
@@ -26,7 +27,8 @@ class Settings:
             raise ValueError("Invalid upload size or receive timeout")
         return cls(Path(os.getenv("JUANZHAN_DATA_DIR", ".local/archive")).resolve(),
                    os.getenv("CONVERTER_SERVICE_TOKEN", ""),
-                   cookie_secure == "true",upload_max_bytes,upload_timeout,source_mounts)
+                   cookie_secure == "true",upload_max_bytes,upload_timeout,source_mounts,
+                   Path(os.environ["JUANZHAN_BACKUP_DIR"]).resolve() if os.getenv("JUANZHAN_BACKUP_DIR") else None)
 
     @property
     def database(self):

@@ -4,10 +4,11 @@ import { message } from "./api.js";
 const statuses = { queued: "排队中", running: "处理中", completed: "已完成", failed: "失败", cancelled: "已取消" };
 function safeResult(value) {
   if (!value || typeof value !== "object") return null;
-  const allowed = new Set(["status", "reason", "document_id", "parse_run_id", "parse_job_id", "revision_id", "job_id", "succeeded", "skipped", "failed", "purged", "external_file_deleted", "gc_job_id", "generation", "tokenizer_version", "code", "error_code", "document_version", "text_available", "ocr_used", "source_id", "estimated_files", "estimated_bytes", "discovered", "retained_objects", "deleted_objects", "ignored_files", "items"]);
+  const allowed = new Set(["backup_id", "recovery_id", "files", "external_sources_included", "activation_required", "automatic_backup_disabled", "credentials_revoked", "status", "reason", "document_id", "parse_run_id", "parse_job_id", "revision_id", "job_id", "succeeded", "skipped", "failed", "purged", "external_file_deleted", "gc_job_id", "generation", "tokenizer_version", "code", "error_code", "document_version", "text_available", "ocr_used", "source_id", "estimated_files", "estimated_bytes", "discovered", "retained_objects", "deleted_objects", "ignored_files", "items"]);
   return Object.fromEntries(Object.entries(value).filter(([key]) => allowed.has(key)).map(([key, item]) => [key, key === "items" && Array.isArray(item) ? item.slice(0, 100).map(safeResult) : (item === null || ["string", "number", "boolean"].includes(typeof item) ? item : null)]));
 }
 const resultLabels = { status: "结果状态", reason: "原因代码", document_id: "档案编号", parse_run_id: "解析记录", parse_job_id: "解析任务编号", revision_id: "原件版本", job_id: "任务编号", succeeded: "成功项", skipped: "跳过项", failed: "失败项", purged: "永久清理", external_file_deleted: "外部文件已删除", gc_job_id: "后续清理任务", generation: "索引代次", tokenizer_version: "分词版本", code: "错误代码", error_code: "错误代码", document_version: "档案版本", text_available: "正文可用", ocr_used: "使用 OCR", source_id: "来源编号", estimated_files: "预计文件数", estimated_bytes: "预计字节数", discovered: "发现对象", retained_objects: "保留对象", deleted_objects: "清理对象", ignored_files: "忽略文件" };
+Object.assign(resultLabels, { backup_id: "备份编号", recovery_id: "恢复编号", files: "文件数", external_sources_included: "包含外部原件", activation_required: "需管理员激活", automatic_backup_disabled: "已关闭自动备份", credentials_revoked: "已撤销旧凭据" });
 function ResultView({ value }) {
   const safe = safeResult(value);
   if (!safe) return <p>没有可显示的结果记录</p>;
@@ -16,6 +17,7 @@ function ResultView({ value }) {
     : <p key={key}>{resultLabels[key] || key}：{item === null ? "未知" : typeof item === "boolean" ? (item ? "是" : "否") : statuses[item] || ({succeeded:"成功",skipped:"跳过",discarded:"未发布"}[item]) || String(item)}</p>)}</div>;
 }
 const kinds = { upload: "上传", scan: "来源扫描", scan_preview: "预扫描", parse: "解析", ocr: "OCR", reindex: "检索索引", batch: "批量操作", purge: "永久清理", gc: "存储清理" };
+function kindLabel(job) { return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
 export function TaskStatus({ api, id }) {
   const [job, setJob] = useState(null), [error, setError] = useState(""), [refresh, setRefresh] = useState(0), [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -41,7 +43,7 @@ export function TaskStatus({ api, id }) {
     {error && <Notice error>{error}</Notice>}
     {job && <>
       <p>关联对象：{job.target_id || "系统维护"}</p>
-      <h3>{kinds[job.kind] || job.kind} · {job.status === "completed" && job.result?.failed > 0 ? "已结束（存在失败项）" : statuses[job.status]}</h3>
+      <h3>{kindLabel(job)} · {job.status === "completed" && job.result?.failed > 0 ? "已结束（存在失败项）" : statuses[job.status]}</h3>
       <p>尝试 {job.attempts} / {job.max_attempts}；已处理 {job.progress_done ?? 0}{job.progress_total == null ? "，总量未知" : ` / ${job.progress_total}`}</p>
       {job.progress_total > 0 && <progress value={job.progress_done || 0} max={job.progress_total} />}
       {job.status === "queued" && <p>最早可执行：{new Date(job.available_at).toLocaleString()}。受理不代表处理成功。</p>}
@@ -71,7 +73,7 @@ export function TaskCenter({ api, onClose }) {
     <div className="tasks-layout"><div>
       {data?.items.length === 0 && <p>暂无任务</p>}
       {data?.items.map(job => <button className="task-row" key={job.id} onClick={() => setId(job.id)} aria-pressed={id === job.id}>
-        <strong>{kinds[job.kind] || job.kind} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
+        <strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
       </button>)}
       {data && <div className="task-pages"><button disabled={page === 1} onClick={() => setPage(n => n - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 项</span><button disabled={page * 20 >= data.total} onClick={() => setPage(n => n + 1)}>下一页</button></div>}
     </div>{id && <TaskStatus key={id} api={api} id={id} />}</div>

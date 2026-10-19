@@ -85,3 +85,29 @@ volumes:
 ## 对外发布仍未执行
 
 当前只交付本地候选。后续需明确目标镜像仓库/命名空间与授权，使用平台已有认证验证后再推送版本镜像、记录registry digest；Git标签/GitHub Release也需单独执行。不可在缺少目标时假称已发布，不能提交凭证或把本地image ID写成registry RepoDigest。RC验证通过不等于稳定版承诺。
+
+## 新开发版本：Web备份与恢复目录激活 · 2026-10-20
+
+以下步骤针对含0010迁移/backup_admin的新代码或镜像；历史0.1.0-rc.1不具备这些能力。尚未替换该历史候选，当前构建信息以最新验证记录为准。配置/backups独立持久卷，archive/worker共享，权限700且归运行UID10001；旧版维护卷若为755，应由目录所有者改为700。不要将备份卷、恢复卷或外部来源挂到活数据内部。
+
+管理员登录后，系统设置→备份与恢复→创建备份，等记录可用再下载ZIP。可上传兼容版本的ZIP并后台完整校验；受理不等于可恢复。ZIP含数据库敏感信息，保存在可信私有位置；备份卷和原数据在同一磁盘时不能抵抗磁盘损坏，下载副本仍需独立保存。外部原件、挂载映射、环境配置/凭证、模型、镜像另行保存。
+
+恢复此备份只生成并验证独立恢复目录。记下页面的恢复编号（32位小写十六进制ID）；服务端绝对路径仅通过管理员CLI查询，不在网页显示。下例将其再次校验并暂存到maintenance的全新恢复目录；把RECOVERY_ID替换为实际编号，不填服务器路径：
+
+```sh
+docker compose --env-file deploy/.env -p juanzhan-prod -f deploy/compose.yaml run --rm maintenance python -m juanzhan.backup_admin locate-recovery --id RECOVERY_ID
+docker compose --env-file deploy/.env -p juanzhan-prod -f deploy/compose.yaml run --rm maintenance python -m juanzhan.backup_admin stage-recovery --id RECOVERY_ID --output /recovery/restored
+```
+
+/recovery/restored必须不存在；失败不得清空或覆盖已有目标。暂存完成后，沿用本手册“备份与恢复到新卷”的独立Compose项目/卷切换流程，将原项目archive_recovery卷挂为新实例archive_data、设置JUANZHAN_DATA_DIR=/data/restored，并为新实例使用独立archive_backups卷。先停旧worker/实例，再启动新实例；重新登录验证下载、正文/检索、迁移/integrity/FK及只读来源状态，确认后切换代理。验证失败停止新实例，按旧镜像/旧卷回退，不把新数据卷交给旧迁移集合镜像。CLI不会自动改Compose、代理或活实例。
+
+恢复后的旧会话/API Token失效，管理员密码哈希保留；正常重新登录。自动备份默认关闭，确认新备份卷和保留配置后再开启。复制来的旧备份记录不意味着原ZIP也已复制到新备份卷，缺文件时会如实显示不可用。
+
+清理：页面删除备份只删除对应ZIP并留记录，不删除活数据或已生成恢复目录。确认恢复目录不再需要且没有实例使用它后，操作员可显式清理：
+
+```sh
+docker compose --env-file deploy/.env -p juanzhan-prod -f deploy/compose.yaml run --rm maintenance python -m juanzhan.backup_admin remove-recovery --id RECOVERY_ID --confirm
+docker compose --env-file deploy/.env -p juanzhan-prod -f deploy/compose.yaml run --rm maintenance python -m juanzhan.backup_admin cleanup-orphans
+```
+
+孤儿清理只处理严格内部ID命名、无引用、非软链产物；work在独占锁下清理，上传/最终孤儿需满一天，每次最多200项。不要泛删/backups、数据卷或共享/tmp。自动保留只影响成功自动备份，始终保留最近一次，手动/上传备份需明确删除。

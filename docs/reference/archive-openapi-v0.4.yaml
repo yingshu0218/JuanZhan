@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.27
+  version: 0.4.28
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2797,6 +2797,343 @@ paths:
         in: query
         schema:
           type: string
+  /system/backups:
+    get:
+      tags:
+      - System
+      operationId: list_backups
+      summary: 分页查看备份记录
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupList'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+    post:
+      tags:
+      - System
+      operationId: create_backup
+      summary: 创建一致性备份任务
+      responses:
+        '202':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupAccepted'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupStart'
+      description: 全实例管理员操作；request_id重复返回同一记录。最多一个活动备份/恢复，不含外部原件、环境凭证或模型。后台任务有限重试，最终结果以job和记录为准。
+  /system/backup-schedule:
+    get:
+      tags:
+      - System
+      operationId: get_backup_schedule
+      summary: 读取持久自动备份计划
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupSchedule'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+    patch:
+      tags:
+      - System
+      operationId: update_backup_schedule
+      summary: 修改自动备份间隔与保留策略
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupSchedule'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupScheduleChange'
+      description: 0关闭，分钟间隔；expected_version防止配置覆盖。首次未来期限按更新时间计算，不补跑错过的间隔，已有活动操作时跳过该期限。仅自动备份受保留策略影响，始终保留最近成功一次；手动与上传备份不自动删除。恢复后的新实例关闭计划。
+  /system/backups/{backup_id}:
+    parameters:
+    - name: backup_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-f]{32}$
+    get:
+      tags:
+      - System
+      operationId: get_backup
+      summary: 查看备份任务及可用性
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupRecord'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+    delete:
+      tags:
+      - System
+      operationId: delete_backup
+      summary: 删除备份传输文件并保留记录
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                - id
+                - status
+                properties:
+                  id:
+                    type: string
+                    pattern: ^[0-9a-f]{32}$
+                  status:
+                    const: deleted
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      description: 有活动备份/恢复引用时拒绝；幂等，先持久删除标记再清理文件。不会删除活实例或恢复目录。
+  /system/backups/{backup_id}/download:
+    parameters:
+    - name: backup_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-f]{32}$
+    get:
+      tags:
+      - System
+      operationId: download_backup
+      summary: 校验后下载私有备份ZIP附件
+      description: 同源鉴权；检查登记大小和SHA-256后从持锁描述符流式下载。响应no-store/nosniff，不暴露服务器路径。
+      responses:
+        '200':
+          description: ZIP附件（application/octet-stream）
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 需要登录
+        '409':
+          description: 备份未就绪、被删除、存储占用或完整性失败
+  /system/backups/{backup_id}/restore:
+    parameters:
+    - name: backup_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-f]{32}$
+    post:
+      tags:
+      - System
+      operationId: restore_backup
+      summary: 校验并恢复到服务器新目录
+      responses:
+        '202':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryAccepted'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupStart'
+      description: 不覆盖活数据。后台校验ZIP、哈希、SQLite/外键、引用对象和精确迁移集合，撤销旧凭据/租约并关闭新实例备份计划。ready表示新目录已验证，仍须管理员按运维手册激活；API不接收客户端路径。
+  /system/recoveries:
+    get:
+      tags:
+      - System
+      operationId: list_recoveries
+      summary: 分页查看恢复任务及新目录状态
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryList'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+  /system/backups/import:
+    post:
+      tags:
+      - System
+      operationId: import_backup
+      summary: 上传受限ZIP并验证为可用备份
+      responses:
+        '202':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupAccepted'
+        '401':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '403':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '409':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '422':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '503':
+          description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+        '400':
+          description: 空包、接收中断或非法长度
+        '408':
+          description: 上传超时
+        '413':
+          description: 传输超限
+        '415':
+          description: 不支持的Content-Type
+        '429':
+          description: 上传并发已满
+        '507':
+          description: 磁盘预算不足
+      parameters:
+      - name: request_id
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,128}$
+      description: 原始application/zip或application/octet-stream请求体，不接收文件名或路径。request_id第一次成功受理后重复返回同一任务。接收期限3600秒、单进程一个上传；传输最多8GiB+100002×1024字节，展开最多8GiB/100000数据成员，manifest16MiB、中央目录64MiB，拒绝链接/穿越/重复/额外成员/加密/损坏。上传受理不等于验证成功。私有磁盘预留128MiB；恢复兼容性验证成功后才ready。
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
 components:
   securitySchemes:
     bearerAuth:
@@ -2845,6 +3182,283 @@ components:
         maximum: 100
         default: 30
   schemas:
+    BackupStart:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      properties:
+        request_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{8,128}$
+    BackupAccepted:
+      type: object
+      additionalProperties: false
+      required:
+      - backup_id
+      - job_id
+      - status
+      properties:
+        backup_id:
+          type: string
+          pattern: ^[0-9a-f]{32}$
+        job_id:
+          type: string
+        status:
+          const: accepted
+    RecoveryAccepted:
+      type: object
+      additionalProperties: false
+      required:
+      - recovery_id
+      - job_id
+      - status
+      properties:
+        recovery_id:
+          type: string
+          pattern: ^[0-9a-f]{32}$
+        job_id:
+          type: string
+        status:
+          const: accepted
+    BackupRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - origin
+      - job_id
+      - created_at
+      - completed_at
+      - deleted_at
+      - bytes
+      - sha256
+      - available
+      - status
+      - error
+      - external_sources_included
+      properties:
+        id:
+          type: string
+          pattern: ^[0-9a-f]{32}$
+        origin:
+          enum:
+          - manual
+          - automatic
+          - imported
+        job_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        deleted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        bytes:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        sha256:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{64}$
+          - type: 'null'
+        available:
+          type: boolean
+        status:
+          enum:
+          - queued
+          - running
+          - failed
+          - cancelled
+          - ready
+          - unavailable
+          - deleted
+        error:
+          anyOf:
+          - type: object
+            required:
+            - code
+            - message
+            - retryable
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              retryable:
+                type: boolean
+          - type: 'null'
+        external_sources_included:
+          const: false
+    BackupScheduleChange:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_version
+      - interval_minutes
+      - keep_count
+      - max_age_days
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9223372036854775806
+        interval_minutes:
+          type: integer
+          minimum: 0
+          maximum: 525600
+        keep_count:
+          type: integer
+          minimum: 1
+          maximum: 100
+        max_age_days:
+          type: integer
+          minimum: 1
+          maximum: 3650
+    BackupSchedule:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - interval_minutes
+      - keep_count
+      - max_age_days
+      - next_run_at
+      - last_job_id
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        interval_minutes:
+          type: integer
+          minimum: 0
+          maximum: 525600
+        keep_count:
+          type: integer
+          minimum: 1
+          maximum: 100
+        max_age_days:
+          type: integer
+          minimum: 1
+          maximum: 3650
+        next_run_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        last_job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+    RecoveryRecord:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - backup_id
+      - job_id
+      - created_at
+      - completed_at
+      - status
+      - error
+      - activation_required
+      properties:
+        id:
+          type: string
+          pattern: ^[0-9a-f]{32}$
+        backup_id:
+          type: string
+          pattern: ^[0-9a-f]{32}$
+        job_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        status:
+          enum:
+          - queued
+          - running
+          - failed
+          - cancelled
+          - ready
+          - unavailable
+        error:
+          anyOf:
+          - type: object
+            required:
+            - code
+            - message
+            - retryable
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              retryable:
+                type: boolean
+          - type: 'null'
+        activation_required:
+          const: true
+    BackupList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackupRecord'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+    RecoveryList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecoveryRecord'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
     Error:
       type: object
       properties:

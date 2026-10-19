@@ -195,3 +195,7 @@ T32 files路由复用已验证ManagedStore/SourceMounts/original通道；复制�
 ## T34 发布拓扑 · 2026-10-18
 
 发布用deploy/compose.yaml与开发项目/卷分离，固定候选镜像/外部digest、非root与只读根、内部Converter/worker及显式maintenance备份/恢复卷；外部源和HTTPS由管理员明确配置。现有三服务协议不变，无新运行服务或迁移。实际same-schema升级/新卷恢复验证与限制见RELEASE/ADR-046。
+
+## 备份管理补充 · 2026-10-20
+
+Archive API和worker共享独立私有备份卷，Converter不挂载此卷。SQLite持久备份/恢复记录与计划，已有worker执行system_backup/system_recovery任务；仓库锁、租约围栏、命名隔离及先墓碑再删除保护并发和失败。备份采用SQLite快照与不可变存储锁，快照库确定复制引用，长复制不占用业务写事务。Web上传原始有界ZIP，下载走鉴权流式附件；恢复只输出新目录，操作员通过CLI再次验证并暂存到新数据卷，停服务/切换按RELEASE执行。原件与外部来源边界保持，详见ADR-057。

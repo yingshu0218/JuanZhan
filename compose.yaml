@@ -6,12 +6,14 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       JUANZHAN_DATA_DIR: /data
+      JUANZHAN_BACKUP_DIR: /backups
       JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
       JUANZHAN_COOKIE_SECURE: ${JUANZHAN_COOKIE_SECURE:-true}
       JUANZHAN_UPLOAD_MAX_BYTES: ${JUANZHAN_UPLOAD_MAX_BYTES:-67108864}
       JUANZHAN_UPLOAD_TIMEOUT_SECONDS: ${JUANZHAN_UPLOAD_TIMEOUT_SECONDS:-60}
     volumes:
       - archive_data:/data
+      - archive_backups:/backups
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
       interval: 5s
@@ -23,11 +25,13 @@ services:
     command: ["python", "-m", "juanzhan.worker"]
     environment:
       JUANZHAN_DATA_DIR: /data
+      JUANZHAN_BACKUP_DIR: /backups
       CONVERTER_URL: http://converter:8000
       CONVERTER_SERVICE_TOKEN: ${CONVERTER_SERVICE_TOKEN:?Set CONVERTER_SERVICE_TOKEN}
       JUANZHAN_SOURCE_MOUNTS: '${JUANZHAN_SOURCE_MOUNTS:-{}}'
     volumes:
       - archive_data:/data
+      - archive_backups:/backups
     depends_on:
       archive:
         condition: service_healthy
@@ -54,3 +58,4 @@ services:
     restart: unless-stopped
 volumes:
   archive_data:
+  archive_backups:

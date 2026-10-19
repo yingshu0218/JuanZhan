@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {login,createSpace,api} from './helpers.mjs';
 
-async function manager(page){await page.getByRole('button',{name:'管理字段与类型',exact:true}).click();return page.getByRole('dialog',{name:'字段与类型管理',exact:true});}
+async function manager(page){await page.getByRole('button',{name:'系统设置',exact:true}).click();await page.getByRole('button',{name:'管理字段与类型',exact:true}).click();return page.getByRole('dialog',{name:'字段与类型管理',exact:true});}
 async function createField(dialog,key,label,type){
   await dialog.getByRole('button',{name:'新增业务字段',exact:true}).click();
   await dialog.getByLabel('字段名称',{exact:true}).fill(label);await dialog.getByLabel('字段标识',{exact:true}).fill(key);

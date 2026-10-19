@@ -1,4 +1,5 @@
 import { TaskCenter } from "./Tasks.jsx";
+import { BackupManager } from './BackupManager.jsx';
 import { CatalogManager } from './CatalogManager.jsx';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -44,6 +45,7 @@ const navIcons = {
 export function Workspace({ api, logout, authError }) {
   const [tasksOpen, setTasksOpen] = useState(false);
   const [catalogOpen,setCatalogOpen]=useState(false);
+  const [settingsOpen,setSettingsOpen]=useState(false),[backupOpen,setBackupOpen]=useState(false);
   const [initial] = useState(readLocation);
   const urlStarted = useRef(false);
   const restoringUrl = useRef(false);
@@ -500,7 +502,9 @@ export function Workspace({ api, logout, authError }) {
           <span>{title}</span>
         </div>
         <div className="header-actions">
-          <button disabled={!space} aria-label="管理字段与类型" title="管理字段与类型" onClick={()=>setCatalogOpen(true)}><Gear size={22} /></button>
+          <button aria-label="系统设置" title="系统设置" onClick={()=>setSettingsOpen(true)}><Gear size={22} /></button>
+          {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button></div></Dialog>}
+          {backupOpen && <BackupManager api={api} onClose={()=>setBackupOpen(false)} />}
           {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
           <button onClick={() => setTasksOpen(true)}>任务中心</button>
           {tasksOpen && <TaskCenter api={api} onClose={() => setTasksOpen(false)} />}

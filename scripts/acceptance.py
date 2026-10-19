@@ -49,7 +49,7 @@ def assess(cases, directories):
                 node=case.attrib['classname'].replace('.','/')+'.py::'+case.attrib['name'].split('[')[0]
                 state='failed' if case.find('failure') is not None or case.find('error') is not None else 'not_run' if case.find('skipped') is not None else 'passed'
                 backend.setdefault(node,[]).append(state)
-        for name in ('sources','library','reading','search','jobs','files'):
+        for name in ('sources','library','reading','search','jobs','files','backups'):
             path=directory/(name+'.xml')
             if path.exists():
                 count=summarize(path)
@@ -94,7 +94,7 @@ def main():
     if args.phase in ('all','browser'):
         steps.append(('web-build',ROOT/'web',['npm','run','build'],None))
         for name,script in [('sources','test:e2e:sources'),('library','test:e2e'),('reading','test:e2e:reading'),
-                            ('search','test:e2e:search'),('jobs','test:e2e:jobs'),('files','test:e2e:files')]:
+                            ('search','test:e2e:search'),('jobs','test:e2e:jobs'),('files','test:e2e:files'),('backups','test:e2e:backups')]:
             steps.append((name,ROOT/'web',['npm','run',script,'--','--reporter=list,junit'],output/(name+'.xml')))
     report={'phase':args.phase,'started_at_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
             'browser':'Browser plugin not available; existing Playwright/Chromium',

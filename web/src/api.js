@@ -7,6 +7,16 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  BACKUP_OPERATION_BUSY: "已有备份/恢复任务或下载正在使用存储，请稍后重试。",
+  BACKUP_SCHEDULE_CONFLICT: "备份计划已被更新，请刷新记录并重载计划后重试。",
+  BACKUP_STORAGE_UNAVAILABLE: "私有备份存储不可用，请管理员核对挂载与权限。",
+  BACKUP_UNAVAILABLE: "备份文件缺失或完整性校验失败，未提供下载。",
+  BACKUP_NOT_READY: "备份尚未通过校验或已删除。",
+  BACKUP_INVALID: "备份内容、兼容版本或存储预算校验失败，请核对备份和可用空间。",
+  BACKUP_TOO_LARGE: "备份超过当前传输限制。",
+  BACKUP_STORAGE_FULL: "备份存储空间不足，请先清理不需要的备份。",
+  BACKUP_UPLOAD_CAPACITY: "已有备份正在上传，请稍后重试。",
+  BACKUP_UPLOAD_TIMEOUT: "备份上传超时，请核对记录后重试。",
   INVALID_FIELD_RULES: "字段规则无效，请核对范围、表达式和单选项。",
   FIELD_LIMIT_REACHED: "当前空间的业务字段已达到1000项上限。",
   DUPLICATE_FIELD: "模板不能重复包含同一个字段。",
@@ -88,6 +98,7 @@ export class ApiClient {
   csrf = null;
   onExpired = () => {};
   async request(path, { method = "GET", body, signal } = {}) {
+    const raw = body instanceof Blob;
     let response;
     try {
       response = await fetch("/api/v1" + path, {
@@ -95,12 +106,12 @@ export class ApiClient {
         signal,
         credentials: "same-origin",
         headers: {
-          ...(body ? { "Content-Type": "application/json" } : {}),
+          ...(body ? { "Content-Type": raw ? "application/zip" : "application/json" } : {}),
           ...(method !== "GET" && this.csrf
             ? { "X-CSRF-Token": this.csrf }
             : {}),
         },
-        ...(body ? { body: JSON.stringify(body) } : {}),
+        ...(body ? { body: raw ? body : JSON.stringify(body) } : {}),
       });
     } catch (error) {
       if (error.name === "AbortError") throw error;

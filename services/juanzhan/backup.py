@@ -44,36 +44,42 @@ def safe_name(name):
     parse_key(key)
 
 
-def copy_object(root, name, target):
+def copy_object(root, name, target, *, max_bytes=None):
     store,key=name.split('/',1)
     with ManagedStore(root/store).open(key) as source, target.open('xb') as output:
+        if max_bytes is not None and os.fstat(source.fileno()).st_size>max_bytes:
+            raise ValueError('Backup byte limit exceeded')
         shutil.copyfileobj(source,output,65536)
         output.flush();os.fsync(output.fileno())
     os.chmod(target,0o440)
 
 
-def create(settings, destination):
+def create(settings, destination, *, max_bytes=None, max_files=None):
     destination=Path(destination).resolve()
     if destination.is_relative_to(settings.data_dir.resolve()): raise ValueError('Backup must be outside live data')
     destination.mkdir(mode=0o700)
     try:
-        # Existing store locks exclude publication and GC. BEGIN IMMEDIATE excludes all
-        # DB writes; a separate read connection uses SQLite backup, including WAL.
+        # Store locks exclude object publication/GC while SQLite backup supplies
+        # one coherent DB snapshot. Copy references from that snapshot, not the live
+        # DB. Business writes and worker lease heartbeats remain available.
         with ExitStack() as stack:
             for name in ('managed','derived'):
                 stack.enter_context(ManagedStore(settings.data_dir/name).locked(exclusive=True))
-            guard=stack.enter_context(connect(settings.database));guard.execute('BEGIN IMMEDIATE')
             read=stack.enter_context(connect(settings.database))
             (destination/'database').mkdir(mode=0o700)
             target=destination/'database/archive.sqlite3'
-            with sqlite3.connect(target) as output: read.backup(output)
-            names=['database/archive.sqlite3']+references(read)
-            entries=[]
+            snapshot=stack.enter_context(sqlite3.connect(target))
+            read.backup(snapshot)
+            names=['database/archive.sqlite3']+references(snapshot)
+            if max_files is not None and len(names)>max_files:raise ValueError('Backup file count exceeded')
+            entries=[];total=0
             for name in names:
                 safe_name(name);target=destination/name
                 if name!='database/archive.sqlite3':
                     target.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
-                    copy_object(settings.data_dir,name,target)
+                    copy_object(settings.data_dir,name,target,max_bytes=None if max_bytes is None else max_bytes-total)
+                total+=target.stat().st_size
+                if max_bytes is not None and total>max_bytes:raise ValueError('Backup byte limit exceeded')
                 entries.append({'name':name,'size':target.stat().st_size,'sha256':digest(target)})
             manifest={'format':'juanzhan-backup-1','external_sources_included':False,'files':entries}
             text=json.dumps(manifest,ensure_ascii=False,sort_keys=True)
@@ -157,6 +163,12 @@ def restore(bundle, destination):
             # Restored sessions/tokens and worker leases must never resume as live identities.
             db.execute('DELETE FROM auth_sessions');db.execute('DELETE FROM auth_api_tokens')
             db.execute('DELETE FROM worker_heartbeats')
+            # A recovery is a separate instance: never resume copied backup plans
+            # or operations against an unrelated backup storage volume.
+            db.execute('UPDATE backup_schedule SET interval_minutes=0,next_due_at=NULL,last_job_id=NULL,version=version+1')
+            db.execute("UPDATE jobs SET status='cancelled',lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,"
+                       "error_json=?,retryable=0 WHERE target_type IN ('system_backup','system_recovery') AND status IN ('queued','running')",
+                       (json.dumps({'code':'RESTORED_BACKUP_OPERATION','message':'Backup operation disabled in recovered instance','retryable':False}),))
             for (id,) in db.execute("SELECT id FROM jobs WHERE status='running'").fetchall():
                 queue._failure(db,row(db,id),'RESTORED_LEASE','Worker lease invalidated during restore',True,queue.clock())
         for directory, _, _ in os.walk(destination,topdown=False):sync_directory(directory)

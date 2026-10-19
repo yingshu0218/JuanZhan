@@ -19,6 +19,6 @@ RUN python /app/scripts/setup_ocr_models.py --verify
 COPY --chmod=755 services /app/services
 COPY --chmod=755 web/dist /app/web/dist
 ENV PYTHONPATH=/app/services PYTHONUNBUFFERED=1 OMP_THREAD_LIMIT=1 OMP_NUM_THREADS=1
-RUN useradd --uid 10001 --create-home app && mkdir -p /data /backups /recovery && chown app:app /data /backups /recovery
+RUN useradd --uid 10001 --create-home app && mkdir -p /data /backups /recovery && chown app:app /data /backups /recovery && chmod 700 /backups /recovery
 USER app
 CMD ["python", "-m", "uvicorn", "juanzhan.archive:app", "--host", "0.0.0.0", "--port", "8000"]

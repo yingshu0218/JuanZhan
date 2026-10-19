@@ -136,6 +136,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         from . import source_matching
         app.include_router(source_matching.router(settings))
         app.include_router(maintenance.router(settings))
+        from . import backup_api
+        app.include_router(backup_api.router(settings))
         app.include_router(fields.router(settings))
         app.include_router(metadata.router(settings))
         from . import files

@@ -29,8 +29,16 @@ def _send(connection,message):
     except (OSError,EOFError):pass
 
 
-def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
+def _handler(job,data_dir,connection,source_mounts=(),converter_token='',backup_dir=None):
     try:
+        if job['kind']=='batch' and job['target_type'] in ('system_backup','system_recovery'):
+            from .backup_management import execute
+            try:
+                execute(Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts,backup_dir=Path(backup_dir) if backup_dir else None),job)
+                _send(connection,('committed',))
+            except ValueError:
+                _send(connection,('failure','BACKUP_INVALID','Backup validation or storage budget failed',False))
+            return
         if job['kind']=='batch' and job['target_type'] in ('document_match','source_entry_register'):
             from .source_matching import execute
             from .parsing import ParseFailure
@@ -190,7 +198,7 @@ class Worker:
         receive,send = context.Pipe(duplex=False)
         arguments = (job,str(self.settings.data_dir),send)
         if self.handler is _handler:
-            arguments += (self.settings.source_mounts,self.settings.converter_token)
+            arguments += (self.settings.source_mounts,self.settings.converter_token,str(self.settings.backup_dir) if self.settings.backup_dir else None)
         process = context.Process(target=self.handler,args=arguments,daemon=True)
         started = time.monotonic()
         next_heartbeat = started
@@ -276,6 +284,8 @@ def main():
             if time.monotonic()>=next_source_schedule:
                 from .source_scheduler import schedule as schedule_sources
                 schedule_sources(settings)
+                from .backup_management import schedule as schedule_backups
+                schedule_backups(settings)
                 next_source_schedule=time.monotonic()+5
             from .indexing import schedule
             schedule(settings,limit=1)

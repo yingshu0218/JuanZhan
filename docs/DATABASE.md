@@ -168,3 +168,7 @@ parse_asset_order(parse_run_id,asset_index,derived_asset_id,source_artifact_ref)
 ## T32 更新 · 2026-10-18
 
 T32无新迁移。备份通过SQLite Backup API包含WAL已提交事实，冻结期间复制Revision/ParseRun引用对象；恢复校验完整性/外键/引用及精确migration_checksums，撤销旧会话/API token/心跳，running Job沿原预算处理，不修改原库。只读外部字节不在包内。
+
+## 0010备份管理迁移 · 2026-10-20
+
+开发版本新增backup_records、recovery_records和backup_schedule，当前10条迁移。记录关联持久job，内部source/artifact令牌不暴露API；备份完成字段成组非空，删除保留墓碑。计划保存version、分钟间隔、数量/天数保留、next_due_at及last_job_id，默认关闭。原0001～0009未改；旧9迁移备份须先使用对应旧代码恢复，再正常升级，不跳过精确迁移检查。

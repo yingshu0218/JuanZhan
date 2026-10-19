@@ -599,3 +599,16 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/backup-transport-final.log/xml。真实SQLite+托管原件目录包导出ZIP、导入新目录、restore完整校验、HTTP重新登录和原件字节一致；当前实例保持可下载。拒绝穿越/绝对路径、符号链接、重复/额外成员、校验损坏/CRC错误、缺失标记、数量/容量超限、伪造中央目录数量/大小、NUL及尾随数据，失败不保留本次暂存目录；ZIP64有效样本通过，已有目录/归档拒绝覆盖。
 
 初次组合测试25 passed/1 failed源于未指定服务器CJK字体（PIL不能打开样本字体），补充已有JUANZHAN_TEST_CJK_FONT后26项通过；增加CRC并修正额外对象/链接样本后最终27项通过。未安装新字体或依赖。这是传输基础证据，不证明Web接口、自动备份或全阶段验收完成。
+
+## Web备份恢复与自动备份专项 · 2026-10-20
+
+授权Linux服务器复用既有依赖，Browser plugin not available，采用仓库Playwright。真实SQLite/文件/HTTP、实际Converter回归和独立生产依赖镜像分别验证，未替换现有实例。
+
+- 后端backup_management/backup_archive/backup/jobs/foundation最终64 passed（35.19s），服务器.local/backup-release-ready.log/xml。覆盖创建/下载/上传/新目录恢复、登录及原件字节、计划关闭和旧凭据失效、9→10迁移保留旧行/校验、持久计划/配置冲突/不补积压/数量保留、真实daemon到期执行及重启、损坏包/哈希、鉴权/CSRF/路径输入、忙锁有限重试、旧租约不发布、中断work清理、失败不删除最近成功备份、活动恢复阻止删除、操作员新目录暂存和明确清理。
+- Web构建.local/backup-release-web-build.log通过；最终备份浏览器3 passed（15.2s），.local/backup-plan-reload-browser.log。真实下载ZIP→上传验证→恢复→计划保存/重载/关闭→删除；空空间入口、损坏包不可恢复、并发计划拒绝覆盖及重新读取服务器版本均通过。另有主界面13 passed（1.3m），.local/backup-final-library.log；任务3 passed（18.6s），.local/backup-final-jobs.log；管理界面入口3项复验通过。
+- 桌面1440×1000及手机390×844截图/tmp/juanzhan-backup-{desktop,mobile}.png，本机/tmp/juanzhan-remote-qa/同名副本已人工查看。暖白/墨绿样式、长编号/哈希换行、纵向滚动、手机无水平溢出；测试含CSS实际加载断言及页面/相关控制台错误收集。
+- juanzhan:backup-dev独立dirty开发镜像构建成功，.local/backup-image-build.log。scripts/backup_runtime_drill.py在随机具名容器/三卷、UID10001、read-only root、cap_drop ALL/no-new-privileges、1536MiB/2CPU上通过，.local/backup-runtime-drill.log。实际loopback HTTP和worker执行手动/自动备份、上传验证、恢复、数量保留，CLI再次校验并暂存到新卷，启动恢复实例重新登录/下载/计划关闭/integrity/FK/迁移集合/CSS均通过；未触碰外部来源。随机容器与测试卷自动清理。
+
+首轮32项在传输基础上通过；后续并发/围栏/运维/迁移证据扩展至64项。调试中发现并修复本轮脚本误写styles.css：恢复已提交样式后重建、重跑并检查真实截图，早期无样式截图不作为验收证据。首轮浏览器失败与新计划冲突用例失败均因定位器匹配其他记录，已限定相应行/错误并最终通过。第一次tar含macOS AppleDouble迁移旁文件造成启动错误，已仅删除本轮tar清单中的._文件，后续COPYFILE_DISABLE=1；并未修改迁移运行器来跳过未知内容。
+
+这是功能专项证据。本阶段所有功能交付后的全后端、七组浏览器、最新候选构建/升级恢复及文档依赖审计仍须完成；不能把历史418项或旧RC验收替代当前代码全量验证。
