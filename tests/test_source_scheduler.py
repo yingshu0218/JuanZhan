@@ -123,4 +123,5 @@ def test_upgrade_eight_migrations_preserves_existing_source_config(tmp_path):
     with connect(settings.database) as db:
         assert db.execute("SELECT scan_interval_minutes FROM sources WHERE id='source'").fetchone()[0]==60
         checksums=dict(db.execute('SELECT name,sha256 FROM migration_checksums'))
-        assert len(checksums)==9 and all(checksums[k]==v for k,v in original.items())
+        assert set(checksums)=={path.name for path in MIGRATIONS.glob('*.sql')}
+        assert all(checksums[k]==v for k,v in original.items())

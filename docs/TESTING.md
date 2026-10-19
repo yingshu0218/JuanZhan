@@ -612,3 +612,16 @@ backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/
 首轮32项在传输基础上通过；后续并发/围栏/运维/迁移证据扩展至64项。调试中发现并修复本轮脚本误写styles.css：恢复已提交样式后重建、重跑并检查真实截图，早期无样式截图不作为验收证据。首轮浏览器失败与新计划冲突用例失败均因定位器匹配其他记录，已限定相应行/错误并最终通过。第一次tar含macOS AppleDouble迁移旁文件造成启动错误，已仅删除本轮tar清单中的._文件，后续COPYFILE_DISABLE=1；并未修改迁移运行器来跳过未知内容。
 
 这是功能专项证据。本阶段所有功能交付后的全后端、七组浏览器、最新候选构建/升级恢复及文档依赖审计仍须完成；不能把历史418项或旧RC验收替代当前代码全量验证。
+
+## 本阶段最终验收：后端与候选镜像 · 2026-10-20
+
+当前全后端在受限Linux容器（1536MiB/2CPU、只读sysfs、真实CJK样本）481 passed（308.69s），无跳过/失败；证据/opt/juanzhan-dev/.local/final-features-verified-backend.log/xml。初次480 passed/1 failed是旧来源升级测试写死9迁移，改为核对当前迁移文件名集合并保留全部旧校验值断言后完整重跑通过；没有跳过或削弱只读检查，未修改旧迁移。
+
+源码候选0.1.0-rc.2从干净16381a9d96f8180aca07fb6e5cff97bfb12ab001构建，镜像sha256:9b4b6025a19a5fac45c6390f5f95e130cbaed261fcd6247f3bd76d7f0e33237d，linux/amd64、source_dirty=false、published=false。构建日志.local/final-features-build.log，原manifest/tmp/juanzhan-release-mprm8mo9/manifest.json。后续仅验证脚本/测试与文档修正，不改该镜像的产品源码追溯；旧rc.1/foundation镜像保留。
+
+- 当前候选六格式/真实OCR/公开正文与历史/候选、中文/繁简FTS、增量编辑与重建：final-features-formats-ocr.log通过。
+- 当前候选真实只读来源/持久daemon/文件变化拒绝/源真实离线缓存及公开检索：final-features-formats-external.log通过；Archive、Converter、offline实例均显式使用rc.2，不把旧foundation标签当当前候选。
+- 实际Compose从旧foundation的8迁移升级到候选10迁移，保留登录/原件/正文/检索；按文档由卷所有者收紧旧备份卷权限，再验证新备份接口和计划；一致备份→全新恢复卷→重新登录/下载/正文/检索、计划关闭与integrity/FK通过。证据final-features-schema-release-drill.log和/tmp/juanzhan-release-drill-jnyh188e/result.json，54.46s，明确previous_database_migrations=8/current=10、UID10001/read-only root/cap_drop ALL。旧same_schema报告不代替这份升级证据。
+- 当前rc.2的独立backup_runtime_drill通过：final-features-rc2-backup-runtime.log；真实HTTP创建/ZIP下载上传/新目录恢复、实际daemon自动计划/保留、CLI再次校验到新卷、启动恢复实例并重新登录/下载/计划关闭/integrity/FK/迁移/CSS通过。随机容器和三卷自动清理。
+
+全阶段七组浏览器与30项映射尚在汇总，最终结论以其实际终态为准。

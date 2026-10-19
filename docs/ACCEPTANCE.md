@@ -79,3 +79,22 @@ UV_CACHE_DIR=/workspace/.uv-cache JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium .venv
 | 备份损坏/软链/越界/中断标记 | test_backup | 拒绝坏包和覆盖、未完成恢复不启动、原实例不变 |
 
 T33验证功能边界，不替代T34性能基线、镜像发布及实际运维切换。浏览器主要为Linux Chromium桌面1440×1000/手机390×844；未承诺真实手机、Firefox/WebKit、网络文件系统、断电硬件与大规模压力覆盖。T16外部转托管及批量reprocess/set_metadata已在后续阶段实现，最新验证见TESTING/FEATURE-BACKLOG。
+
+## 本阶段补充功能验收索引 · 2026-10-20
+
+下表补充原30项及UX-15～18，不改变原编号或将旧报告当当前证据。完成判定须同时检查当前全后端、对应完整浏览器套件和实物演练；最终结果见TESTING。
+
+| 功能 | 后端/实物入口 | 浏览器入口 |
+|---|---|---|
+| 批量重解析/OCR | test_batches的batch_reprocess/ocr；test_content、镜像smoke_formats | jobs |
+| 批量七类型字段/清空/撤销 | test_batches的batch_metadata及test_metadata | library/organize |
+| T16外部文件纳入托管 | test_adoptions；真实只读复制/新Revision/旧正文保留 | sources |
+| 来源定时扫描 | test_source_scheduler；真实daemon及备份恢复 | sources |
+| 歧义文件人工匹配 | test_source_matching；真实只读字节/原件身份保护 | sources |
+| 历史原件下载 | test_files两项historical；并发追加版本仍固定字节 | files |
+| 完整PDF阅读 | test_files安全下载及web/CSP；真实多页/密码/中文/预算样本 | files九项完整套件 |
+| 字段/类型/模板管理 | test_fields/test_metadata/test_catalog；精度、必填和停用保护 | library/catalog |
+| Web备份恢复 | test_backup_management/test_backup_archive/test_backup；backup_runtime_drill | backups |
+| 自动备份/保留/失败/重启 | test_backup_management真实daemon/保留/失败保护；backup_runtime_drill | backups计划配置与冲突 |
+
+完整浏览器现在是sources、library、reading、search、jobs、files、backups七组。来源组须显式JUANZHAN_E2E_IMAGE指向本次被验收的候选，格式镜像专项用JUANZHAN_SMOKE_IMAGE选同一候选；默认旧开发标签仅为兼容旧命令，不作为本阶段当前证据。所有随机容器、卷、网络仅用于测试并在退出清理。用户原有管理员/服务/卷及外部原件不参与覆盖或切换。

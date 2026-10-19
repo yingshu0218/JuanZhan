@@ -79,8 +79,18 @@ def main():
                 if time.monotonic()>deadline:raise RuntimeError('Real parse deadline exceeded')
                 time.sleep(.2)
             verify(id,space,content);result['steps'].append('fresh_install_real_import_and_search')
+            result['previous_database_migrations']=int(compose(prefix,['exec','-T','archive','python','-c',
+                'from juanzhan.config import Settings; from juanzhan.database import connect; '
+                '\nwith connect(Settings.from_env().database) as db: print(db.execute("SELECT count(*) FROM migration_checksums").fetchone()[0])']))
             env['JUANZHAN_IMAGE']=candidate
             compose(prefix,['up','-d','--wait','--no-build']);base=address(prefix)
+            # Existing backup volumes retain the previous image's directory mode.
+            # Exercise the documented owner-only upgrade step on this test volume.
+            compose(prefix,['exec','-T','archive','chmod','700','/backups'])
+            assert request('/api/v1/system/backups')['total']==0
+            plan=request('/api/v1/system/backup-schedule')
+            request('/api/v1/system/backup-schedule',{'expected_version':plan['version'],
+                'interval_minutes':60,'keep_count':2,'max_age_days':30},method='PATCH')
             verify(id,space,content)
             with opener.open(base+'/',timeout=15) as response:
                 shell=response.read().decode();assert 'JuanZhan' in shell and "frame-ancestors 'none'" in response.headers['Content-Security-Policy']
@@ -91,7 +101,7 @@ def main():
             assert 'ALL' in docker(['inspect','--format','{{json .HostConfig.CapDrop}}',container])
             assert docker(['exec',container,'python','-c','import os; print(os.getuid())'])=='10001'
             result['runtime_checks']={'uid':10001,'read_only_root':True,'cap_drop_all':True,'web_assets_and_csp':True}
-            result['steps'].append('same_schema_image_upgrade_preserves_credentials_and_data')
+            result['steps'].append('candidate_image_and_schema_upgrade_preserves_credentials_and_data')
             compose(prefix,['stop','archive-worker'])
             compose(prefix,['run','--rm','maintenance','python','-m','juanzhan.backup','create','--output','/backups/drill'])
             compose(prefix,['run','--rm','maintenance','python','-m','juanzhan.backup','restore','--input','/backups/drill','--output','/recovery/restored'])
@@ -101,6 +111,8 @@ def main():
             try:request('/api/v1/documents/'+id);raise AssertionError('Old session unexpectedly accepted')
             except urllib.error.HTTPError as error:assert error.code==401
             login();verify(id,space,content)
+            assert request('/api/v1/system/backup-schedule')['interval_minutes']==0
+            assert request('/api/v1/system/backups')['total']==0
             checks=compose(names[1],['exec','-T','archive','python','-c',
                 'import json; from juanzhan.config import Settings; from juanzhan.database import connect; '
                 '\nwith connect(Settings.from_env().database) as db: print(json.dumps({"migrations":db.execute("SELECT count(*) FROM migration_checksums").fetchone()[0],"integrity":db.execute("PRAGMA integrity_check").fetchone()[0],"foreign_keys":len(db.execute("PRAGMA foreign_key_check").fetchall())}))'],True)

@@ -34,6 +34,8 @@ def request(base,path,*,body=None,cookie='',csrf='',content_type='application/js
         return response.status,json.load(response),response.headers
 
 
+image=os.environ.get('JUANZHAN_SMOKE_IMAGE','juanzhan-foundation:dev')
+
 prefix='juanzhan-formats-smoke-'+uuid.uuid4().hex[:12]
 network=prefix+'-net'
 archive=prefix+'-archive'
@@ -69,11 +71,11 @@ try:
     docker('volume','create',volume)
     run_with_token('run','-d','--name',converter,'--network',network,'--network-alias','converter',
            '--tmpfs','/tmp:rw,size=128m,mode=1777','-e','CONVERTER_SERVICE_TOKEN',
-           'juanzhan-foundation:dev','python','-m','uvicorn','juanzhan.converter:app','--host','0.0.0.0','--port','8000')
+           image,'python','-m','uvicorn','juanzhan.converter:app','--host','0.0.0.0','--port','8000')
     run_with_token('run','-d','--name',archive,'--network',network,'-p','127.0.0.1::8000',
            '--mount',f'type=volume,source={volume},target=/data','-e','JUANZHAN_DATA_DIR=/data',
            '-e','JUANZHAN_COOKIE_SECURE=false','-e','CONVERTER_SERVICE_TOKEN','-e','CONVERTER_URL=http://converter:8000',*mount_args,
-           'juanzhan-foundation:dev')
+           image)
     base='http://127.0.0.1:'+docker('port',archive,'8000/tcp').split(':')[-1]
     for _ in range(60):
         try:
@@ -303,7 +305,7 @@ print('PASS: explicit rebuild is idempotent and a real HTTP title change is incr
             run_with_token('run','-d','--name',index_worker,'--network',network,
                 '--mount',f'type=volume,source={volume},target=/data','-e','JUANZHAN_DATA_DIR=/data',
                 '-e','CONVERTER_SERVICE_TOKEN','-e','CONVERTER_URL=http://converter:8000',
-                'juanzhan-foundation:dev','python','-m','juanzhan.worker','--poll-seconds','0.05')
+                image,'python','-m','juanzhan.worker','--poll-seconds','0.05')
             code='''
 from juanzhan.config import Settings
 from juanzhan.database import connect
@@ -352,7 +354,7 @@ print(json.dumps({'job_id':job['id'],'document_id':document,'current':current}))
         assert not before['stale_for_current_revision']
         docker('run','-d','--name',offline,'--network',network,'-p','127.0.0.1::8000',
             '--mount',f'type=volume,source={volume},target=/data','-e','JUANZHAN_DATA_DIR=/data',
-            '-e','JUANZHAN_SOURCE_MOUNTS={"fixture":"/offline-fixture"}','juanzhan-foundation:dev')
+            '-e','JUANZHAN_SOURCE_MOUNTS={"fixture":"/offline-fixture"}',image)
         offline_base='http://127.0.0.1:'+docker('port',offline,'8000/tcp').split(':')[-1]
         for _ in range(60):
             try:
