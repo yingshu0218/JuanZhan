@@ -13,7 +13,7 @@
 
 ## 本地依赖与测试
 
-需要 Python 3.12、uv、Node >=22.12 和 npm；SQLite >=3.38，支持 JSON 与 FTS5。
+需要 Python 3.12、uv、Node >=22.13 和 npm；SQLite >=3.38，支持 JSON 与 FTS5。
 从仓库根目录执行：
 
 ```sh

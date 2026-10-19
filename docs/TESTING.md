@@ -625,3 +625,27 @@ backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/
 - 当前rc.2的独立backup_runtime_drill通过：final-features-rc2-backup-runtime.log；真实HTTP创建/ZIP下载上传/新目录恢复、实际daemon自动计划/保留、CLI再次校验到新卷、启动恢复实例并重新登录/下载/计划关闭/integrity/FK/迁移/CSS通过。随机容器和三卷自动清理。
 
 全阶段七组浏览器与30项映射尚在汇总，最终结论以其实际终态为准。
+
+## 本阶段最终完整结论 · 2026-10-20
+
+全部本阶段功能已按FEATURE-BACKLOG和ACCEPTANCE补充索引核对完成。当前完整后端481 passed；七组浏览器共39 passed，无失败或跳过；原30项机器映射30/30 passed。原UX-15～18由完整reading/files、内容/候选/离线/OCR测试及实际截图共同验证，不只根据30项清单存在判断。
+
+| 浏览器套件 | 通过项数 | 当前证据来源 |
+|---|---:|---|
+| sources | 4 | 首轮86.84s，当前rc.2镜像和真实内核只读挂载 |
+| library | 13 | 首轮80.86s，包含管理界面与批量字段 |
+| reading | 3 | 首轮14.58s，真实结构化/历史/候选 |
+| search | 4 | 补齐已有CJK字体环境后22.7s |
+| jobs | 3 | 17.5s，真实重解析子任务/失败与有限重试 |
+| files | 9 | 33.7s，历史下载/完整PDF/密码/中文/资源释放 |
+| backups | 3 | 15.1s，真实ZIP/新目录/计划/冲突/删除 |
+
+首轮浏览器驱动在search样本生成时因缺JUANZHAN_TEST_CJK_FONT失败，保留原.local/reports/final-features-browser-16381a9/summary.json及日志。无需安装字体；加上服务器已有字体路径后只续跑search/jobs/files/backups，输出到.local/reports/final-features-browser-completion。未重跑已通过的前三组，也未把第一次failed摘要改成passed。
+
+最终选用的481项后端与七个完整套件JUnit逐项检查无error/failure/skipped，按原字节汇集到.local/reports/final-features-accepted；provenance.json逐份记录来源/用例数/SHA-256和续跑原因。汇总脚本只接受明确的本次报告，校验481/39总数；acceptance.py --phase assess针对该目录得到30/30，证据.local/reports/final-features-assess/summary.json。没有混入旧MVP结果。
+
+最终契约检查：Archive0.4.28/63路径、备份10个HTTP操作与运行应用生成的路由定义一致，错误体明确Error并补全404等状态，10条迁移；.local/final-features-contract.log。自动生成内部GET/HEAD operationId提示不构成公开契约，公开以仓库手写OpenAPI为准。
+
+候选一致性：当前rc.2与工作区打包内容逐文件SHA-256比较，services 63文件、web/dist 208文件、licenses 17文件全部一致，.local/final-features-candidate-match.log。当前产品源码、配置和前端相对镜像构建提交16381a9无差异；后续仅文档/验证脚本和测试适配变动，不篡改候选源码追溯。实际升级/恢复、六格式/OCR、只读离线、自动备份/恢复验证见前一节。
+
+结束检查：仅原有nginx-proxy、simple-shell-terminal-1服务运行；本轮临时后端/来源/镜像演练容器及其随机卷/网络已退出清理。未推送Git标签、Release、镜像仓库，未替换用户业务实例。本轮范围是既定单管理员Linux产品与明确补充功能，不包含PRD明确排除的LLM/向量/多用户/在线Office或未确认扩展。浏览器范围为既有Linux Chromium桌面/窄屏，具体资源和复杂格式边界仍按DEVELOPMENT/PERFORMANCE，不声称真实手机/所有浏览器/硬件断电或无限容量均已实测。

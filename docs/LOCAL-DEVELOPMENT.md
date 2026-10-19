@@ -117,3 +117,17 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 可清理测试报告/夹具在/opt/juanzhan-dev/.local：backup-management*.log/xml、backup-release-ready.log/xml、backup-*-web*.log、backup-*-library.log、backup-*-jobs.log、backup-*-build.log、backup-*-browser.log、backup-runtime-drill.log、pytest-backup-management*/pytest-backup-release-ready目录。浏览器原生下载测试ZIP在服务器/tmp/juanzhan-backup-browser.zip，含测试数据库，确认无需复查后删除；截图服务器/tmp/juanzhan-backup-{desktop,mobile}.png和本机/tmp/juanzhan-remote-qa/同名副本。运行脚本.local/run-backup-runtime.sh、各backup-*-work.tar.gz、本机.local/update-backup-openapi.py/minimize-backup-openapi.py/base-openapi.yaml也属开发中间文件，可按具体文件清理。不要泛删.local、/tmp或测试之外的备份目录。
 
 独立运行时演练只创建随机juanzhan-backup-check-*容器和带本轮标签的三只测试卷，退出自动删除；既有nginx-proxy/simple-shell服务未改。首轮tar带入macOS ._旁文件，已按本轮tar清单逐个删除，之后使用COPYFILE_DISABLE=1；不是忽略未知迁移。业务备份卷的文件保留/恢复目录清理参照RELEASE及backup_admin，不按测试产物处理。
+
+## 本阶段最终资源与清理快照 · 2026-10-20
+
+本机仅编辑、读文件、Git和同步，重型依赖/调试/构建继续在授权服务器；本轮无新增本机软件包或VM。实测本机.local约304MiB、.venv约65MiB、web/node_modules约112MiB、ocr-models约6.3MiB；此前Colima/Lima/Docker CLI/Compose的安装与未启动VM记录见上文，不把共享Homebrew工具目录当项目缓存删除。
+
+服务器/opt/juanzhan-dev约2.9GiB（含保留的测试数据库/夹具/报告），项目浏览器924MiB、web/node_modules186MiB、.venv86MiB、wheelhouse22MiB、web/dist6.2MiB；根分区约48GiB可用。Docker另计：新juanzhan:0.1.0-rc.2和backup-dev逻辑大小各约358MB，实际层共享，不能直接相加；旧rc.1/foundation及各开发镜像保留，均未覆盖旧候选。当前候选manifest与镜像ID见TESTING，无新常驻服务。
+
+本阶段额外可清理产物：服务器.local/final-features-*.log/xml、pytest-final-features和pytest-final-features-verified两个测试目录、.local/reports/final-features-*报告；保留报告便于追溯，确认无需复查后再删。首轮failed原报告与最终provenance均在这些明确目录中。原构建manifest位于/tmp/juanzhan-release-mprm8mo9/，最终升级演练报告/tmp/juanzhan-release-drill-jnyh188e/，均为本轮专用；不要泛删其他/tmp。
+
+两端本轮Git同步中间文件可按名称清理：.local/catalog-history.bundle、catalog-source.tar.gz、backup-management-history.bundle、backup-management-source.tar.gz、rc2-history.bundle、rc2-source.tar.gz；服务器对应文件位于/opt/juanzhan-dev/.local/。两端backup*-work.tar.gz/backup-work*.tar.gz、.local/run-backup-runtime*.sh、aggregate-final-evidence.py、verify-final-contract.py及上述OpenAPI一次性脚本也可在无需重现后清理；不删除跟踪源码、锁文件、licenses、迁移、业务卷或真实备份。
+
+容器清理采用本轮随机名称及退出trap，最终无本轮服务遗留；保留原有nginx-proxy/simple-shell服务。后续删除镜像前先核对没有实例引用，仅选择本项目明确标签，禁止全局prune。业务/backups卷、恢复目录与测试夹具不同，按RELEASE操作，不能按本段缓存清理。
+
+最终同步使用的.local/final-history.bundle、final-source.tar.gz（两端）也可在无需复核后删除；final-audit.py属于只读核验脚本。本机/tmp/juanzhan-final-evidence仅保存本阶段报告副本，确认无需复查后可清理，不影响源码、依赖或业务数据。

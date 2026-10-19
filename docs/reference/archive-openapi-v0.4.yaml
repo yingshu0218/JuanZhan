@@ -2812,14 +2812,34 @@ paths:
                 $ref: '#/components/schemas/BackupList'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       parameters:
       - name: page
         in: query
@@ -2849,14 +2869,34 @@ paths:
                 $ref: '#/components/schemas/BackupAccepted'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         required: true
         content:
@@ -2879,14 +2919,34 @@ paths:
                 $ref: '#/components/schemas/BackupSchedule'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     patch:
       tags:
       - System
@@ -2901,14 +2961,34 @@ paths:
                 $ref: '#/components/schemas/BackupSchedule'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         required: true
         content:
@@ -2930,6 +3010,8 @@ paths:
       operationId: get_backup
       summary: 查看备份任务及可用性
       responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
         '200':
           description: 成功
           content:
@@ -2938,20 +3020,42 @@ paths:
                 $ref: '#/components/schemas/BackupRecord'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
       - System
       operationId: delete_backup
       summary: 删除备份传输文件并保留记录
       responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
         '200':
           description: 成功
           content:
@@ -2970,14 +3074,34 @@ paths:
                     const: deleted
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       description: 有活动备份/恢复引用时拒绝；幂等，先持久删除标记再清理文件。不会删除活实例或恢复目录。
   /system/backups/{backup_id}/download:
     parameters:
@@ -2994,6 +3118,16 @@ paths:
       summary: 校验后下载私有备份ZIP附件
       description: 同源鉴权；检查登记大小和SHA-256后从持锁描述符流式下载。响应no-store/nosniff，不暴露服务器路径。
       responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Validation'
+        '503':
+          description: Private backup storage unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '200':
           description: ZIP附件（application/octet-stream）
           content:
@@ -3003,8 +3137,16 @@ paths:
                 format: binary
         '401':
           description: 需要登录
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 备份未就绪、被删除、存储占用或完整性失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /system/backups/{backup_id}/restore:
     parameters:
     - name: backup_id
@@ -3019,6 +3161,8 @@ paths:
       operationId: restore_backup
       summary: 校验并恢复到服务器新目录
       responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
         '202':
           description: 成功
           content:
@@ -3027,14 +3171,34 @@ paths:
                 $ref: '#/components/schemas/RecoveryAccepted'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         required: true
         content:
@@ -3057,14 +3221,34 @@ paths:
                 $ref: '#/components/schemas/RecoveryList'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       parameters:
       - name: page
         in: query
@@ -3095,26 +3279,70 @@ paths:
                 $ref: '#/components/schemas/BackupAccepted'
         '401':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '503':
           description: 鉴权、CSRF、状态/完整性/计划冲突、输入或私有存储不可用，错误体沿用Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '400':
           description: 空包、接收中断或非法长度
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '408':
           description: 上传超时
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '413':
           description: 传输超限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '415':
           description: 不支持的Content-Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: 上传并发已满
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '507':
           description: 磁盘预算不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       parameters:
       - name: request_id
         in: query
