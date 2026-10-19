@@ -58,7 +58,7 @@ PRD新增UX-15～18同样属于第一版完成门槛；下表补充原30项机�
 UV_CACHE_DIR=/workspace/.uv-cache JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium .venv/bin/python scripts/acceptance.py
 ```
 
-默认完整后端→构建→sources→library→reading→search→jobs→files，浏览器串行；sources的Docker网络操作与其他浏览器隔离。运行器只用现有依赖，输出默认私有/tmp目录；可用`--output`指定新的仓库外目录。`--phase backend`/`--phase browser`只验证选定阶段，未跑的映射显示not_run，不算整体验收通过。JUnit缺失/无测试/跳过/失败使阶段失败，保存首个非零退出码并停止，后续阶段不伪装已执行。所有结果仅指本次实际执行。运行前机器清单会核验30个ID与实际测试函数；最终判定读取JUnit，后端按参数化测试的全部结果、浏览器按对应完整套件结果，不根据文件存在判通过。若分阶段执行，可用下列命令只汇总本次真实报告（不重跑、不把not_run当passed）：
+默认完整后端→构建→sources→library→reading→search→jobs→files→backups，浏览器串行；sources的Docker网络操作与其他浏览器隔离。运行器只用现有依赖，输出默认私有/tmp目录；可用`--output`指定新的仓库外目录。`--phase backend`/`--phase browser`只验证选定阶段，未跑的映射显示not_run，不算整体验收通过。JUnit缺失/无测试/跳过/失败使阶段失败，保存首个非零退出码并停止，后续阶段不伪装已执行。所有结果仅指本次实际执行。运行前机器清单会核验30个ID与实际测试函数；最终判定读取JUnit，后端按参数化测试的全部结果、浏览器按对应完整套件结果，不根据文件存在判通过。若分阶段执行，可用下列命令只汇总本次真实报告（不重跑、不把not_run当passed）：
 
 ```sh
 .venv/bin/python scripts/acceptance.py --phase assess --reports /tmp/current-backend /tmp/current-browser
@@ -78,4 +78,4 @@ UV_CACHE_DIR=/workspace/.uv-cache JUANZHAN_CHROMIUM_PATH=/usr/bin/chromium .venv
 | 索引提交中断/代次变化 | test_indexing transaction_interruption / newer_input_fences | 旧成功索引保留、后续重建不重复 |
 | 备份损坏/软链/越界/中断标记 | test_backup | 拒绝坏包和覆盖、未完成恢复不启动、原实例不变 |
 
-T33验证功能边界，不替代T34性能基线、镜像发布及实际运维切换。浏览器主要为Linux Chromium桌面1440×1000/手机390×844；未承诺真实手机、Firefox/WebKit、网络文件系统、断电硬件与大规模压力覆盖。T16外部转托管及批量reprocess/set_metadata仍明确未实现。
+T33验证功能边界，不替代T34性能基线、镜像发布及实际运维切换。浏览器主要为Linux Chromium桌面1440×1000/手机390×844；未承诺真实手机、Firefox/WebKit、网络文件系统、断电硬件与大规模压力覆盖。T16外部转托管及批量reprocess/set_metadata已在后续阶段实现，最新验证见TESTING/FEATURE-BACKLOG。
