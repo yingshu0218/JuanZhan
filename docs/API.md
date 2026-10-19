@@ -318,6 +318,8 @@ Archive契约0.4.22，路径数和8条迁移不变。POST /documents/batch支持
 
 ## 批量业务字段 · 2026-10-19
 
+人工匹配后续契约为Archive0.4.27/56路径：GET /sources/{id}/entries/{entry_id}/matches分页返回未关联needs_match条目的精确updated_at观察令牌，以及同来源/相同当前Revision哈希与大小/非回收外部档案候选。POST同路径/resolve接受action=match或new_document、expected_entry_updated_at及request_id；match还须document_id、expected_document_version、expected_revision_id，new_document禁止非null目标字段。额外键拒绝，Cookie须CSRF。返回202持久batch任务，最多核验1GiB、300秒/3次有限重试；相同请求ID及参数幂等，变化409。match复核根身份/实际字节和旧路径缺失，保留Revision/人工字段，仅更新关联、业务版本与审计；new_document建立独立needs_review档案并排队解析，不合并同哈希。成功结果含document_id/source_entry_id/matched/external_file_modified=false。终态失败释放扫描屏障；Purge取消匹配并释放未关联条目的屏障。
+
 自动扫描后续契约为Archive0.4.26/54路径：PATCH /sources/{id}/schedule接受expected_schedule_version与scan_interval_minutes，额外键拒绝。间隔1～525600分钟开启，0/null关闭；并发版本变化409 SCHEDULE_VERSION_CONFLICT。Source新增scan_schedule（version、next_run_at UTC/null、last_job_id/null）。版本仅随配置变化；worker推进期限不改变配置版本。关闭不取消已受理任务。首次导入完成后，正常worker每5秒最多处理20个到期来源，使用既有增量任务和有限重试；已有任意扫描时跳过并推进期限，错过的间隔不追补。创建来源已有的正间隔现在会实际生效。
 
 T16后续契约为Archive0.4.25/53路径：POST /documents/{id}/adopt接受expected_document_version、expected_revision_id、request_id，额外键拒绝，Cookie须CSRF。返回202复制任务；同请求ID和参数幂等复用（包括完成后重试），参数变化409。复制上限使用服务端托管输入配置，默认64MiB，超限413 ADOPTION_LIMIT。任务kind=batch、target_type=document_adoption，有限3次重试；成功结果含document_id、revision_id、parse_job_id及external_file_modified=false。父任务成功表示复制并切换完成，解析子任务另行跟踪。来源entries新增is_managed，排除规则新增protected；已托管绑定禁止取消索引或删除防重导规则，返回409 SOURCE_ENTRY_MANAGED。正在复制时取消索引返回SOURCE_ENTRY_BUSY。清理档案后旧绑定消失，规则仍保留，可再明确移除。

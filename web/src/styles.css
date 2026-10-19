@@ -1127,6 +1127,10 @@ select {
   height: 16px;
   accent-color: var(--green);
 }
+.source-match-choice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .selection-bar {
   display: flex;
   align-items: center;

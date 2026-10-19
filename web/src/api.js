@@ -7,6 +7,11 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  SOURCE_ENTRY_RESOLVED: "该文件已处理，请刷新来源。",
+  SOURCE_ENTRY_UNVERIFIED: "缺少可靠扫描记录，请先完成一次增量扫描。",
+  SOURCE_MATCH_INVALID: "所选档案不再符合相同原件的匹配条件，请刷新候选。",
+  SOURCE_MATCH_OLD_PRESENT: "原路径仍存在，未改变关联，请先核对来源文件。",
+  SOURCE_MATCH_LIMIT: "原件超过1 GiB的匹配核验上限。",
   SCHEDULE_VERSION_CONFLICT: "扫描计划已被更新，请刷新来源后重试。",
   SOURCE_ENTRY_MANAGED: "该来源条目已纳入托管；保留排除规则以防重复导入。",
   SOURCE_ENTRY_BUSY: "该来源条目已有操作或排除规则，请先核对。",

@@ -23,7 +23,7 @@ def main():
     if root.parent != Path('/tmp') or not root.name.startswith('juanzhan-source-browser-'):
         raise ValueError('Expected an isolated browser fixture')
     root.mkdir(mode=0o755)
-    for name in ('collection', 'flat', 'adoption', 'scheduled'):
+    for name in ('collection', 'flat', 'adoption', 'scheduled', 'matching'):
         (root / name).mkdir(mode=0o755)
     (root / 'collection' / '设计').mkdir(mode=0o755)
     (root / 'collection' / '设计' / '计划.txt').write_text('真实只读来源。\n', encoding='utf-8')
@@ -33,6 +33,8 @@ def main():
     (root / 'flat' / 'one.txt').write_text('flat fixture\n')
     (root / 'adoption' / 'one.txt').write_text('adoption fixture\n')
     (root / 'scheduled' / 'one.txt').write_text('scheduled fixture\n')
+    for name in ('old-a.txt','old-b.txt'):
+        (root/'matching'/name).write_text('same original bytes for explicit matching\n')
     (root / 'collection' / 'ignored.bin').write_bytes(b'not a supported candidate')
     # The cloud shell uses umask 077; the unprivileged container needs read/traverse.
     for item in [root, *root.rglob('*')]:
@@ -59,6 +61,7 @@ def main():
                    'collection': '/sources/fixtures/collection', 'flat': '/sources/fixtures/flat',
                    'adoption': '/sources/fixtures/adoption',
                    'scheduled': '/sources/fixtures/scheduled',
+                   'matching': '/sources/fixtures/matching',
                    'writable': '/sources/writable', 'offline': '/sources/fixtures/absent'}),
                os.environ.get('JUANZHAN_E2E_IMAGE','juanzhan-foundation:dev'))
         for _ in range(100):

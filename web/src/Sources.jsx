@@ -11,6 +11,7 @@ import { Dialog, Notice, Empty, formatSize, formatDate } from "./ui.jsx";
 import { Detail } from "./Detail.jsx";
 import { SourceWizard } from "./SourceWizard.jsx";
 import { SourceSchedule } from "./SourceSchedule.jsx";
+import { SourceMatch } from "./SourceMatch.jsx";
 import { message } from "./api.js";
 
 const states = {
@@ -61,6 +62,8 @@ export function Sources({
   refreshKey,
 }) {
   const [documentId, setDocumentId] = useState(null);
+  const [matching,setMatching]=useState(null);
+  useEffect(()=>setMatching(null),[space,active]);
   const [sources, setSources] = useState([]);
   const [mounts, setMounts] = useState([]);
   const [id, setId] = useState("");
@@ -471,7 +474,7 @@ export function Sources({
                               </small>
                               {entry.status === "needs_match" && (
                                 <small>
-                                  存在匹配歧义，暂未提供人工匹配操作；不会自动合并。
+                                  {entry.document_id ? "原档案待重新关联。请在新发现的待匹配文件中选择此档案，或核对后取消索引。" : "存在匹配歧义，需要明确选择原档案或登记新档案；不会自动合并。"}
                                 </small>
                               )}
                             </div>
@@ -482,6 +485,7 @@ export function Sources({
                                 查看档案
                               </button>
                             )}
+                            {entry.status==='needs_match' && !entry.document_id && <button disabled={!ready || busy || pending || excludedPaths.has(entry.relative_path)} onClick={()=>setMatching({sourceId:id,entry})}>处理待匹配文件</button>}
                             <button
                               disabled={
                                 busy ||
@@ -793,6 +797,7 @@ export function Sources({
             </div>
           </Dialog>
         )}
+      {matching && active && <SourceMatch key={matching.entry.id} api={api} sourceId={matching.sourceId} entry={matching.entry} onClose={()=>setMatching(null)} onDone={()=>{setMatching(null);refresh();}} />}
     </section>
   );
 }

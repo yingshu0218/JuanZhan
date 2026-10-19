@@ -41,7 +41,7 @@ def add(db, entry, reason, timestamp):
 
 
 def failed(db, job, terminal):
-    if terminal and job['target_type'] in ('source_exclude','document_adoption'):
+    if terminal and job['target_type'] in ('source_exclude','document_adoption','document_match','source_entry_register'):
         rows=db.execute('SELECT source_id FROM source_exclusion_intents WHERE job_id=?',(job['id'],)).fetchall()
         db.execute('DELETE FROM source_exclusion_intents WHERE job_id=?',(job['id'],))
         for row in rows:bump(db,row[0])

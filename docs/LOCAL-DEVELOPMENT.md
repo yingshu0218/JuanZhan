@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+人工匹配增量（2026-10-19）：无新依赖、迁移或系统服务。开发镜像juanzhan:source-matching-dev，最终专项ID sha256:a5ca0c3fb88251522e0771b34647838ed14a0accf7dafa0f5be08d8786483a10，仅测试且dirty。报告/夹具在服务器`.local/source-match*.log/xml`、`.local/source-matching*.log/xml`、`.local/pytest-source-matching*`；截图服务器`/tmp/juanzhan-source-match-mobile.png`及本机`/tmp/juanzhan-remote-qa/`同名副本。正常退出已清理随机测试容器、卷和来源目录；仅保留原有nginx-proxy/simple-shell服务。清理开发镜像前核对引用，不删除源码或普通业务资源。
+
 来源计划时间显示修正后，juanzhan:source-schedule-dev标签指向sha256:7b2af5d345b228fdc93b9ff47c18a249cf0adb08d7e47068abb3bb4f2b3bade1；下述4456eca为此前完整来源组测试时的镜像ID。开发标签可重建变化，清理时须以当前引用核对，不能根据旧ID直接批量删除。
 
 来源定时扫描增量（2026-10-19）：没有安装依赖、系统服务或cron。新增数据库迁移0009及源码需保留，不作缓存清理。服务器测试产物`.local/source-schedul*.log/xml`、`.local/pytest-source-schedul*`，截图`/tmp/juanzhan-source-schedule-mobile.png`及本机`/tmp/juanzhan-remote-qa/`副本可按需清理。独立dirty镜像juanzhan:source-schedule-dev，测试时ID为sha256:4456eca1367e8fe77860587726bb785cae21c6f2a758f138416275dc080fc953；清理前核对无实例引用。测试随机容器/卷/目录退出清理，最终仅既有nginx-proxy/simple-shell运行；旧RC及foundation标签未覆盖。

@@ -130,6 +130,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))
         app.include_router(source_api.router(settings))
+        from . import source_matching
+        app.include_router(source_matching.router(settings))
         app.include_router(maintenance.router(settings))
         app.include_router(fields.router(settings))
         app.include_router(metadata.router(settings))

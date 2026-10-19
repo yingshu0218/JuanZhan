@@ -358,3 +358,52 @@ test("persistent scan plan queues real daemon incremental work and can be paused
   await page.screenshot({path:'/tmp/juanzhan-source-schedule-mobile.png'});
   expect(errors).toEqual([]);
 });
+
+test("explicit ambiguity matching preserves manual fields and can register a separate document",async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);await createSpace(page,'人工匹配验证');
+  const space=await page.getByLabel('当前空间').inputValue();
+  const created=await api(page,'/sources','POST',{space_id:space,name:'人工匹配来源',kind:'external',root_alias:'matching',initial_import_policy:'flat'});
+  expect(created.status).toBe(201);const source=created.data.id;
+  async function scanSource(mode){
+    const result=await api(page,`/sources/${source}/scan`,'POST',{mode});expect(result.status).toBe(202);
+    await expect.poll(async()=>(await api(page,`/jobs/${result.data.job_id}`)).data.status,{timeout:30000}).toBe('completed');
+  }
+  await scanSource('initial');
+  const originalEntries=(await api(page,`/sources/${source}/entries`)).data.items;
+  const original=originalEntries.find(entry=>entry.relative_path==='old-a.txt');
+  const old=(await api(page,`/documents/${original.document_id}`)).data;
+  expect((await api(page,`/documents/${old.id}`,'PATCH',{expected_document_version:old.document_version,description:'retain manual description',is_favorite:true})).status).toBe(200);
+  await rename(root+'/matching/old-a.txt',root+'/matching/new-a.txt');
+  await rename(root+'/matching/old-b.txt',root+'/matching/new-b.txt');
+  await scanSource('incremental');
+  await page.getByRole('navigation',{name:'档案导航'}).getByRole('button',{name:'来源',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'人工匹配来源',exact:true})).toBeVisible();
+  // Entry names are text, not clickable file links.
+  const first=page.locator('.source-entry').filter({has:page.getByText('new-a.txt',{exact:true})});
+  await first.getByRole('button',{name:'处理待匹配文件',exact:true}).click();
+  let dialog=page.getByRole('dialog',{name:'处理待匹配文件',exact:true});
+  await expect(dialog.getByRole('button',{name:'确认处理待匹配文件',exact:true})).toBeDisabled();
+  await dialog.getByRole('radio',{name:'old-a.txt · 原路径 old-a.txt',exact:true}).check();
+  await dialog.getByLabel('确认此选择，外部文件保持不变').check();
+  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/juanzhan-source-match-mobile.png'});
+  await dialog.getByRole('button',{name:'确认处理待匹配文件',exact:true}).click();
+  await expect(dialog.getByRole('heading',{name:'批量操作 · 已完成',exact:true})).toBeVisible({timeout:30000});
+  await dialog.getByRole('button',{name:'关闭并刷新来源',exact:true}).click();
+  const linked=(await api(page,`/documents/${old.id}`)).data;
+  expect(linked.current_revision_id).toBe(old.current_revision_id);expect(linked.description).toBe('retain manual description');expect(linked.is_favorite).toBe(true);
+  const download=await page.request.get(`/api/v1/documents/${old.id}/download`);expect((await download.body()).toString()).toBe('same original bytes for explicit matching\n');
+  const second=page.locator('.source-entry').filter({has:page.getByText('new-b.txt',{exact:true})});
+  await second.getByRole('button',{name:'处理待匹配文件',exact:true}).click();
+  dialog=page.getByRole('dialog',{name:'处理待匹配文件',exact:true});
+  await dialog.getByRole('combobox',{name:'处理方式',exact:true}).selectOption('new_document');
+  await dialog.getByLabel('确认此选择，外部文件保持不变').check();
+  await dialog.getByRole('button',{name:'确认处理待匹配文件',exact:true}).click();
+  await expect(dialog.getByRole('heading',{name:'批量操作 · 已完成',exact:true})).toBeVisible({timeout:30000});
+  await dialog.getByRole('button',{name:'关闭并刷新来源',exact:true}).click();
+  expect((await api(page,`/documents?space_id=${space}`)).data.total).toBe(3);
+  expect((await readFile(root+'/matching/new-a.txt','utf8'))).toBe('same original bytes for explicit matching\n');
+  expect((await readFile(root+'/matching/new-b.txt','utf8'))).toBe('same original bytes for explicit matching\n');
+  expect(errors).toEqual([]);
+});

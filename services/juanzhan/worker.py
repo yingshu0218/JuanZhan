@@ -31,6 +31,21 @@ def _send(connection,message):
 
 def _handler(job,data_dir,connection,source_mounts=(),converter_token=''):
     try:
+        if job['kind']=='batch' and job['target_type'] in ('document_match','source_entry_register'):
+            from .source_matching import execute
+            from .parsing import ParseFailure
+            from .source_paths import SourcePathError
+            from fastapi import HTTPException
+            try:
+                execute(Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts),job)
+                _send(connection,('committed',))
+            except HTTPException as exc:
+                _send(connection,('failure',exc.detail['code'],'Source resolution is no longer applicable',False))
+            except ParseFailure as exc:
+                _send(connection,('failure',exc.code,'Source bytes could not be verified',exc.retryable))
+            except SourcePathError as exc:
+                _send(connection,('failure',exc.code,'Source could not be verified safely',exc.code in ('SOURCE_OFFLINE','SOURCE_FILE_MISSING','SOURCE_CHANGED')))
+            return
         if job['kind']=='batch' and job['target_type']=='document_adoption':
             from .adoptions import execute
             from .parsing import ParseFailure

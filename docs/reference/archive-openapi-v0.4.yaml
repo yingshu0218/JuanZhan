@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.26
+  version: 0.4.27
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2346,6 +2346,125 @@ paths:
           $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
+  /sources/{id}/entries/{entry_id}/matches:
+    get:
+      tags: [Sources]
+      summary: 分页读取待匹配文件及相同原件候选
+      operationId: get_sources_id_entries_entry_id_matches
+      description: 只接受同来源、未关联Document的needs_match条目。候选为相同当前Revision哈希/大小、非回收、外部且旧条目待匹配/失联的档案，不自动选择。返回entry.updated_at作为确认时的精确观察版本令牌；候选仅表示数据库记录符合，执行时仍验证实际字节和旧路径缺失。
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: entry_id
+        in: path
+        required: true
+        schema: {type: string}
+      - name: page
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 1000000, default: 1}
+      - name: page_size
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          description: 观察版本及分页候选
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entry, items, page, page_size, total]
+                properties:
+                  entry:
+                    type: object
+                    required: [id, relative_path_display, sha256, size_bytes, updated_at]
+                    properties:
+                      id: {type: string}
+                      relative_path_display: {type: string}
+                      sha256: {type: string}
+                      size_bytes: {type: integer}
+                      updated_at: {type: string}
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [document_id, title, document_version, revision_id, previous_path]
+                      properties:
+                        document_id: {type: string}
+                        title: {type: string}
+                        document_version: {type: integer}
+                        revision_id: {type: string}
+                        previous_path: {type: string}
+                  page: {type: integer}
+                  page_size: {type: integer}
+                  total: {type: integer}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Validation'
+  /sources/{id}/entries/{entry_id}/resolve:
+    post:
+      tags: [Sources]
+      summary: 明确关联旧档案或登记新档案
+      operationId: post_sources_id_entries_entry_id_resolve
+      description: Cookie须CSRF；显式选择match或new_document。最多1GiB只读字节核验，任务kind=batch，有限3次重试。入队设置扫描屏障，完成或终态失败释放；相同request_id及参数复用任务。match仅关联相同原件，执行时旧路径必须确实不存在，保留Document/Revision/人工字段/成功正文并递增业务版本；不创建无意义二进制版本。new_document建立独立档案，needs_review并排队解析，不合并相同哈希。成功返回document_id、source_entry_id、matched、external_file_modified=false。失败不改关联或原件。
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: entry_id
+        in: path
+        required: true
+        schema: {type: string}
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+                additionalProperties: false
+                required: [action, expected_entry_updated_at, request_id, document_id, expected_document_version, expected_revision_id]
+                properties:
+                  action: {type: string, const: match}
+                  expected_entry_updated_at: {type: string, minLength: 1, maxLength: 64}
+                  request_id: {type: string, pattern: '^[A-Za-z0-9_-]{1,128}$'}
+                  document_id: {type: string, minLength: 1, maxLength: 255}
+                  expected_document_version: {type: integer, minimum: 1, maximum: 9223372036854775806}
+                  expected_revision_id: {type: string, minLength: 1, maxLength: 255}
+              - type: object
+                additionalProperties: false
+                required: [action, expected_entry_updated_at, request_id]
+                properties:
+                  action: {type: string, const: new_document}
+                  expected_entry_updated_at: {type: string, minLength: 1, maxLength: 64}
+                  request_id: {type: string, pattern: '^[A-Za-z0-9_-]{1,128}$'}
+                  document_id: {type: 'null'}
+                  expected_document_version: {type: 'null'}
+                  expected_revision_id: {type: 'null'}
+      responses:
+        '202':
+          description: 已受理核验与关联任务，须跟踪真实任务状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: SOURCE_MATCH_LIMIT，超过1GiB核验上限
+        '422':
+          $ref: '#/components/responses/Validation'
   /sources/{id}/schedule:
     patch:
       tags: [Sources]

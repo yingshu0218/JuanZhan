@@ -1,5 +1,13 @@
 # 测试与交付验收
 
+## 歧义文件人工处理专项 · 2026-10-19
+
+服务器标准只读sysfs容器执行test_source_matching、test_source_incremental、test_maintenance、test_adoptions、test_source_scheduler：38 passed，26.68秒，1条既有客户端弃用提示。证据`/opt/juanzhan-dev/.local/source-matching-final.log/xml`。最后补充前后相对路径审计及匿名请求拒绝后，匹配专项8 passed（8.89秒），证据`.local/source-matching-audit.log/xml`。覆盖真实只读字节、保留档案/Revision/人工字段、独立登记不合并、幂等/CSRF/鉴权、分页/严格类型、并发版本/条目观察冲突、旧路径存在、哈希不符、审计回滚、失效租约、Purge取消与屏障释放。sysfs由元数据观察夹具登记，未声称无扩展名文件由实际扫描发现。
+
+真实只读bind来源通过正常首次扫描、实际两文件重命名及增量歧义检测，再由Web选择旧档案关联、将另一份登记为独立档案：完整来源浏览器组4 passed（1.4分钟），日志`.local/source-match-browser-full.log`。最后优化手机单选/确认布局后，专项1 passed（17.1秒），日志`.local/source-match-browser-visual.log`，原件/人工字段/Revision不变和独立档案数均核对；手机截图`/tmp/juanzhan-source-match-mobile.png`已目视检查，无横向溢出，本机副本`/tmp/juanzhan-remote-qa/`。首次新增浏览器测试getByLabel精确名称因包含select子文本超时，改用combobox角色/名称后通过，初始日志保留`.local/source-match-browser-initial.log`；首次后端夹具误读公开Entry的space_id已修正，不属于业务失败。
+
+前端构建和OpenAPI YAML解析通过，Archive0.4.27/56路径、9迁移不变。最终专项开发镜像juanzhan:source-matching-dev（dirty）ID为sha256:a5ca0c3fb88251522e0771b34647838ed14a0accf7dafa0f5be08d8786483a10。未替换既有候选或业务服务，尚未执行本阶段最终全仓库/所有浏览器/发行恢复验收。
+
 ## 来源定时扫描专项 · 2026-10-19
 
 服务器标准只读sysfs容器运行test_source_scheduler、test_sources、test_foundation、test_backup、test_source_initial、test_source_incremental、test_adoptions：55 passed，30.51秒，1条既有客户端弃用提示。证据`/opt/juanzhan-dev/.local/source-schedule-final.log/xml`。6项新增计划测试验证CSRF/类型/版本冲突/关闭、初次导入门槛、多worker并发只排一次、持久期限、活动扫描/禁用、排队失败事务回滚、真实只读worker、备份恢复及8→9迁移保留配置/旧校验值。额外历史parse_requests升级测试1 passed，0.45秒，日志`.local/source-schedule-upgrade.log`。
