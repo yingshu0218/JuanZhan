@@ -593,3 +593,9 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 - 桌面1440×1000及手机390×844截图：/tmp/juanzhan-catalog-template-{desktop,mobile}.png、/tmp/juanzhan-catalog-manager-mobile.png，本机副本/tmp/juanzhan-remote-qa/。已检查可读性、控件布局及无水平溢出；测试收集控制台错误。
 
 没有重建生产候选或对外部署；本专项不代替剩余功能完成后的全量验收。
+
+## Web备份传输基础专项 · 2026-10-19
+
+backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/backup-transport-final.log/xml。真实SQLite+托管原件目录包导出ZIP、导入新目录、restore完整校验、HTTP重新登录和原件字节一致；当前实例保持可下载。拒绝穿越/绝对路径、符号链接、重复/额外成员、校验损坏/CRC错误、缺失标记、数量/容量超限、伪造中央目录数量/大小、NUL及尾随数据，失败不保留本次暂存目录；ZIP64有效样本通过，已有目录/归档拒绝覆盖。
+
+初次组合测试25 passed/1 failed源于未指定服务器CJK字体（PIL不能打开样本字体），补充已有JUANZHAN_TEST_CJK_FONT后26项通过；增加CRC并修正额外对象/链接样本后最终27项通过。未安装新字体或依赖。这是传输基础证据，不证明Web接口、自动备份或全阶段验收完成。

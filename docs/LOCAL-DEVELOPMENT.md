@@ -107,3 +107,5 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 ## 管理界面开发增量 · 2026-10-19
 
 没有新增依赖、系统安装或数据库迁移，使用服务器现有Node/Python/Playwright。可清理证据：服务器.local/catalog-*.log/xml、catalog-library*.log、catalog-reading*.log及pytest-catalog*目录；截图在服务器/tmp/juanzhan-catalog-*.png和本机/tmp/juanzhan-remote-qa/同名副本。确认无需复查后按具体文件删除，不泛删共享/tmp、依赖或其他项目资源。本机没有为本轮运行安装包，生产候选镜像未替换。
+
+备份传输基础增量：复用Python标准库zipfile，无新包/服务/镜像/迁移。服务器可清理.local/backup-archive*.log/xml、backup-transport-final.log/xml及pytest-backup-archive*/pytest-backup-transport-final夹具；其中包含测试备份数据库，只存私有测试目录。正常业务数据与现有实例未改变。
