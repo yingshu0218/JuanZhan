@@ -1,5 +1,13 @@
 # 测试与交付验收
 
+## PDF全页阅读专项 · 2026-10-19
+
+服务器实际构建产物/HTTP/浏览器：原件组9 passed（最终代码34.5秒），日志`/opt/juanzhan-dev/.local/pdf-reader-browser-final-code.log`。覆盖原有下载/被动预览/HTML隔离/历史下载，新增真实8页PDF（超出缩略图范围）、跳页/旋转/缩放、高DPR画布像素预算、文字选择和跨页查找、PDF脚本/URI不执行、中文本地CMap、真实扫描页非白像素、加密文件错误密码后纠正、版本冲突/损坏、快速关闭重开后worker数为0、真实10001页拒绝。最后加载失败/超限后worker释放断言专项2 passed（9.6秒），日志`.local/pdf-reader-failure-cleanup.log`；正常方向/宽度适配截图流程1 passed（8.5秒），日志`.local/pdf-reader-browser-final-visual.log`。
+
+服务器只读sysfs隔离容器tests/test_web.py + tests/test_files.py：8 passed，7.59秒，1条既有客户端弃用提示，证据`.local/pdf-web.log/xml`。验证新worker CSP仅同源、禁止JS eval、nosniff，既有鉴权/当前与历史原件/损坏/外部边界/被动预览不变。HTTP契约0.4.27/56路径、9条迁移未变；前端构建通过，PDF模块548KiB左右按需加载，构建器保留大分块提示，不掩盖警告。
+
+桌面1440×1000和手机390×844截图`/tmp/juanzhan-full-pdf-{desktop,mobile}.png`已目视检查，完整控件和真实文字可见，无页面横向溢出；高倍缩放在PDF面板内部滚动。本机副本`/tmp/juanzhan-remote-qa/`。初次辅助浏览器测试重复登录已登录会话导致超时，修正夹具后通过；10001页预算测试发现PDF.js6缺少PDFDocumentProxy.destroy，改为loadingTask.destroy后验证明确超限和释放。初步/预算/布局日志保留`.local/pdf-reader-browser-*`。测试源生成器有pypdf add_js弃用提示，非产品失败。未重新宣称本阶段完整后端/所有浏览器/发行镜像恢复验收通过。
+
 ## 歧义文件人工处理专项 · 2026-10-19
 
 服务器标准只读sysfs容器执行test_source_matching、test_source_incremental、test_maintenance、test_adoptions、test_source_scheduler：38 passed，26.68秒，1条既有客户端弃用提示。证据`/opt/juanzhan-dev/.local/source-matching-final.log/xml`。最后补充前后相对路径审计及匿名请求拒绝后，匹配专项8 passed（8.89秒），证据`.local/source-matching-audit.log/xml`。覆盖真实只读字节、保留档案/Revision/人工字段、独立登记不合并、幂等/CSRF/鉴权、分页/严格类型、并发版本/条目观察冲突、旧路径存在、哈希不符、审计回滚、失效租约、Purge取消与屏障释放。sysfs由元数据观察夹具登记，未声称无扩展名文件由实际扫描发现。

@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Dialog, Notice, formatSize } from "./ui.jsx";
 import { message, ApiError } from "./api.js";
 import { TaskStatus } from "./Tasks.jsx";
+const PDFReader=lazy(()=>import('./PDFReader.jsx'));
 export function Original({ api, doc, revisions, onClose, onRefresh }) {
   const [data,setData]=useState(null),[error,setError]=useState(""),[downloadError,setDownloadError]=useState(""),[busy,setBusy]=useState(false),[imageError,setImageError]=useState(false);
   const [confirmed,setConfirmed]=useState(false),[adoption,setAdoption]=useState(null);
+  const [readingPDF,setReadingPDF]=useState(false);
   const [adoptionRequest]=useState(()=>crypto.randomUUID());
   async function adopt(){
     setBusy(true);setDownloadError("");
@@ -32,11 +34,11 @@ export function Original({ api, doc, revisions, onClose, onRefresh }) {
   }
   return <Dialog title="关联原文件" wide onClose={onClose}>
     <p>{current?.original_filename || doc.title} · {current?.mime_type} · {current ? formatSize(current.size_bytes) : "大小未知"}</p>
-    <p>下载前重新核验版本和完整性。历史外部原件若已变化或离线，将明确提示不可用。</p>
+    {!readingPDF && <p>下载前重新核验版本和完整性。历史外部原件若已变化或离线，将明确提示不可用。</p>}
     {current?.size_bytes > 64 * 1024 * 1024 && <Notice>当前浏览器下载入口限64 MiB；更大原件请使用已鉴权下载API（上限1 GiB）。</Notice>}
     <button className="primary" disabled={busy || !current || current.size_bytes > 64 * 1024 * 1024} onClick={()=>download()}>{busy ? "正在核验与准备…" : "下载当前原件"}</button>
     {downloadError && <Notice error>{downloadError}</Notice>}
-    {current?.storage_kind==="external" && <section aria-label="纳入托管">
+    {current?.storage_kind==="external" && !readingPDF && <section aria-label="纳入托管">
       <h3>纳入托管</h3>
       {adoption ? <><Notice>已受理复制任务；成功后生成新的托管原件版本，重新解析结果请跟踪解析子任务。</Notice><TaskStatus api={api} id={adoption} /><button onClick={onRefresh}>关闭并刷新档案</button></> : <>
         <p>校验并复制外部原件，保留此档案编号、人工字段和已有正文。外部文件保持原样；复制失败时不切换原件。</p>
@@ -44,11 +46,14 @@ export function Original({ api, doc, revisions, onClose, onRefresh }) {
         <button disabled={busy || !confirmed || !!doc.deleted_at} onClick={adopt}>确认纳入托管</button>
       </>}
     </section>}
-    <h3>安全预览</h3><p className="muted">显示当前版本已生成的缩略图，可能只覆盖部分内容；图序号不代表原件页码。原件可用性与缓存预览独立。</p>
+    {current?.mime_type==='application/pdf' && <button disabled={current.size_bytes>64*1024*1024} onClick={()=>setReadingPDF(value=>!value)}>{readingPDF ? '关闭完整PDF阅读' : '阅读完整PDF'}</button>}
+    {readingPDF && <Suspense fallback={<p>正在加载PDF阅读器…</p>}><PDFReader documentId={doc.id} revisionId={doc.current_revision_id} /></Suspense>}
+    {!readingPDF && <><h3>安全预览</h3><p className="muted">显示当前版本已生成的缩略图，可能只覆盖部分内容；图序号不代表原件页码。原件可用性与缓存预览独立。</p>
     {error && <Notice error>{error}</Notice>}
     {imageError && <Notice error>预览暂不可用或原件版本已变化，请关闭并刷新档案。</Notice>}
     {data?.items.length===0 && <Notice>暂无可用缩略图，可下载原件，或在支持的格式上重新解析生成预览。</Notice>}
     <div className="original-previews">{data?.items.map(item=><figure key={item.id}><img loading="lazy" src={`/api/v1/documents/${doc.id}/preview/${item.id}${query}`} alt={`原件预览图 ${item.sequence}`} onError={()=>setImageError(true)} /><figcaption>预览图 {item.sequence}</figcaption></figure>)}</div>
-    <details><summary>已登记原件版本</summary>{revisions.map(rev=><p key={rev.id}>{rev.original_filename} · 版本 {rev.revision_no} · {formatSize(rev.size_bytes)} {rev.id!==doc.current_revision_id && <button disabled={busy || rev.size_bytes > 64 * 1024 * 1024} onClick={()=>download(rev)}>下载版本 {rev.revision_no}</button>}</p>)}</details>
+    </>}
+    {!readingPDF && <details><summary>已登记原件版本</summary>{revisions.map(rev=><p key={rev.id}>{rev.original_filename} · 版本 {rev.revision_no} · {formatSize(rev.size_bytes)} {rev.id!==doc.current_revision_id && <button disabled={busy || rev.size_bytes > 64 * 1024 * 1024} onClick={()=>download(rev)}>下载版本 {rev.revision_no}</button>}</p>)}</details>}
   </Dialog>;
 }

@@ -17,7 +17,11 @@ def test_shell_is_public_but_data_and_non_get_requests_remain_protected(tmp_path
         assert response.headers['Cache-Control']=='no-store'
         assert "frame-ancestors 'none'" in response.headers['Content-Security-Policy']
         assert client.head('/').status_code==200
-        assert client.get('/assets/app-hash.js').status_code==200
+        script=client.get('/assets/app-hash.js')
+        assert script.status_code==200
+        assert "connect-src 'self'" in script.headers['Content-Security-Policy']
+        assert "'unsafe-eval'" not in script.headers['Content-Security-Policy']
+        assert script.headers['X-Content-Type-Options']=='nosniff'
         assert client.get('/favicon.svg').status_code==200
         assert client.get('/api/v1/documents').status_code==401
         assert client.post('/assets/app-hash.js').status_code==401

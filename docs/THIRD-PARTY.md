@@ -1,5 +1,18 @@
 # 转换解析依赖与许可证
 
+## 前端PDF阅读补充 · 2026-10-19
+
+| 组件 | 锁定版本 | 许可记录 | 用途 |
+|---|---|---|---|
+| pdfjs-dist | 6.4.299 | Apache-2.0，全文licenses/pdfjs/LICENSE | 浏览器只读PDF解析、Canvas、文字层及同源worker |
+| @napi-rs/canvas | 1.0.11（可选间接依赖） | npm包声明MIT，licenses/napi-canvas-LICENSE.txt | 开发Node环境可选依赖；浏览器与生产镜像不使用node_modules |
+| PDF.js标准字体 | 随上述固定包 | standard_fonts/LICENSE_FOXIT与LICENSE_LIBERATION | 原样复制资源；Liberation随包文本为GPLv2及字体例外，不能笼统标为Apache |
+| CMap/ICC/WASM及解码器 | 随上述固定包 | licenses/pdfjs/cmaps、iccs、wasm中的独立许可文本 | 版本化本地资源；保留Adobe、OpenJPEG、QCMS、JBIG2和PDF.js包装层各自许可 |
+
+package-lock.json记录完整性，主包sha512与官方registry元数据核对一致；安装沿用已有npm镜像解析。构建只分发阅读器JS/worker、必要资源和完整许可，不复制开发node_modules或可选Node原生canvas。文本层CSS从该锁定包的上游CSS提取并保留Mozilla版权/Apache声明。实际安装包许可均已复制到licenses/pdfjs/，随资源构建再次保留；没有新增Python/OCR模型/系统服务。
+
+接口与渲染依据[Mozilla示例](https://mozilla.github.io/pdf.js/examples/)及[官方API](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html)，具体方法同时核对已安装6.4.299源码，避免旧版销毁API混用。
+
 T20新增的解析依赖均为纯Python，不引入浏览器、LibreOffice、Java或系统PDF命令作为运行依赖。版本与分发哈希分别锁在uv.lock和requirements.lock；容器从wheelhouse离线安装并验证哈希。构建架构仍需匹配Python3.12和目标平台；未声称本轮已在Apple Silicon实测。
 
 | 包 | 锁定版本 | 随包许可证 | 用途 |

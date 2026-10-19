@@ -1,5 +1,7 @@
 # 技术架构
 
+2026-10-19 PDF阅读：Original按需懒加载PDFReader，鉴权获取固定Revision的已校验附件字节，再以Uint8Array交给同源PDF.js worker。Canvas逐页绘制、独立文本层支持选择和查找；不使用iframe/object/embed、远程PDF URL或PDF脚本管理器。构建复制版本化CMap/标准字体/ICC/WASM及各自许可，页面和worker响应分别限制同源资源，保留禁止JS eval与对象嵌入；仅允许WASM编译。文本层CSS从锁定上游版本提取并限定阅读器范围，避免上游整套查看器CSS改变应用对话框。原成功正文/元数据/版本不受客户端阅读影响，详见ADR-054。
+
 ## 既有 V0.4 基线
 
 - Archive 应用：Python HTTP API（已采用 FastAPI，当前实现范围见 STATUS）、SQLite + FTS5、本地文件卷、SQLite 持久 Job/worker、Web 前端。

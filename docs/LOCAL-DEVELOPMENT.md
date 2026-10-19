@@ -1,5 +1,11 @@
 # 本机开发依赖与清理记录
 
+PDF阅读增量（2026-10-19，专项已通过）：仅在服务器web/安装固定pdfjs-dist6.4.299，npm --save-exact --ignore-scripts；官方registry元数据核对完整性sha512-AVl138zALtfaAPvADulE0PZThbYzCBS79nL4pOSL/6Sm/4AH5A21BD9VHt97OlCuzJuCpmeZtAtkinisF4Vb1g==与锁文件一致，安装沿用已有镜像解析。主包约35MiB、可选间接@napi-rs/canvas1.0.11相关目录约35MiB（浏览器不使用）；项目npm-cache当前约48MiB，可在开发结束后按项目范围清理。构建产物当前约6.2MiB，其中本地PDF字体/CMap/ICC/WASM资源约4MiB；worker约1.3MB、PDF阅读模块约550kB按需加载，不新增Archive运行时Node进程。
+
+记录及可清理产物位于服务器`.local/pdf-reader*.log`、`.local/pdf-web.log/xml`、`.local/pytest-pdf-web/`、`.local/pdf-budget-sample.pdf`和两端`.local/pdfjs-licenses.tar.gz`；截图服务器`/tmp/juanzhan-full-pdf-{desktop,mobile}.png`及本机`/tmp/juanzhan-remote-qa/`副本。源码、package.json/lock、licenses/pdfjs/、licenses/napi-canvas-LICENSE.txt及文本层CSS许可须保留。本机仅同步源码/锁文件/许可，没有安装PDF依赖或新增系统软件；服务器没有新系统服务/模型/数据库迁移，也未覆盖既有候选镜像。完整后端/全部浏览器/新发行验收仍待最终阶段。
+
+浏览器资源估算：输入最多64MiB并转移到worker，画布最多8×1024²像素（RGBA约32MiB），解码大图和字体/操作缓存另计，典型阅读可达数十至数百MiB；这是预算估算，不是峰值实测或浏览器硬内存隔离承诺。关闭/损坏/超限后worker终止已有真实浏览器证据，见TESTING。
+
 人工匹配增量（2026-10-19）：无新依赖、迁移或系统服务。开发镜像juanzhan:source-matching-dev，最终专项ID sha256:a5ca0c3fb88251522e0771b34647838ed14a0accf7dafa0f5be08d8786483a10，仅测试且dirty。报告/夹具在服务器`.local/source-match*.log/xml`、`.local/source-matching*.log/xml`、`.local/pytest-source-matching*`；截图服务器`/tmp/juanzhan-source-match-mobile.png`及本机`/tmp/juanzhan-remote-qa/`同名副本。正常退出已清理随机测试容器、卷和来源目录；仅保留原有nginx-proxy/simple-shell服务。清理开发镜像前核对引用，不删除源码或普通业务资源。
 
 来源计划时间显示修正后，juanzhan:source-schedule-dev标签指向sha256:7b2af5d345b228fdc93b9ff47c18a249cf0adb08d7e47068abb3bb4f2b3bade1；下述4456eca为此前完整来源组测试时的镜像ID。开发标签可重建变化，清理时须以当前引用核对，不能根据旧ID直接批量删除。

@@ -100,6 +100,9 @@ def create_app(kind, settings=None, *, converter_config=None):
                 except HTTPException as exc:
                     return error(exc.status_code, exc.detail['code'], exc.detail['message'])
         response = await call_next(request)
+        if kind=='archive' and request.url.path.startswith('/assets/') and request.url.path.endswith(('.js','.mjs')):
+            response.headers['Content-Security-Policy']=web.WORKER_CSP
+            response.headers['X-Content-Type-Options']='nosniff'
         if kind == "archive" and (request.url.path in ("/api/v1/documents/search","/api/v1/system/summary") or (request.url.path=="/api/v1/documents" and "q" in request.query_params)):
             response.headers["Cache-Control"]="no-store"
             response.headers["X-Content-Type-Options"]="nosniff"

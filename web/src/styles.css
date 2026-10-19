@@ -1131,6 +1131,18 @@ select {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.pdf-reader { margin: 20px 0; min-width: 0; }
+.dialog.wide:has(.pdf-reader) { width: min(1080px,calc(100vw - 32px)); max-height: 92dvh; }
+.pdf-controls, .pdf-controls form, .pdf-find { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 10px 0; }
+.pdf-reader form > label, .pdf-controls form { margin: 0; }
+.pdf-controls input { width: 80px; }
+.pdf-find label { flex: 1; min-width: 120px; }
+.pdf-find input { width: 100%; }
+.pdf-controls button, .pdf-find button { border: 1px solid var(--line); border-radius: 5px; padding: 7px 10px; font-size: 12px; }
+.pdf-pane { overflow: auto; max-width: 100%; max-height: 65vh; min-width: 0; border: 1px solid var(--line); background: #e8eae6; padding: 8px; }
+.pdf-page { position: relative; margin: 0 auto; background: white; }
+.pdf-page canvas { display: block; }
+.pdf-page .textLayer { --scale-round-x: 1px; --scale-round-y: 1px; }
 .selection-bar {
   display: flex;
   align-items: center;
