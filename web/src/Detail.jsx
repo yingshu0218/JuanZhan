@@ -98,6 +98,12 @@ export function Detail({
   const current = revisions[0];
   const type = types.find((t) => t.id === doc.document_type_id);
   const folder = folders.find((f) => f.id === doc.folder_id);
+  const definitionsById=new Map(definitions.map(field=>[field.id,field]));
+  const valuesById=new Map(metadata.map(field=>[field.field_definition_id,field]));
+  const template=type?.fields||[];
+  const templateIds=new Set(template.map(field=>field.field_definition_id));
+  const displayed=[...template.map(field=>({...valuesById.get(field.field_definition_id),field_definition_id:field.field_definition_id,
+    missing:!valuesById.has(field.field_definition_id),required_for_filing:field.required_for_filing})),...metadata.filter(field=>!templateIds.has(field.field_definition_id))];
   return (
     <section className="detail-shell" aria-label="档案详情">
       <div className="reader-toolbar">
@@ -151,30 +157,29 @@ export function Detail({
             <ContentReader api={api} doc={doc} definitions={definitions} onChanged={() => setAttempt((n) => n + 1)} />
             <section className="business-fields">
               <h3>业务字段</h3>
-              {metadata.length ? (
+              {displayed.length ? (
                 <dl>
-                  {metadata.map((field) => (
+                  {displayed.map((field) => (
                     <div key={field.field_definition_id}>
                       <dt>
-                        {definitions.find(
-                          (d) => d.id === field.field_definition_id,
-                        )?.label || field.key}
+                        {definitionsById.get(field.field_definition_id)?.label || field.key || '字段已不可用'}
                         <small>
+                          {field.missing ? '尚未填写' : <>
                           {field.is_confirmed ? "已确认" : "未确认"} ·{" "}
                           {field.origin === "extracted"
                             ? "采纳候选"
                             : field.origin === "manual"
                               ? "人工填写"
-                              : "导入值"}
+                              : "导入值"}</>}
+                          {field.required_for_filing ? ' · 归档必填' : ''}
                         </small>
                       </dt>
                       <dd>
-                        {typeof field.value === "boolean"
+                        {field.missing ? '未填写' : typeof field.value==='number' && !Number.isSafeInteger(field.value) ? '超出浏览器安全整数范围，请通过API查看精确值' : field.value==='' ? '（空文本）' : typeof field.value === "boolean"
                           ? field.value
                             ? "是"
                             : "否"
-                          : definitions
-                              .find((d) => d.id === field.field_definition_id)
+                          : definitionsById.get(field.field_definition_id)
                               ?.constraints?.options?.find(
                                 (option) => option.id === field.value,
                               )?.label || String(field.value)}

@@ -1,4 +1,5 @@
 import { TaskCenter } from "./Tasks.jsx";
+import { CatalogManager } from './CatalogManager.jsx';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   HardDrives,
@@ -14,6 +15,7 @@ import {
   Plus,
   CaretRight,
   List,
+  Gear,
 } from "@phosphor-icons/react";
 import { SearchPanel } from "./SearchPanel.jsx";
 import { encodedState, readLocation, searchBody } from "./searchState.js";
@@ -41,6 +43,7 @@ const navIcons = {
 
 export function Workspace({ api, logout, authError }) {
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [catalogOpen,setCatalogOpen]=useState(false);
   const [initial] = useState(readLocation);
   const urlStarted = useRef(false);
   const restoringUrl = useRef(false);
@@ -497,6 +500,8 @@ export function Workspace({ api, logout, authError }) {
           <span>{title}</span>
         </div>
         <div className="header-actions">
+          <button disabled={!space} aria-label="管理字段与类型" title="管理字段与类型" onClick={()=>setCatalogOpen(true)}><Gear size={22} /></button>
+          {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
           <button onClick={() => setTasksOpen(true)}>任务中心</button>
           {tasksOpen && <TaskCenter api={api} onClose={() => setTasksOpen(false)} />}
           <button className="primary" disabled={!space} onClick={importFiles}>

@@ -329,3 +329,7 @@ T16后续契约为Archive0.4.25/53路径：POST /documents/{id}/adopt接受expec
 Archive契约0.4.23，路径数与8条迁移保持。POST /documents/batch的set_metadata已实现，替代此前501说明。payload为values非空字段键映射（最多1000项）与严格布尔confirm；null明确清空，其余复用单档案七类型校验，小数传字符串，false保留为有效值。既有批次序列化64KiB限制仍生效。
 
 每项核对空间、档案版本、字段启用状态及归档必填规则；失败项独立回滚。撤销仅恢复选中字段原始行，保留原来源/确认/更新时间，重新校验当前字段规则与档案版本，不覆盖其他字段。每项撤销快照上限2MiB，超限返回BATCH_METADATA_SNAPSHOT_LIMIT；审计写入失败或租约失效不发布字段变更。Web一次选择一个字段设置或清空；整数限JS安全范围，API仍支持64位整数。
+
+## 字段/类型管理界面接入 · 2026-10-19
+
+生产Web已接现有field-definitions/document-types查询、创建和PATCH，限定当前space_id。编辑未改变约束或模板时省略对应属性；不改变既有API。当前Archive0.4.27/56路径，Converter0.4.3/6路径、9迁移保持。七类型和归档必填由既有服务验证，管理界面不能绕过CSRF、空间或类型规则。

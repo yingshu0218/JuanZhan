@@ -582,3 +582,14 @@ Browser插件缺席，沿用仓库Playwright；服务器平台采用其Ubuntu回
 服务器前端构建通过；原件浏览器组3 passed，13.0秒，日志`.local/history-files-browser.log`。新增真实Revision服务追加后从Web版本列表下载旧字节，并核对当前字节、中文文件名和手机无溢出；原有PDF预览/返回和恶意HTML隔离也通过。手机截图`/tmp/juanzhan-history-original-mobile.png`已目视检查，本机副本在`/tmp/juanzhan-remote-qa/`。未执行本次代码的完整全量回归或镜像重建。
 
 最终浏览器命令在进程环境指定`LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`，并沿用已有JUANZHAN_TEST_CJK_FONT和PLAYWRIGHT_BROWSERS_PATH。SSH默认POSIX字符集使初次Chromium中文下载名退化为download；已有UTF-8 locale下全部通过，未放宽断言或改变产品Blob策略。首次宿主pytest未指定字体导致PDF夹具失败，补充已有字体环境变量后通过，最终容器6项全过。初步/调试日志保留于`.local/history-*`。浏览器测试私有pointer文件只用于一次性测试卷的真实Revision夹具，退出清理，不提供生产测试API。
+
+## 字段/类型/模板管理专项 · 2026-10-19
+
+在授权Linux开发服务器复用现有Node/Python/Playwright；Browser plugin not available，使用仓库Playwright。真实HTTP+SQLite+文件存储验证字段七类型、Decimal精度、模板排序和必填拒绝/通过、真实上传/归档、启停保留已有值、空间隔离和错误提示；int64原始JSON验证名称修改不舍入约束，详情明确精度提示且API原值保留。
+
+- 后端test_fields.py/test_metadata.py/test_batches.py：77 passed（33.22s），服务器.local/catalog-manager.log/xml。
+- 主界面全组13 passed（1.3m），.local/catalog-library-final.log；阅读3 passed（13.0s），.local/catalog-reading-final.log。
+- 最后精度补丁重新构建后管理浏览器3 passed（12.5s），.local/catalog-precision-final.log；构建.local/catalog-build-final.log通过。
+- 桌面1440×1000及手机390×844截图：/tmp/juanzhan-catalog-template-{desktop,mobile}.png、/tmp/juanzhan-catalog-manager-mobile.png，本机副本/tmp/juanzhan-remote-qa/。已检查可读性、控件布局及无水平溢出；测试收集控制台错误。
+
+没有重建生产候选或对外部署；本专项不代替剩余功能完成后的全量验收。

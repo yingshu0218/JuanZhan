@@ -7,6 +7,10 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  INVALID_FIELD_RULES: "字段规则无效，请核对范围、表达式和单选项。",
+  FIELD_LIMIT_REACHED: "当前空间的业务字段已达到1000项上限。",
+  DUPLICATE_FIELD: "模板不能重复包含同一个字段。",
+  INACTIVE_FIELD: "字段已停用，请刷新后选择可用字段。",
   SOURCE_ENTRY_RESOLVED: "该文件已处理，请刷新来源。",
   SOURCE_ENTRY_UNVERIFIED: "缺少可靠扫描记录，请先完成一次增量扫描。",
   SOURCE_MATCH_INVALID: "所选档案不再符合相同原件的匹配条件，请刷新候选。",

@@ -1143,6 +1143,21 @@ select {
 .pdf-page { position: relative; margin: 0 auto; background: white; }
 .pdf-page canvas { display: block; }
 .pdf-page .textLayer { --scale-round-x: 1px; --scale-round-y: 1px; }
+.catalog-tabs { display:flex; gap:8px; margin:16px 0; }
+.catalog-tabs [aria-pressed=true] { background:var(--green); color:white; border-radius:4px; }
+.catalog-list { list-style:none; padding:0; }
+.catalog-list li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.catalog-list small { display:block; color:var(--muted); margin-top:4px; }
+.catalog-list li > div { min-width:0; }
+.catalog-list strong, .catalog-list small, .catalog-template strong { overflow-wrap:anywhere; }
+.catalog-list button { flex-shrink:0; }
+.catalog-editor .check-label { margin:12px 0; }
+.catalog-option { display:flex; align-items:end; gap:8px; margin:12px 0; }
+.catalog-option label { flex:1; min-width:0; }
+.catalog-template { padding-left:20px; }
+.catalog-template li { border-bottom:1px solid var(--line); padding:12px 0; }
+.catalog-template button { margin-right:8px; }
+.catalog-editor input, .catalog-editor select { max-width:100%; }
 .selection-bar {
   display: flex;
   align-items: center;
