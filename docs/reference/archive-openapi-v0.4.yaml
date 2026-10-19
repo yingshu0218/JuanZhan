@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.25
+  version: 0.4.26
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2156,7 +2156,7 @@ paths:
       - Sources
       summary: 注册一个外部来源挂载别名
       operationId: post_sources
-      description: 只能选择服务器白名单中已挂载的只读目录；禁止客户端提交任意宿主机路径。拒绝已有来源相同或重叠的别名/物理根（跨空间同样拒绝）；无法验证现有根分离时返回409 SOURCE_OVERLAP_UNVERIFIED。只保存配置，不扫描/导入。扫描间隔仅保存配置，调度器尚未实现。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
+      description: 只能选择服务器白名单中已挂载的只读目录；禁止客户端提交任意宿主机路径。拒绝已有来源相同或重叠的别名/物理根（跨空间同样拒绝）；无法验证现有根分离时返回409 SOURCE_OVERLAP_UNVERIFIED。只保存配置，不扫描/导入。扫描间隔为正整数时在首次导入完成后由worker自动排队增量扫描，0或null关闭。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API Bearer 不需要 CSRF。
       x-roadmap-phase: MVP
       requestBody:
         required: true
@@ -2346,6 +2346,52 @@ paths:
           $ref: '#/components/responses/Conflict'
         '404':
           $ref: '#/components/responses/NotFound'
+  /sources/{id}/schedule:
+    patch:
+      tags: [Sources]
+      summary: 设置或关闭持久增量扫描计划
+      operationId: patch_sources_id_schedule
+      description: scan_interval_minutes为1至525600时开启，0或null关闭；须expected_schedule_version防并发覆盖。计划持久化，正常worker每5秒检查最多20个到期来源，首次导入完成后才执行，已有扫描不重复排队；错过的间隔只排一次，不补跑积压。关闭不取消已排队任务。Cookie写入须CSRF。
+      parameters:
+      - $ref: '#/components/parameters/SourceId'
+      - name: X-CSRF-Token
+        in: header
+        required: false
+        schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expected_schedule_version, scan_interval_minutes]
+              properties:
+                expected_schedule_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9223372036854775806
+                scan_interval_minutes:
+                  type: [integer, 'null']
+                  minimum: 0
+                  maximum: 525600
+      responses:
+        '200':
+          description: 已保存来源配置及计划版本
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Source'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: SCHEDULE_VERSION_CONFLICT，计划已变更，请刷新
+        '422':
+          $ref: '#/components/responses/Validation'
   /sources/{id}/exclusions:
     get:
       tags:
@@ -3293,6 +3339,18 @@ components:
     Source:
       type: object
       properties:
+        scan_schedule:
+          type: object
+          required: [version, next_run_at, last_job_id]
+          properties:
+            version:
+              type: integer
+              minimum: 1
+            next_run_at:
+              type: [string, 'null']
+              format: date-time
+            last_job_id:
+              type: [string, 'null']
         id: *id001
         space_id: *id001
         name:

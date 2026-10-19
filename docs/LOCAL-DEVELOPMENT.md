@@ -1,5 +1,9 @@
 # 本机开发依赖与清理记录
 
+来源计划时间显示修正后，juanzhan:source-schedule-dev标签指向sha256:7b2af5d345b228fdc93b9ff47c18a249cf0adb08d7e47068abb3bb4f2b3bade1；下述4456eca为此前完整来源组测试时的镜像ID。开发标签可重建变化，清理时须以当前引用核对，不能根据旧ID直接批量删除。
+
+来源定时扫描增量（2026-10-19）：没有安装依赖、系统服务或cron。新增数据库迁移0009及源码需保留，不作缓存清理。服务器测试产物`.local/source-schedul*.log/xml`、`.local/pytest-source-schedul*`，截图`/tmp/juanzhan-source-schedule-mobile.png`及本机`/tmp/juanzhan-remote-qa/`副本可按需清理。独立dirty镜像juanzhan:source-schedule-dev，测试时ID为sha256:4456eca1367e8fe77860587726bb785cae21c6f2a758f138416275dc080fc953；清理前核对无实例引用。测试随机容器/卷/目录退出清理，最终仅既有nginx-proxy/simple-shell运行；旧RC及foundation标签未覆盖。
+
 2026-10-19，macOS / Apple M5 arm64，仓库 `/Users/infinity/Desktop/Dev/juanzuan`。
 
 ## 初始本机开发轮实际使用（c092200）

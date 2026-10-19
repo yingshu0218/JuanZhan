@@ -1,5 +1,7 @@
 # 数据库设计
 
+2026-10-19：新增不可变迁移0009_source_schedules.sql，当前9条迁移。source_scan_schedules以source_id为外键主键，保存配置version、next_due_at Unix秒/null和last_job_id外键/null；到期索引支持有界调度。来源插入及间隔更新触发器维护期限/版本，旧正间隔保留并初始化；原有8条迁移未改。API暴露UTC时间，更新计划与调度均在SQLite事务中完成。详见ADR-052。
+
 权威 DDL：[archive-schema-v0.4.sql](reference/archive-schema-v0.4.sql)。本文件只解释模型，不另写一份有差异的迁移。
 
 ## 实体边界

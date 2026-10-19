@@ -1,5 +1,15 @@
 # 测试与交付验收
 
+## 来源定时扫描专项 · 2026-10-19
+
+服务器标准只读sysfs容器运行test_source_scheduler、test_sources、test_foundation、test_backup、test_source_initial、test_source_incremental、test_adoptions：55 passed，30.51秒，1条既有客户端弃用提示。证据`/opt/juanzhan-dev/.local/source-schedule-final.log/xml`。6项新增计划测试验证CSRF/类型/版本冲突/关闭、初次导入门槛、多worker并发只排一次、持久期限、活动扫描/禁用、排队失败事务回滚、真实只读worker、备份恢复及8→9迁移保留配置/旧校验值。额外历史parse_requests升级测试1 passed，0.45秒，日志`.local/source-schedule-upgrade.log`。
+
+真实daemon浏览器专项1 passed（9.7秒）：在Web开启1分钟计划，仅回拨一次性测试库期限，由正常worker自动发现真实新增文件，关闭后重载保留。完整来源浏览器组3 passed（1.1分钟），覆盖原导入/失联/排除、托管接管与定时扫描，日志`.local/source-schedule-browser-full.log`。测试只通过私有fixture的.container-name定位随机容器，不增加生产测试API或改变实际worker调度代码。新手机截图`/tmp/juanzhan-source-schedule-mobile.png`已目视检查，可读且无横向溢出；本机副本在`/tmp/juanzhan-remote-qa/`。
+
+前端构建通过，OpenAPI YAML解析确认0.4.26/54路径。独立dirty开发镜像juanzhan:source-schedule-dev用于本组，既有RC标签未改。当前9迁移，release_drill迁移数量断言同步源码迁移集合，但本轮尚未重跑完整发布演练；完整后端/全部浏览器/新正式候选验收仍需最后执行。
+
+最后核对将下次计划显示为本地日期和具体时分秒，并保留time datetime UTC值；相应真实daemon浏览器流程补充1 passed（10.1秒），日志`.local/source-schedule-time-browser.log`。此显示修正后的开发镜像ID为sha256:7b2af5d345b228fdc93b9ff47c18a249cf0adb08d7e47068abb3bb4f2b3bade1。
+
 ## 本次知识库检查
 
 - 五个原始规格从当前可读取的文件完整读取，文件大小与来源元数据一致。

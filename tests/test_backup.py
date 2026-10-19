@@ -9,7 +9,7 @@ from format_samples import raster_sample
 from juanzhan.apps import create_app
 from juanzhan.backup import create,restore
 from juanzhan.config import Settings
-from juanzhan.database import connect
+from juanzhan.database import connect,MIGRATIONS
 from juanzhan.jobs import JobQueue,JobSpec
 from juanzhan.indexing import schedule
 from juanzhan.storage import ManagedStore,StorageBusy
@@ -51,7 +51,7 @@ def test_consistent_backup_restore_drill_and_no_overwrite(pipeline,tmp_path):
     with connect(restored.database) as db:
         assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
         assert db.execute('SELECT count(*) FROM auth_api_tokens').fetchone()[0]==0
-        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0]==8
+        assert db.execute('SELECT count(*) FROM migration_checksums').fetchone()[0]==len(list(MIGRATIONS.glob('*.sql')))
     # Live source retains its worker lease; recovery mutations are confined to new DB.
     assert queue.get(active['id'])['status']=='running'
 

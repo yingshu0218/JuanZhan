@@ -23,7 +23,7 @@ def main():
     if root.parent != Path('/tmp') or not root.name.startswith('juanzhan-source-browser-'):
         raise ValueError('Expected an isolated browser fixture')
     root.mkdir(mode=0o755)
-    for name in ('collection', 'flat', 'adoption'):
+    for name in ('collection', 'flat', 'adoption', 'scheduled'):
         (root / name).mkdir(mode=0o755)
     (root / 'collection' / '设计').mkdir(mode=0o755)
     (root / 'collection' / '设计' / '计划.txt').write_text('真实只读来源。\n', encoding='utf-8')
@@ -32,11 +32,14 @@ def main():
         (root / 'collection' / f'item-{index:02}.txt').write_text(f'content {index}\n')
     (root / 'flat' / 'one.txt').write_text('flat fixture\n')
     (root / 'adoption' / 'one.txt').write_text('adoption fixture\n')
+    (root / 'scheduled' / 'one.txt').write_text('scheduled fixture\n')
     (root / 'collection' / 'ignored.bin').write_bytes(b'not a supported candidate')
     # The cloud shell uses umask 077; the unprivileged container needs read/traverse.
     for item in [root, *root.rglob('*')]:
         item.chmod(0o755 if item.is_dir() else 0o644)
     name = 'juanzhan-source-browser-' + uuid.uuid4().hex[:12]
+    pointer=root/'.container-name'
+    pointer.write_text(name);pointer.chmod(0o600)
     volume = name + '-data'
     stop = False
     def shutdown(*_):
@@ -55,6 +58,7 @@ def main():
                '-e', 'JUANZHAN_SOURCE_MOUNTS=' + json.dumps({
                    'collection': '/sources/fixtures/collection', 'flat': '/sources/fixtures/flat',
                    'adoption': '/sources/fixtures/adoption',
+                   'scheduled': '/sources/fixtures/scheduled',
                    'writable': '/sources/writable', 'offline': '/sources/fixtures/absent'}),
                os.environ.get('JUANZHAN_E2E_IMAGE','juanzhan-foundation:dev'))
         for _ in range(100):

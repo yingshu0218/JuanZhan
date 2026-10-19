@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import {execFileSync} from "node:child_process";
 import { readFile, writeFile, rename, unlink, chmod } from "node:fs/promises";
 import { createSpace, api } from "./helpers.mjs";
 const root = process.env.JUANZHAN_E2E_SOURCE_ROOT;
@@ -318,5 +319,42 @@ test("adopt a real scanned readonly original through the managed copy dialog",as
   await expect(dialog).toHaveCount(0);
   await page.getByRole('button',{name:'关联原文件',exact:true}).click();
   await expect(page.getByRole('region',{name:'纳入托管',exact:true})).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("persistent scan plan queues real daemon incremental work and can be paused",async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);await createSpace(page,'自动扫描验证');
+  const space=await page.getByLabel('当前空间').inputValue();
+  const source=await api(page,'/sources','POST',{space_id:space,name:'自动扫描来源',kind:'external',root_alias:'scheduled',initial_import_policy:'flat'});
+  expect(source.status).toBe(201);const id=source.data.id;
+  const initial=await api(page,`/sources/${id}/scan`,'POST',{mode:'initial'});expect(initial.status).toBe(202);
+  await expect.poll(async()=>(await api(page,`/jobs/${initial.data.job_id}`)).data.status,{timeout:30000}).toBe('completed');
+  await page.getByRole('navigation',{name:'档案导航'}).getByRole('button',{name:'来源',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'自动扫描来源',exact:true})).toBeVisible();
+  await page.getByText('自动扫描设置',{exact:true}).click();
+  const form=page.getByRole('form',{name:'自动扫描设置',exact:true});
+  await form.getByLabel('扫描间隔（分钟，0为关闭）').fill('1');
+  await form.getByRole('button',{name:'保存扫描计划',exact:true}).click();
+  await expect(page.getByText('每 1 分钟自动增量扫描',{exact:false})).toBeVisible();
+  await expect(form.locator('time')).toHaveText(/\d{1,2}:\d{2}/);
+  await expect(form.locator('time')).toHaveAttribute('datetime',/Z$/);
+  // Advance the persisted fixture deadline, then let the normal daemon tick enqueue.
+  const container=(await readFile(root+'/.container-name','utf8')).trim();
+  await writeFile(root+'/scheduled/timed.txt','automatically discovered bytes\n',{mode:0o644});
+  execFileSync('docker',['exec',container,'python','-c',"import sqlite3,sys;db=sqlite3.connect('/data/database/archive.sqlite3');db.execute('UPDATE source_scan_schedules SET next_due_at=0 WHERE source_id=?',(sys.argv[1],));db.commit()",id]);
+  await expect.poll(async()=>(await api(page,`/sources/${id}/entries`)).data.total,{timeout:30000}).toBe(2);
+  const scheduled=(await api(page,`/sources/${id}`)).data.scan_schedule.last_job_id;expect(scheduled).toBeTruthy();
+  await expect.poll(async()=>(await api(page,`/jobs/${scheduled}`)).data.status).toBe('completed');
+  await page.getByRole('button',{name:'刷新来源',exact:true}).click();
+  await form.getByLabel('扫描间隔（分钟，0为关闭）').fill('0');
+  await form.getByRole('button',{name:'保存扫描计划',exact:true}).click();
+  await expect(page.getByText('自动扫描已关闭',{exact:false})).toBeVisible();
+  await page.reload();await page.getByLabel('当前空间').selectOption(space);
+  await page.getByRole('navigation',{name:'档案导航'}).getByRole('button',{name:'来源',exact:true}).click();
+  await expect(page.getByText('自动扫描已关闭',{exact:false})).toBeVisible();
+  await page.setViewportSize({width:390,height:844});await page.getByText('自动扫描设置',{exact:true}).click();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/juanzhan-source-schedule-mobile.png'});
   expect(errors).toEqual([]);
 });

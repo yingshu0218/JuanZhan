@@ -10,6 +10,7 @@ import {
 import { Dialog, Notice, Empty, formatSize, formatDate } from "./ui.jsx";
 import { Detail } from "./Detail.jsx";
 import { SourceWizard } from "./SourceWizard.jsx";
+import { SourceSchedule } from "./SourceSchedule.jsx";
 import { message } from "./api.js";
 
 const states = {
@@ -367,8 +368,9 @@ export function Sources({
               </div>
               <p className="source-hint">
                 最近成功扫描：{formatDate(source.last_successful_scan_at)} ·
-                当前仅手动扫描
+                {source.scan_interval_minutes>0 ? `每 ${source.scan_interval_minutes} 分钟自动增量扫描` : "自动扫描已关闭"}
               </p>
+              <SourceSchedule api={api} source={source} onSaved={refresh} />
               {!ready && (
                 <Notice error>
                   {message({ code: source.health.error_code })}{" "}

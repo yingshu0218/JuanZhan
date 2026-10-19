@@ -7,6 +7,7 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  SCHEDULE_VERSION_CONFLICT: "扫描计划已被更新，请刷新来源后重试。",
   SOURCE_ENTRY_MANAGED: "该来源条目已纳入托管；保留排除规则以防重复导入。",
   SOURCE_ENTRY_BUSY: "该来源条目已有操作或排除规则，请先核对。",
   EXTERNAL_REVISION_REQUIRED: "当前原件已不再是外部版本，请刷新档案。",

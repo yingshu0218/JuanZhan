@@ -16,6 +16,11 @@ class ScanRequest(Input):
     mode: Literal['initial', 'incremental']
 
 
+class ScheduleChange(Input):
+    expected_schedule_version: Annotated[int,Field(strict=True,ge=1,le=9223372036854775806)]
+    scan_interval_minutes: Annotated[int,Field(strict=True,ge=0,le=525600)] | None
+
+
 class SourceCreate(Input):
     space_id: ID
     name: Name
@@ -43,6 +48,8 @@ def public(db, mounts, source):
         'initial_target_folder_id', 'initial_triage_status', 'initial_import_completed_at',
         'new_file_target_folder_id', 'scan_interval_minutes', 'last_successful_scan_at')}
     result['root_alias'] = source['root_ref']
+    from .source_scheduler import public as schedule_public
+    result['scan_schedule']=schedule_public(db,source['id'])
     result['health'] = health(mounts, source['root_ref'])
     if source['status'] != 'disabled':
         if result['health']['mount_status'] != 'ready':
@@ -131,6 +138,18 @@ def router(settings):
                 (*params, page_size, (page-1)*page_size)).fetchall()
             items=[{**dict(r),'is_managed':bool(r['is_managed'])} for r in rows]
             return {'items': items, 'page': page, 'page_size': page_size, 'total': total}
+
+    @result.patch('/sources/{id}/schedule')
+    def configure_schedule(id:str,body:ScheduleChange,request:Request):
+        with transaction(settings,request) as db:
+            required(db,'sources',id)
+            schedule=db.execute(
+                'SELECT version FROM source_scan_schedules WHERE source_id=?',(id,)).fetchone()
+            if schedule is None or schedule['version']!=body.expected_schedule_version:
+                fail(409,'SCHEDULE_VERSION_CONFLICT','Scan schedule changed; reload before saving')
+            db.execute('UPDATE sources SET scan_interval_minutes=?,updated_at=? WHERE id=?',
+                (body.scan_interval_minutes,now(),id))
+            return public(db,mounts,required(db,'sources',id))
 
     @result.post('/sources/{id}/preview-scan', status_code=202)
     def preview(id: str, request: Request):

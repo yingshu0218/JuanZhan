@@ -105,7 +105,7 @@ def main():
                 'import json; from juanzhan.config import Settings; from juanzhan.database import connect; '
                 '\nwith connect(Settings.from_env().database) as db: print(json.dumps({"migrations":db.execute("SELECT count(*) FROM migration_checksums").fetchone()[0],"integrity":db.execute("PRAGMA integrity_check").fetchone()[0],"foreign_keys":len(db.execute("PRAGMA foreign_key_check").fetchall())}))'],True)
             result['database_checks']=json.loads(checks)
-            assert result['database_checks']=={'migrations':8,'integrity':'ok','foreign_keys':0}
+            assert result['database_checks']=={'migrations':len(list((ROOT/'services'/'migrations').glob('*.sql'))),'integrity':'ok','foreign_keys':0}
             result['steps'].append('restored_instance_login_download_content_search_and_integrity')
             result['elapsed_seconds']=round(time.monotonic()-begin,2);result['status']='passed'
         finally:

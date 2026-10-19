@@ -255,8 +255,13 @@ def main():
         print(json.dumps(worker.run_once()))
         return
     prefer_index=False
+    next_source_schedule=0
     while not stop.is_set():
         try:
+            if time.monotonic()>=next_source_schedule:
+                from .source_scheduler import schedule as schedule_sources
+                schedule_sources(settings)
+                next_source_schedule=time.monotonic()+5
             from .indexing import schedule
             schedule(settings,limit=1)
             worker.run_once(prefer_index=prefer_index)
