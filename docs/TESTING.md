@@ -1,5 +1,30 @@
 # 测试与交付验收
 
+## 2026-10-21 六格式、十份文档的概要引擎实测
+
+用户目标是常见格式解析和概要提取。本轮使用完全合成的真实二进制/文本文件，运行隔离Archive + TCP Converter + worker，实际SQLite、文件存储、HTTP上传与Playwright；未导入或修改用户文档。Browser plugin not available，使用既有Playwright，无新依赖。
+
+| 样本 | 格式 | 最终结果 |
+|---|---|---|
+| 摄影课程说明 | DOCX | 课程要点/安排保留，数字普通文本，无专用卡片 |
+| 服务合同 | DOCX | 服务范围、付款验收和延期说明均保留 |
+| 会议纪要 | TXT | 决议、负责人、截止时间及注意事项保留 |
+| 项目计划 | Markdown | 进展、下一步列表、风险保留 |
+| 设备清单 | HTML | 表格中主机/路由器及验收状态保留 |
+| 操作手册 | EPUB | 首章/次章名称及正文保留，不伪造页码 |
+| 季度报告 | PDF | 三页报告的进展、风险及后续动作可读 |
+| 120段笔记 | TXT | 有界8点，并提供部分范围提示，不宣称全文概括 |
+| 扫描报告 | PDF | 默认不启用OCR，正确显示暂无可提炼文本，本轮未测试OCR提取 |
+| 含脚本和外链图像的网页 | HTML | 可读内容保留，概要无活动元素，脚本未执行 |
+
+每份检查默认概览、无领域卡片、正文来源跳转（扫描空文本除外）、1440×1000/390×844截图、无横向溢出，以及只读查看不改Document版本/Revision/ParseRun。十份样本场景28.1秒；另4项完整阅读回归均通过，整组5项49.1秒。8项纯规则回归通过（含新增不一致章节层级首章保留）。控制台/截图与测试初始页面身份通过现有测试断言和人工截图复核。未重跑完整后端或全部其他浏览器组。
+
+实测发现并修复：首个唯一一级标题被一律视为总标题，EPUB下一章使用二级标题时首章名称被省略；现在保留父标题及原文来源，再展示子章节。初次仅前5份通过即在EPUB断言失败，日志保留overview-types-before-fix.log；没有放宽章节期望。另有初始浏览器Compositor因/tmp共享内存写权限崩溃，使用私有TMPDIR解决，未改系统目录权限；中断的环境诊断不计通过。
+
+证据：.local/overview-types.log；.local/types-browser-tmp/juanzhan-overview-types-results.json（十份passed）、juanzhan-types-*-desktop/mobile.png；本机/tmp/juanzhan-types-contract.png、juanzhan-types-epub-mobile.png及结果JSON。可重跑命令：TMPDIR=/opt/juanzhan-dev/.local/types-browser-tmp LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PLAYWRIGHT_BROWSERS_PATH=/opt/juanzhan-dev/.local/playwright JUANZHAN_TEST_CJK_FONT=/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Medium.otf npm run test:e2e:reading（在web目录）。隔离数据库/存储/样本退出自动删除，截图/日志按LOCAL-DEVELOPMENT清理。
+
+rc.10镜像sha256:8fc85cbf73f4ddc356c15d9fccbfabe297a6fe72002fe6a284bcb5e6654705a7，干净源码281b929；manifest /tmp/juanzhan-release-njyhi7e4/manifest.json，副本私有rc10-manifest.json。仅概要规则/测试变化，无接口或迁移；这不代表已提供后端概要API，也不证明任意复杂文档或长文都能生成语义摘要。
+
 ## 2026-10-20 通用分点内容概览（rc.9）
 
 最终镜像sha256:83776d5283eead7eabca8da5d147664137209092aa5abe4027647fee42b27349，干净源码7168700；构建manifest为/tmp/juanzhan-release-1hgyu80e/manifest.json并复制私有rc9-manifest.json。表格摘录补充后7项规则再次通过，部署后的真实Word只读核对在此最终镜像执行。此前5168ff6构建为中间产物，不作为最终运行镜像。

@@ -1,5 +1,7 @@
 # 技术架构
 
+2026-10-21产品目标明确为常见格式的通用解析与概要提取。当前链路：Converter六格式适配 → 持久化标准blocks/ParseRun → Web通用规则概要。概要算法位于web/src/documentSummary.js，尚未作为独立后端产物存储或通过统一概要API提供。建议/待定：后续将概要能力提升为可复用引擎输出；若增加持久化/HTTP契约，须先同步API/数据库规格并以迁移实施，不能将现有前端视图包装为已交付后端能力。
+
 2026-10-19 PDF阅读：Original按需懒加载PDFReader，鉴权获取固定Revision的已校验附件字节，再以Uint8Array交给同源PDF.js worker。Canvas逐页绘制、独立文本层支持选择和查找；不使用iframe/object/embed、远程PDF URL或PDF脚本管理器。构建复制版本化CMap/标准字体/ICC/WASM及各自许可，页面和worker响应分别限制同源资源，保留禁止JS eval与对象嵌入；仅允许WASM编译。文本层CSS从锁定上游版本提取并限定阅读器范围，避免上游整套查看器CSS改变应用对话框。原成功正文/元数据/版本不受客户端阅读影响，详见ADR-054。
 
 ## 既有 V0.4 基线
