@@ -109,7 +109,7 @@ test("real login, first space, upload, duplicate decision, details, responsive a
   await page.getByRole("button", { name: "收起上传队列" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("heading", { name: "正文内容", exact: true }),
+    page.getByRole("heading", { name: "摘要与关键信息", exact: true }),
   ).toBeVisible();
   await page.screenshot({ path: "/tmp/juanzhan-mobile.png", fullPage: true });
   expect(

@@ -5,7 +5,7 @@ import {
   CaretLeft,
   CaretRight,
 } from "@phosphor-icons/react";
-import { Empty, Notice, processing, formatDate } from "./ui.jsx";
+import { Empty, Notice, InfoTip, processing, formatDate } from "./ui.jsx";
 export function Library({
   searchPanel,
   searching,
@@ -202,7 +202,7 @@ export function Library({
           ))
         ) : (
           searching ? <Empty title={indexState?.incomplete ? "暂未找到匹配档案" : "没有匹配的档案"}><p>{indexState?.incomplete ? "处理或索引尚未完整，不能据此确认没有匹配内容。请稍后刷新。" : "请调整关键词或过滤条件，或清除搜索。"}</p></Empty> : <Empty title="这里还没有档案">
-            <p>导入原文件，开始整理资料。</p>
+            <InfoTip>导入原文件，开始整理资料。</InfoTip>
             <button onClick={importFiles} className="text-action">
               导入文件
             </button>
