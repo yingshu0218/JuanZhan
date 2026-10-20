@@ -1,5 +1,11 @@
 # 测试与交付验收
 
+## 2026-10-20 内容概览优先与阅读降噪
+
+无后台/API/迁移/依赖变化。真实阅读浏览器3项通过（17.0s），.local/content-overview-reading-final-verified.log；任务4项通过（29.2s），.local/content-overview-jobs.log。覆盖默认原文章节摘录、语义表格、进入完整正文、逐段定位显式开关、分页/源文本安全、候选冲突/采纳、历史/失败/过期会话、次级重解析及手机布局。Browser插件未提供，复用现有Playwright。首轮旧正文标题断言及列头AX角色断言不适用于新默认视图/单列表格，分别改为验证新概览标题及真实thead/th值；原失败日志content-overview-reading.log、content-overview-reading-final.log保留。
+
+rc.6干净e9484b8构建并部署，manifest /tmp/juanzhan-release-mgnd6hov/manifest.json，镜像sha256:e53f7680c63a70ea039b791cf14ef94c80a4f77abeab675378eb629e5c44a36d。实际用户Word已有75块（20标题、26段落、26列表项、3表格），只读验证默认呈现开篇信息/4个主章节、完整正文入口、定位按需开启、说明默认折叠；1440/390无溢出或控制台错误，三个服务健康。未重解析、改写原件/正文/业务字段，未生成语义摘要或推测信息。报告私有实例content-overview-browser-smoke.json，实际文档截图content-overview-desktop/mobile.png；本机/tmp/juanzhan-word-overview-*.png。未重跑无变更的后端484项。
+
 ## 2026-10-20 任务中心单列竖向调整
 
 仅UI布局调整，后台/63路径契约/11迁移/依赖不变。devtest构建及任务浏览器4项全部通过（30.8s），真实DOCX/失败任务/刷新持久性/原位详情/1440与390视口，日志.local/task-column-build.log、task-column-browser.log，截图本机/tmp/juanzhan-task-column-{desktop,mobile}.png。Browser插件未提供，复用已有Playwright；未重复运行无改动的484项后端。

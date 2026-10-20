@@ -33,7 +33,7 @@ test("real paginated reading, safe source text, explicit candidate adoption, his
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
   await expect(reader.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
   await expect(reader.getByRole("heading", { name: "项目规划" })).toBeVisible();
-  await expect(reader.getByRole("columnheader", { name: "字段", exact: true })).toBeVisible();
+  await expect(reader.locator(".overview-table thead th")).toHaveText("字段");
   await expect(reader.getByRole("cell", { name: "内容", exact: true })).toBeVisible();
   await reader.getByRole("button", { name: "阅读本节完整内容", exact: true }).click();
   await expect(reader.getByText("定位未知", { exact: true })).not.toBeVisible();
