@@ -135,3 +135,7 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 ## 2026-10-20 任务进度中心迭代
 
 复用devtest现有npm/Python/Playwright/Docker，无安装依赖。新增rc.3镜像、.local/progress-*.log与/tmp/juanzhan-progress-center-*.png为本轮构建/验证产物；保留rc.2可回退。测试实例数据卷及私有认证覆盖保留，见DEVTEST，不能当缓存删除。
+
+## 2026-10-20 文件名与分步进度
+
+复用devtest已有依赖/浏览器/Docker，无新增安装。rc.4镜像、.local/step-progress-*.log/xml、.local/pytest-step-progress、构建manifest和/tmp/juanzhan-step-progress-*.png为本轮产物，可在无需复查且无实例引用时按名称清理；运行数据卷/私有认证覆盖/升级前备份不可按缓存删除。0011迁移后不能直接用rc.3连接11迁移库；需按RELEASE使用rc.3与升级前备份恢复到新卷回退。

@@ -151,16 +151,20 @@ def publish(db,job,options,result,assets):
 
 
 def execute(settings,job,client=None):
+    queue=JobQueue(settings)
     options,revision=begin(settings,job)
     remote=None
     try:client=client or ConverterClient(os.getenv('CONVERTER_URL','http://converter:8000'),settings.converter_token)
     except ValueError:raise ParseFailure('CONVERTER_NOT_CONFIGURED') from None
     store=ManagedStore(settings.data_dir/'derived');store.initialize()
     try:
-        with original(settings,revision,client.max_file_bytes) as file:remote=client.submit(file,options)['job_id']
+        with original(settings,revision,client.max_file_bytes) as file:
+            queue.step(job['id'],job['lease_token'],'submit')
+            remote=client.submit(file,options)['job_id']
         with JobQueue(settings).write() as db:
             JobQueue(settings)._owned(db,job['id'],job['lease_token'])
             db.execute('UPDATE parse_attempts SET remote_job_id=? WHERE parse_run_id=?',(remote,options.parse_run_id))
+        queue.step(job['id'],job['lease_token'],'extract')
         terminal=client.wait(remote,deadline_seconds=min(45,job['timeout_seconds']))
         if terminal['status']!='completed':
             code=(terminal.get('error') or {}).get('error',{}).get('code')
@@ -168,6 +172,7 @@ def execute(settings,job,client=None):
         result=client.result(remote,file_revision_id=revision['id'],parse_run_id=options.parse_run_id)
         if result['status']=='failed':raise ParseFailure('CONVERSION_FAILED')
         assets=[]
+        queue.step(job['id'],job['lease_token'],'assets',0,len(result['artifacts'])+1 if result['status']=='completed' else 0)
         if result['status']=='completed':
             total=sum(a['size_bytes'] for a in result['artifacts'])
             raw=dumps(result).encode()
@@ -178,11 +183,15 @@ def execute(settings,job,client=None):
                     with client.artifact(asset) as file:
                         obj=store.put(file,max_bytes=MAX_RESULT,expected_sha256=asset['sha256'],expected_size=asset['size_bytes'])
                     assets.append((asset['kind'],asset['media_type'],obj,asset['artifact_ref']))
+                    queue.step(job['id'],job['lease_token'],'assets',len(assets),len(result['artifacts'])+1)
                 # Keep the complete normalized result, including provenance and OCR languages.
                 obj=store.put(BytesIO(raw),max_bytes=MAX_RESULT)
                 assets.append(('json','application/json',obj,None))
+                queue.step(job['id'],job['lease_token'],'assets',len(assets),len(result['artifacts'])+1)
+                queue.step(job['id'],job['lease_token'],'publish')
                 JobQueue(settings).complete(job['id'],job['lease_token'],lambda db,owned:publish(db,owned,options,result,assets))
         else:
+            queue.step(job['id'],job['lease_token'],'publish')
             JobQueue(settings).complete(job['id'],job['lease_token'],lambda db,owned:publish(db,owned,options,result,[]))
     except ConverterClientError as exc:
         raise ParseFailure(exc.code,exc.code in ('CONVERTER_UNAVAILABLE','CONVERTER_WAIT_TIMEOUT') or exc.status in (404,408,409,429,500,502,503,504)) from None

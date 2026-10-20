@@ -71,6 +71,9 @@ def test_six_real_formats_automatically_persist(pipeline,kind):
     before=client.get('/api/v1/documents/'+uploaded['document_id']).json()
     assert Worker(settings).run_once()['status']=='completed'
     job=JobQueue(settings).get(uploaded['job_id'])
+    assert job['document_name']=='sample.'+kind
+    assert [step['code'] for step in job['steps']]==['validate','submit','extract','assets','publish']
+    assert all(step['status']=='completed' for step in job['steps'])
     run=job['result']['parse_run_id']
     assert rows(settings,'SELECT status FROM parse_runs WHERE id=?',run)[0]['status']=='completed'
     assert rows(settings,'SELECT * FROM content_blocks WHERE parse_run_id=?',run)
@@ -126,9 +129,12 @@ def test_real_ocr_and_duplicate_frame_assets_preserve_order(pipeline):
 
 def test_lost_lease_fails_attempt_then_retry_has_new_run(pipeline):
     settings,_,_,_=pipeline;uploaded=upload(pipeline)
-    queue=JobQueue(settings);job=queue.claim('old',lease_seconds=.01)
+    queue=JobQueue(settings);job=queue.claim('old',lease_seconds=30)
     options,_=begin(settings,job)
-    time.sleep(.02)
+    # Expire the persisted lease after begin, independent of CPU/SQLite timing.
+    with connect(settings.database) as db:
+        db.execute('UPDATE jobs SET lease_expires_at=? WHERE id=?',(time.time()-1,job['id']))
+        db.commit()
     queue.claim('recovery')  # Expired lease is persisted, backoff prevents immediate reclaim.
     assert rows(settings,'SELECT status FROM parse_runs WHERE id=?',options.parse_run_id)[0]['status']=='failed'
     with pytest.raises(LostLease):queue.complete(job['id'],job['lease_token'],{})
@@ -277,3 +283,31 @@ def test_database_rejects_cross_document_parse_and_asset_links(pipeline):
         with pytest.raises(sqlite3.IntegrityError):
             db.execute('UPDATE parse_attempts SET request_sequence=? WHERE parse_run_id=?',(attempts[1]['request_sequence'],attempts[0]['parse_run_id']))
         db.rollback()
+
+
+def test_actual_pipeline_persists_sequential_progress_and_revision_name(pipeline,monkeypatch):
+    settings,client,headers,_=pipeline
+    uploaded=upload(pipeline,name='named-original.txt')
+    q=JobQueue(settings)
+    queued=client.get('/api/v1/jobs/'+uploaded['job_id']).json()
+    assert queued['document_name']=='named-original.txt'
+    assert all(s['status']=='pending' for s in queued['steps'])
+    snapshots=[]
+    original_step=JobQueue.step
+    def observe(self,id,token,code,done=0,total=None):
+        original_step(self,id,token,code,done,total)
+        snapshots.append(JobQueue(settings).get(id)['steps'])
+    monkeypatch.setattr(JobQueue,'step',observe)
+    owned=q.claim('progress-observer')
+    execute(settings,owned)
+    assert q.get(owned['id'])['status']=='completed'
+    assert snapshots
+    assert [s['status'] for s in snapshots[0]]==['completed','running','pending','pending','pending']
+    assert any(s[2]['status']=='running' and s[2]['total'] is None for s in snapshots)
+    assert any(s[3]['status']=='running' and s[3]['done']>0 and s[3]['total']>0 for s in snapshots)
+    summary=next(x for x in client.get('/api/v1/jobs').json()['items'] if x['id']==uploaded['job_id'])
+    assert summary['document_name']=='named-original.txt'
+    assert all(s['status']=='completed' for s in summary['steps'])
+    # A later revision must not relabel a historical parse task.
+    append(settings,uploaded['document_id'],b'newer bytes')
+    assert client.get('/api/v1/jobs/'+uploaded['job_id']).json()['document_name']=='named-original.txt'

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
+import { JobProgress } from "./JobProgress.jsx";
 const statuses = { queued: "排队中", running: "处理中", completed: "已完成", failed: "失败", cancelled: "已取消" };
 function safeResult(value) {
   if (!value || typeof value !== "object") return null;
@@ -59,11 +60,12 @@ export function TaskStatus({ api, id }) {
     catch (e) { setError(message(e)); } finally { setBusy(false); }
   }
   return <section className="task-status" aria-label="任务详情">
-    <p>任务编号：<code>{id}</code></p>
     {error && <Notice error>{error}</Notice>}
     {job && <>
+      <JobProgress job={job} />
       <p>关联对象：{job.target_id || "系统维护"}</p>
       <h3>{kindLabel(job)} · {job.status === "completed" && job.result?.failed > 0 ? "已结束（存在失败项）" : statuses[job.status]}</h3>
+      <p>任务编号：<code>{id}</code></p>
       <p>尝试 {job.attempts} / {job.max_attempts}；已处理 {job.progress_done ?? 0}{job.progress_total == null ? "，总量未知" : ` / ${job.progress_total}`}</p>
       {job.progress_total > 0 && <progress value={job.progress_done || 0} max={job.progress_total} />}
       {job.status === "queued" && <p>最早可执行：{new Date(job.available_at).toLocaleString()}。受理不代表处理成功。</p>}
@@ -99,7 +101,7 @@ export function TaskCenter({ api, onClose, initialId = null }) {
     <div className="tasks-layout"><div>
       {data?.items.length === 0 && <p>暂无任务</p>}
       {data?.items.map(job => <button className="task-row" key={job.id} onClick={() => setId(job.id)} aria-pressed={id === job.id}>
-        <strong>{kindLabel(job)} · {statuses[job.status]}</strong><span className="task-progress">{job.status === "queued" ? "等待后台执行" : job.progress_total > 0 ? `已处理 ${job.progress_done ?? 0} / ${job.progress_total}` : job.status === "running" ? "正在处理 · 总量未知" : statuses[job.status]}</span>{job.progress_total > 0 && <progress aria-label="任务处理进度" value={job.progress_done ?? 0} max={job.progress_total} />}<small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
+        <JobProgress job={job} /><strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
       </button>)}
       {data && <div className="task-pages"><button disabled={page === 1} onClick={() => setPage(n => n - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 项</span><button disabled={page * 20 >= data.total} onClick={() => setPage(n => n + 1)}>下一页</button></div>}
     </div>{id && <TaskStatus key={id} api={api} id={id} />}</div>

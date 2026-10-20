@@ -655,3 +655,9 @@ backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/
 Browser plugin not available，本次使用已有Playwright，无新依赖。devtest执行npm run build及npm run test:e2e:jobs：4项通过（32.0秒），真实SQLite/文件存储/HTTP/Converter/worker，新增DOCX上传→查看解析进度→对应任务完成→新增任务自动出现→刷新保留；其余覆盖批量解析、显式重解析及损坏原件失败。检查1440×1000与390×844截图、无页面错误、无水平溢出。日志在服务器.local/progress-build.log与.local/progress-jobs.log，截图在/tmp/juanzhan-progress-center-{desktop,mobile}.png。此专项不替代此前全量验收，不声称重新运行481项后端。
 
 后续主界面回归npm run test:e2e：13项全部通过（1.6分钟），服务器.local/progress-library.log。干净提交c1f0a02构建rc.3并部署到原juanzhan-test项目/持久卷，三个服务健康。部署后用test账号对18080实际浏览器验证常驻数量、任务列表、1440/390布局与无控制台错误；原空间4份档案保留（含用户追加资料），不读取或重导用户原件。部署报告在私有实例目录progress-deployment-smoke.json。
+
+## 2026-10-20 文件名与分步进度验证
+
+新增0011及Archive0.4.29。浏览器任务4项通过（28.3s），主界面13项通过（1.9m），真实DOCX/SQLite/文件存储/HTTP/Converter/worker，验证捕获文件名、五步独立条/总体完成步骤数、真实成功与损坏PDF失败所在步骤，1440×1000/390×844无水平溢出与控制台错误。截图本机/tmp/juanzhan-step-progress-{desktop,mobile}.png，服务器原图/tmp/juanzhan-progress-center-{desktop,mobile}.png，日志.local/step-progress-browser.log、step-progress-library.log。Browser插件未提供，复用现有Playwright，无新增依赖。
+
+首次两组后端36通过/3失败：新增测试观察列表不能跨worker子进程回传、测试重试未等持久退避，以及未指定现有CJK字体。分别改为同进程实际execute+HTTP转换观察、按持久时钟推进退避、复用现有字体，随后39项通过（32.38s）。初次完整后端482通过/1失败（320.52s），原租约测试在10ms预算内未完成begin即失效；改为先以正常租约begin，再将真实SQLite租约时间设为过去，继续验证失效围栏/重试新ParseRun与GC不丢失，未放松生产租约逻辑。原始日志保留.local/step-progress-backend.log、step-progress-backend-verified.log、step-progress-full.log/xml；当前新增顺序/回退/丢弃发布断言与最终完整复验另记录。

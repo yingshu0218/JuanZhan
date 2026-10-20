@@ -2,7 +2,7 @@
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（当前版本0.4.28），base `/api/v1`，63个path模板（含内部 healthz 与 T03 认证接口）。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（当前版本0.4.29），base `/api/v1`，63个path模板（含内部 healthz 与 T03 认证接口）。
 - 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T21版本0.4.3），6 个 path 模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
@@ -339,3 +339,7 @@ Archive契约0.4.23，路径数与8条迁移保持。POST /documents/batch的set
 Archive契约0.4.28、63个path，新增/system/backups查询/创建、单记录查询/删除、附件下载、恢复任务、原始ZIP上传、/system/recoveries及/system/backup-schedule。严格结构见OpenAPI；所有读写鉴权，Cookie写入CSRF，request_id支持受理后幂等重试。上传第一次成功受理后同request_id返回原任务；校验完成前不可下载或恢复。不得传入服务器路径或URL。
 
 状态ready仅说明备份可用或新恢复目录已验证；恢复不自动切换当前实例。计划expected_version防并发覆盖；0关闭，已受理任务继续运行。ZIP输入与资源限额沿用ADR-056/057；恢复只支持精确迁移集合。Converter0.4.3/6路径不变，无新依赖。
+
+## 任务分步进度 · 2026-10-20
+
+Archive0.4.29：GET /jobs与/jobs/{id}新增document_name与steps。解析文件名固定到任务捕获的原件版本，其余文档任务取当前原件名，均剥离路径；五个解析步骤按validate/submit/extract/assets/publish推进，每步status/done/total独立。total=null时为不定进度，不表示0%；总体条表示完成步骤数，不表示耗时百分比。维护/索引任务为process单步，旧任务steps=[]，不虚构历史进度。

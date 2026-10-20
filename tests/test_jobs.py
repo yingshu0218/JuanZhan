@@ -359,3 +359,40 @@ def test_public_inventory_pagination_and_retry_projection(queue):
     assert jobs.get(claimed['id'])['can_retry'] is False
     with connect(settings.database) as db:
         assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
+
+
+def test_steps_are_ordered_durable_and_fenced_on_retry(queue):
+    jobs, clock, settings, _ = queue
+    item=jobs.enqueue(spec('step-retry'))
+    assert jobs.get(item['id'])['steps'][0]['status']=='pending'
+    job=jobs.claim('first',lease_seconds=1)
+    jobs.progress(job['id'],job['lease_token'],2,5)
+    assert JobQueue(settings,clock).get(job['id'])['steps'][0]['done']==2
+    with pytest.raises(ValueError):jobs.step(job['id'],job['lease_token'],'process',-1)
+    clock.advance(2)
+    assert jobs.claim('expired-sweep') is None
+    clock.advance(1)
+    replacement=jobs.claim('second')
+    assert replacement['attempts']==2
+    with pytest.raises(LostLease):jobs.step(job['id'],job['lease_token'],'process',3,5)
+    steps=jobs.get(job['id'])['steps']
+    assert steps==[{'code':'process','status':'running','done':0,'total':None}]
+    jobs.failure(job['id'],replacement['lease_token'],'BROKEN','Failure',retryable=False)
+    assert JobQueue(settings,clock).get(job['id'])['steps'][0]['status']=='failed'
+
+
+def test_parse_steps_reject_skips_regression_and_do_not_claim_discarded_publish(queue):
+    jobs, _, _, _ = queue
+    item=jobs.enqueue(JobSpec(kind='parse',target_type='document',idempotency_key='ordered'))
+    job=jobs.claim('ordered-worker')
+    with pytest.raises(ValueError):jobs.step(job['id'],job['lease_token'],'extract')
+    jobs.step(job['id'],job['lease_token'],'submit')
+    with pytest.raises(ValueError):jobs.step(job['id'],job['lease_token'],'validate')
+    jobs.step(job['id'],job['lease_token'],'extract')
+    jobs.step(job['id'],job['lease_token'],'assets',1,3)
+    with pytest.raises(ValueError):jobs.step(job['id'],job['lease_token'],'assets',0,3)
+    jobs.step(job['id'],job['lease_token'],'assets',3,3)
+    jobs.step(job['id'],job['lease_token'],'publish')
+    jobs.complete(job['id'],job['lease_token'],{'status':'discarded'})
+    steps=jobs.get(item['id'])['steps']
+    assert [s['status'] for s in steps]==['completed']*4+['discarded']

@@ -56,6 +56,8 @@ def public(job, *, summary=False):
                                       'progress_total','created_at','updated_at')}
     result['target_type'] = job['target_type']
     result['target_id'] = job['target_id']
+    result['document_name'] = None
+    result['steps'] = json.loads(job['steps_json'])
     result['can_retry'] = bool(job['retryable'] and job['attempts'] < job['max_attempts'] and
                                (job['status'] == 'failed' or (job['status'] == 'queued' and job['attempts'] > 0)))
     result['available_at'] = stamp(job['available_at'])
@@ -100,15 +102,22 @@ class JobQueue:
                    (id,spec.kind,spec.target_type,spec.target_id,'queued',payload,spec.max_attempts,
                     stamp(now),stamp(now),spec.idempotency_key,fingerprint,now,spec.timeout_seconds,int(spec.auto_retry)))
         job=row(db,id)
+        from .job_steps import initial
+        db.execute('UPDATE jobs SET steps_json=? WHERE id=?',(encoded(initial(job)),id))
+        job=row(db,id)
         from .parsing import requested
         requested(db,job)
         return public(job)
 
     def get(self,id):
         with connect(self.settings.database) as db:
-            return public(row(db,id))
+            from .job_steps import enrich
+            job=row(db,id)
+            return enrich(db,job,public(job))
 
     def _failure(self,db,job,code,message,retryable,now):
+        from .job_steps import finish
+        finish(db,job,'failed')
         again = retryable and bool(job['auto_retry']) and job['attempts']<job['max_attempts']
         delay = min(2**max(job['attempts']-1,0),60) if again else 0
         db.execute('UPDATE jobs SET status=?,error_json=?,retryable=?,available_at=?,lease_token=NULL,'
@@ -144,6 +153,11 @@ class JobQueue:
                        'lease_expires_at=?,updated_at=?,progress_done=0,progress_total=NULL WHERE id=?',
                        (owner,token,now+lease_seconds,stamp(now),candidate[0]))
             job = row(db,candidate[0])
+            from .job_steps import initial
+            steps=initial(job)
+            steps[0]['status']='running'
+            db.execute('UPDATE jobs SET steps_json=? WHERE id=?',(encoded(steps),job['id']))
+            job=row(db,job['id'])
             from .source_scans import job_state
             job_state(db,job,'running',stamp(now))
             return job
@@ -171,6 +185,30 @@ class JobQueue:
             self._owned(db,id,token)
             db.execute('UPDATE jobs SET progress_done=?,progress_total=?,updated_at=? WHERE id=?',
                        (done,total,stamp(self.clock()),id))
+            # Generic maintenance/index jobs expose their existing real counters.
+            steps=json.loads(row(db,id)['steps_json'])
+            if len(steps)==1 and steps[0]['code']=='process':
+                steps[0].update(done=done,total=total)
+                db.execute('UPDATE jobs SET steps_json=? WHERE id=?',(encoded(steps),id))
+
+    def step(self,id,token,code,done=0,total=None):
+        if type(done) is not int or not 0<=done<=9223372036854775807 or (total is not None and
+                (type(total) is not int or not done<=total<=9223372036854775807)):
+            raise ValueError('Invalid step progress')
+        with self.write() as db:
+            job=self._owned(db,id,token)
+            steps=json.loads(job['steps_json'])
+            index=next((i for i,s in enumerate(steps) if s['code']==code),None)
+            if index is None:raise ValueError('Unknown processing step')
+            active=next((i for i,s in enumerate(steps) if s['status']=='running'),None)
+            if active is None or index not in (active,active+1):raise ValueError('Steps must advance in order')
+            if index==active+1:
+                previous=steps[active]
+                previous.update(status='completed',done=previous['total'] if previous['total'] is not None else 1,
+                                total=previous['total'] if previous['total'] is not None else 1)
+            elif done<steps[index]['done']:raise ValueError('Step progress must not decrease')
+            steps[index].update(status='running',done=done,total=total)
+            db.execute('UPDATE jobs SET steps_json=?,updated_at=? WHERE id=?',(encoded(steps),stamp(self.clock()),id))
 
     def complete(self,id,token,result,*,effect=None):
         """Commit database effect and job completion together. Effect must use this db; a callable result runs here and returns the result JSON."""
@@ -184,6 +222,9 @@ class JobQueue:
             if callable(result):
                 result_json = encoded(result(db,job))
             self._owned(db,id,token)  # Long callbacks must not outlive the lease.
+            from .job_steps import finish
+            outcome=json.loads(result_json)
+            finish(db,row(db,id),'discarded' if isinstance(outcome,dict) and outcome.get('status')=='discarded' else 'completed')
             db.execute("UPDATE jobs SET status='completed',result_json=?,error_json=NULL,retryable=0,"
                        'lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,updated_at=?, '
                        'progress_done=COALESCE(progress_total,progress_done) WHERE id=?',
@@ -236,7 +277,9 @@ def router(settings):
                              (*values,page_size,(page-1)*page_size)).fetchall()
             items = []
             for (id,) in ids:
-                item = public(row(db,id), summary=True)
+                from .job_steps import enrich
+                job=row(db,id)
+                item = enrich(db,job,public(job, summary=True))
                 item['error'] = {'code':item['error'].get('code')} if item['error'] else None
                 items.append(item)
             return {'items':items,'total':total,'page':page,'page_size':page_size}

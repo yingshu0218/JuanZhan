@@ -1639,3 +1639,16 @@ select {
 .task-progress { display:block; font-size:12px; margin-top:6px; }
 .task-row progress { width:100%; margin-top:6px; }
 @media(max-width:420px) { .header-actions .primary { padding:8px; } .header-actions .primary svg { display:none; } .brand strong { font-size:18px; } .task-entry { padding:5px; } }
+
+.job-progress,.job-overall,.job-steps,.job-step { display:block; }
+.job-filename { display:block; font-size:15px; overflow-wrap:anywhere; margin-bottom:10px; }
+.job-overall { font-size:12px; margin:8px 0 12px; }
+.job-progress progress { display:block; width:100%; height:8px; margin:6px 0 10px; accent-color:#286754; }
+.job-steps { padding-left:10px; border-left:2px solid #e4ebe6; margin-bottom:12px; }
+.job-step-label { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px; font-size:12px; }
+.job-step-label small { margin:0; font-size:11px; }
+.job-step.pending { color:#727b75; }
+.job-step.failed progress { accent-color:#b33d37; }
+.job-step.failed .job-step-label,.job-step.discarded .job-step-label { color:#a83530; }
+.tasks-layout:has(.job-progress) { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+@media(max-width:700px) { .tasks-layout:has(.job-progress) { grid-template-columns:minmax(0,1fr); } }

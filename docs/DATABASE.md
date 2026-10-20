@@ -172,3 +172,7 @@ T32无新迁移。备份通过SQLite Backup API包含WAL已提交事实，冻结
 ## 0010备份管理迁移 · 2026-10-20
 
 开发版本新增backup_records、recovery_records和backup_schedule，当前10条迁移。记录关联持久job，内部source/artifact令牌不暴露API；备份完成字段成组非空，删除保留墓碑。计划保存version、分钟间隔、数量/天数保留、next_due_at及last_job_id，默认关闭。原0001～0009未改；旧9迁移备份须先使用对应旧代码恢复，再正常升级，不跳过精确迁移检查。
+
+## 0011：任务步骤进度
+
+jobs新增steps_json（JSON数组，旧记录默认[]），保存当前尝试的有序步骤code/status/done/total。只持有效租约的worker可推进；领取新尝试清空上轮步骤，失败/租约过期保留失败步骤，完成步骤状态与任务结果同事务提交。无原件/业务字段变化，原0010及之前迁移保持不变。

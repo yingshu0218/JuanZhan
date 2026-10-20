@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.28
+  version: 0.4.29
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -3719,6 +3719,24 @@ components:
       - page
       - page_size
       - total
+    JobStep:
+      type: object
+      additionalProperties: false
+      required: [code, status, done, total]
+      properties:
+        code:
+          type: string
+          enum: [validate, submit, extract, assets, publish, process]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, discarded]
+        done:
+          type: integer
+          minimum: 0
+        total:
+          type: [integer, 'null']
+          minimum: 0
+          description: null表示总量不可得，禁止据耗时估算百分比。
     Job:
       type: object
       properties:
@@ -3751,6 +3769,15 @@ components:
           type: string
         target_id:
           type: [string, 'null']
+        document_name:
+          type: [string, 'null']
+          description: 解析任务取捕获版本的文件名，其余文档任务取当前原件名；不含来源路径，系统任务为null。
+        steps:
+          type: array
+          description: 当前尝试的真实有序步骤；旧历史任务为空数组。重试领取时重新初始化。
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/JobStep'
         can_retry:
           type: boolean
           description: 与写接口相同的当前资格；不增加尝试预算，提交时重新验证。
@@ -5091,6 +5118,15 @@ components:
           type:
           - string
           - 'null'
+        document_name:
+          type: [string, 'null']
+          description: 解析任务取捕获版本的文件名，其余文档任务取当前原件名；不含来源路径，系统任务为null。
+        steps:
+          type: array
+          description: 当前尝试的真实有序步骤；旧历史任务为空数组。重试领取时重新初始化。
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/JobStep'
         can_retry:
           type: boolean
           description: 与写接口相同的当前资格；不增加尝试预算，提交时重新验证。

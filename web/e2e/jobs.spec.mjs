@@ -14,6 +14,15 @@ test("upload links directly to persistent automatically refreshed task progress"
   const center = page.getByRole("dialog", { name: "任务中心", exact: true });
   await expect(center.getByRole("region", { name: "任务详情", exact: true }).getByText(receipt.job_id, { exact: true })).toBeVisible();
   await expect(center.getByRole("heading", { name: "解析 · 已完成", exact: true })).toBeVisible({ timeout: 30000 });
+  const detail = center.getByRole("region", { name: "任务详情", exact: true });
+  await expect(detail.locator(".job-filename")).toHaveText("进度验证.docx");
+  await expect(detail.getByRole("list", { name: "按顺序排列的处理步骤" }).getByRole("listitem")).toHaveCount(5);
+  await expect(detail.getByRole("progressbar")).toHaveCount(6);
+  await expect(detail.getByLabel("文件总体步骤进度")).toHaveAttribute("value", "5");
+  for (const label of ["读取并校验原件", "提交转换任务", "提取正文 / OCR（如启用）", "保存派生文件", "写入正文与候选"]) {
+    await expect(detail.getByLabel(label + "进度", { exact: true })).toHaveAttribute("value", "1");
+  }
+
   const space = await page.getByLabel("当前空间").inputValue();
   const csrf = (await api(page, "/auth/session")).data.csrf_token;
   const response = await page.request.post("/api/v1/documents/upload", { headers: { "X-CSRF-Token": csrf }, multipart: { space_id: space, file: { name: "自动刷新.txt", mimeType: "text/plain", buffer: Buffer.from("New background task") } } });
@@ -120,6 +129,11 @@ test("actual corrupt original reports failure without offering terminal retry", 
   await center.getByLabel("任务状态").selectOption("failed");
   await center.locator(".task-row").filter({hasText:receipt.job_id}).click();
   await expect(center.getByRole("heading",{name:"解析 · 失败"})).toBeVisible();
+  const detail = center.getByRole("region", { name: "任务详情", exact: true });
+  await expect(detail.locator(".job-filename")).toHaveText("损坏.pdf");
+  await expect(detail.locator(".job-step.failed")).toHaveCount(1);
+  await expect(detail.locator(".job-step.pending")).toHaveCount(2);
+
   await expect(center.getByText("错误代码：",{exact:false})).toBeVisible();
   await expect(center.getByRole("button",{name:"确认重试（沿用剩余次数）"})).toHaveCount(0);
   const doc = (await api(page,`/documents/${receipt.document_id}`)).data;
