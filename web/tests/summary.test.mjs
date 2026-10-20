@@ -28,6 +28,8 @@ test('table excerpts preserve actual column labels, values and source navigation
  const result=summarizeDocument(data([h('设备清单'),{type:'table',text:'',structure:{table:{headers:['设备','状态'],rows:[['主机','已验收'],['路由器','待验证']]}}}]));
  assert.ok(result.points[0].details[0].includes('设备：主机；状态：已验收'));
  assert.equal(result.points[0].sources[1].index,1);
+ const withHeaderRow=summarizeDocument(data([h('清单'),{type:'table',structure:{table:{rows:[['设备','状态'],['主机','已验收']]}}}]));
+ assert.ok(withHeaderRow.points[0].details[0].includes('主机；已验收'));
 });
 test('bounded reads and omitted details never imply full-document coverage',()=>{
  const result=summarizeDocument(data(Array.from({length:110},(_,i)=>p('第'+i+'段内容')),250));

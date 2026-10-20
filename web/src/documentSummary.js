@@ -5,7 +5,7 @@ const normalize = text => text.replace(/[ \t]+/g, ' ').trim();
 const compact = blocks => ({ ...blocks[0], text: blocks.map(block => block.text).join('；'), sourceBlocks: blocks });
 function textOf(block) {
   const table = block.structure?.table;
-  if (block.type === 'table' && table) return table.rows.slice(0, 2).map(row => row.map((cell, index) => `${table.headers?.[index] ? table.headers[index] + '：' : ''}${cell}`).join('；')).join('。');
+  if (block.type === 'table' && table) return table.rows.slice(0, 2).map(row => row.map((cell, index) => `${table.headers?.[index] ? table.headers[index] + '：' : ''}${cell}`).join('；')).join('；');
   return block.text || '';
 }
 function excerpt(text) {
