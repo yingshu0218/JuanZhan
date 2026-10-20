@@ -1,5 +1,15 @@
 # 测试与交付验收
 
+## 2026-10-20 通用分点内容概览（rc.9）
+
+最终镜像sha256:83776d5283eead7eabca8da5d147664137209092aa5abe4027647fee42b27349，干净源码7168700；构建manifest为/tmp/juanzhan-release-1hgyu80e/manifest.json并复制私有rc9-manifest.json。表格摘录补充后7项规则再次通过，部署后的真实Word只读核对在此最终镜像执行。此前5168ff6构建为中间产物，不作为最终运行镜像。
+
+按最新用户决定移除课程/价格/时长/受众等专用事实卡片与领域判断。概览按实际章节、子标题、代表句或纯文本顺序组成通用要点；数字保留在原句，标题/短标签/明确粗体做安全React强调，不渲染活动HTML。表格摘录包含列名及实际数据，避免只摘表头。100块/4000字符读取预算、8点上限、原文依据和章节/全文入口保留；范围/方法仍通过信息图标展示。无依赖/API/迁移/业务字段变更。
+
+验证：7项规则覆盖课程与通用报告/会议、纯文本、表格、边界/空内容/XSS字符串与输入不变。阅读浏览器4项覆盖真实HTML概览、单列要点、标签加粗、无专用卡片、提示/触屏与原文导航、真实DOCX候选/并发/历史、安全文本和失败/会话；首次3通过1因旧.document-abstract选择器失败，改为新要点选择器后单项5.9秒通过。基础浏览器首轮12通过1跨页选择收件箱计数暂为0而非1，未改业务逻辑，单独重跑该项18.5秒通过；保留两次日志，不将其归因本轮摘要代码。累计17项浏览器通过；未重跑后台484项或其他浏览器组。
+
+Browser plugin not available，沿用devtest已有Playwright缓存。生产构建通过（既有PDF大分包提示保留）。真实用户Word在1440/390只读核对：默认通用要点、数字无卡片、标题强调、原文跳转、无控制台错误/框架错误层/横向溢出；Document版本、Revision和ParseRun不变，未重解析。私有证据为test-instance/generic-overview-browser.mjs、generic-overview-smoke.json及同前缀PNG；日志.local/generic-reading.log、generic-library.log、generic-library-retry.log与generic-rc9-build.log。
+
 ## 2026-10-20 概览优先与全站信息提示（rc.8）
 
 目标流程：点击资料 → 主阅读区默认摘要/关键信息 → 信息图标悬浮/键盘聚焦显示说明 → Escape关闭；手机点击与视口边界核对。Browser plugin not available，沿用devtest已有Playwright，无新增依赖。
