@@ -1,5 +1,19 @@
 # 测试与交付验收
 
+## 2026-10-20 概览优先与全站信息提示（rc.8）
+
+目标流程：点击资料 → 主阅读区默认摘要/关键信息 → 信息图标悬浮/键盘聚焦显示说明 → Escape关闭；手机点击与视口边界核对。Browser plugin not available，沿用devtest已有Playwright，无新增依赖。
+
+已验证：7项摘要规则；4项阅读浏览器（21.9秒，含提示隐藏/悬浮/聚焦/Escape/触屏与390像素边界）；4项任务浏览器（28.4秒）。基础13项中12项直接通过，首条旧“正文内容”断言更新为默认摘要后单独通过（6.0秒），未修改产品来适配旧测试。初次浏览器启动错误来自误设/usr/bin/chromium，已使用既有PLAYWRIGHT_BROWSERS_PATH缓存重跑。来源初次使用默认旧foundation镜像，结果不计本轮验收，须用JUANZHAN_E2E_IMAGE=juanzhan:0.1.0-rc.8。
+
+生产构建通过，既有PDF分包大小提示仍存在。实际devtest Word只读1440/390验证通过，摘要/价格/时长/课次/未说明受众、原文入口、悬浮提示、无控制台错误与溢出；document_version、Revision、ParseRun不变，未重解析。私有证据为test-instance/info-overview-browser.mjs、info-overview-browser-smoke.json及同前缀PNG。
+
+rc.8镜像sha256:8956c1a0aaa6dbbe0fc0cc0297310b8e5142fd5e9ca43b8d57a2116addfcdd2b；干净源码b0e903c，manifest为/tmp/juanzhan-release-6h1k_xr9/manifest.json。仅前端交互，无API/迁移/后端变化，本轮不重跑完整后端484项；全站补充浏览器结果在下方追加。
+
+最终补充：来源4项（rc.8镜像，1.5分钟）、搜索4项（首轮3项通过，缺字体的扫描PDF夹具按已有CJK字体补环境后单项8.3秒通过）、原件/PDF9项（37.5秒）、备份3项（15.4秒）通过。累计七组41项浏览器及7项规则通过，按失败原因只重跑相应用例，未反复重跑已通过组。复用JUANZHAN_TEST_CJK_FONT=/usr/share/fonts/google-noto-cjk/NotoSansCJKsc-Medium.otf，LANG/LC_ALL=en_US.UTF-8，无字体安装或断言放宽。原有Starlette弃用提示属于测试库提示，无浏览器应用异常。
+
+界面核对：页面身份/非空/无框架错误层、控制台、桌面1440与手机390截图及交互全部通过。最新真实Word核对在最终rc.8镜像完成；临时隔离来源容器/卷正常清理，线上三服务及原两个无关服务保留。证据日志为info-reading.log/info-jobs.log及本机/tmp/juanzhan-info-broad.log、info-broad-verified.log、info-extra-verified.log、info-final-verified.log；后两份分别含来源/搜索与字体修正后的搜索/文件/备份结果。
+
 ## 2026-10-20 摘要与关键信息卡片
 
 用户明确选摘要/卡片优先，原章节摘录保留为次级模式。本轮仅前端，未改HTTP契约/11迁移/后台/依赖；未重新执行无变化的484项后端。Node原生规则测试7项全部通过（120ms），日志.local/summary-cards-unit-verified.log：原文标价与报价/收益例子隔离、四位小数/早鸟条件/价格区间/单位原文保留、适合人群明示/未知、课程标题后的时长与镜头时长区分、部分读取边界、章节内容与出处。

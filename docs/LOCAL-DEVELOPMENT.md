@@ -2,6 +2,8 @@
 
 2026-10-20信息提示迭代：无新增依赖，使用已有React/CSS及devtest的Playwright浏览器缓存。临时源码包为/tmp/juanzhan-info-source.tar.gz及服务器.local/同名包；验证日志为.local/info-reading.log、info-jobs.log及本机/tmp/juanzhan-info-broad.log，均可在无需复查后按名删除。保留运行数据卷、私有认证配置及备份。未在本机安装构建依赖。
 
+补充可清理产物：info-rc8-build.log，juanzhan-info.bundle/juanzhan-info-clean.tar.gz，/tmp/juanzhan-info-*-verified.log及/tmp/juanzhan-release-6h1k_xr9构建manifest。test-instance/info-overview-browser.mjs/json/png与本机/tmp/juanzhan-info-*.png包含用户文档截图，按私有资料保管，无需复查后可按名删除；运行中rc.8镜像与数据卷保留。旧rc.7回退镜像在无需回退时单独清理，禁止全局prune。
+
 2026-10-20摘要卡片：无新增依赖，新增npm test:summary使用已有Node原生测试运行器。rc.7镜像、.local/summary-cards-*.log、构建manifest、/tmp/juanzhan-summary-cards-*.png及本轮bundle/source归档为验证产物；无运行引用且无需复查时可按名称清理。实际文档只读验证截图按私有资料处理，不提交Git；原数据/认证/备份保留。
 
 本轮构建manifest为/tmp/juanzhan-release-8x8je1ok，Git中间文件为.local/juanzhan-summary-cards.bundle、juanzhan-summary-cards-source.tar.gz及同前缀evidence归档。私有实例summary-cards-browser.mjs/json/png和本机/tmp/juanzhan-word-summary-cards-*.png含实际文档验证信息，按私有资料保管，无需复查后可单独删除。
