@@ -18,6 +18,35 @@ async function open(page, name, space) {
   await page.getByRole("region", { name: "档案列表", exact: true }).getByRole("button").filter({ hasText: name }).click();
 }
 
+test("source-bound summary cards distinguish course tuition from commercial examples", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await login(page); await createSpace(page, "摘要卡片验证");
+  const space = await page.getByLabel("当前空间").inputValue();
+  const html = '<html><body><h1>剪辑实战营</h1><p>6节直播课 · 12小时 · 1980元</p><h2>课程内容</h2><h3>脚本设计</h3><p>编写课程练习脚本。</p><h3>视频剪辑</h3><h2>收益举例</h2><p>报价参考：200-500元/集</p></body></html>';
+  await upload(page, space, "摘要样例.html", Buffer.from(html), "text/html");
+  await open(page, "摘要样例.html", space);
+  const reader = page.getByRole("region", { name: "正文阅读", exact: true });
+  await expect(reader.getByLabel("阅读格式")).toHaveValue("summary");
+  const price = reader.getByRole("article", { name: "课程价格", exact: true });
+  await expect(price.locator(".fact-value")).toHaveText("1980元");
+  await expect(reader.getByRole("article", { name: "课程时长", exact: true }).locator(".fact-value")).toHaveText("12小时");
+  await expect(reader.getByRole("article", { name: "课次与形式", exact: true }).locator(".fact-value")).toHaveText("6节直播课");
+  await expect(reader.getByRole("article", { name: "适合人群", exact: true })).toContainText("未说明");
+  await expect(reader.getByRole("article", { name: "课程内容", exact: true })).toContainText("脚本设计");
+  await expect(reader.locator(".document-abstract > p")).not.toContainText("200-500");
+  await price.locator("summary").click();
+  await expect(price.locator("blockquote")).toContainText("1980元");
+  await price.getByRole("button", { name: "查看对应正文", exact: true }).click();
+  await expect(reader.locator(".content-blocks")).toBeVisible();
+  await reader.getByLabel("阅读格式").selectOption("summary");
+  await expect(reader.locator(".fact-grid")).toBeVisible();
+  await page.screenshot({ path: "/tmp/juanzhan-summary-cards-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/juanzhan-summary-cards-mobile.png" });
+  expect(errors).toEqual([]);
+});
+
 test("real paginated reading, safe source text, explicit candidate adoption, history and responsive return", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -31,7 +60,10 @@ test("real paginated reading, safe source text, explicit candidate adoption, his
   await page.reload();
   await open(page, "真实候选.docx", space);
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
-  await expect(reader.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
+  await expect(reader.getByRole("heading", { name: "摘要与关键信息", exact: true })).toBeVisible();
+  await expect(reader.getByRole("article", { name: "明确标价", exact: true }).getByText("未说明", { exact: true })).toBeVisible();
+  await reader.getByRole("button", { name: "查看章节摘录", exact: true }).click();
+  await expect(reader.getByRole("heading", { name: "章节摘录", exact: true })).toBeVisible();
   await expect(reader.getByRole("heading", { name: "项目规划" })).toBeVisible();
   await expect(reader.locator(".overview-table thead th")).toHaveText("字段");
   await expect(reader.getByRole("cell", { name: "内容", exact: true })).toBeVisible();
@@ -78,7 +110,7 @@ test("real paginated reading, safe source text, explicit candidate adoption, his
   await reader.getByRole("button", { name: "返回当前成功正文" }).click();
   await page.screenshot({ path: "/tmp/juanzhan-t29-desktop.png", fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(reader.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
+  await expect(reader.getByRole("heading", { name: "摘要与关键信息", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: "/tmp/juanzhan-t29-mobile.png", fullPage: false });
   await page.getByRole("button", { name: "返回档案列表" }).click();
@@ -93,7 +125,7 @@ test("real multi-page blocks and untrusted markup remain safe across format chan
   await upload(page, space, "分页.txt", Buffer.from(text), "text/plain");
   await open(page, "分页.txt", space);
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
-  await expect(reader.getByText("段落 01", { exact: false })).toBeVisible();
+  await expect(reader.locator(".document-abstract > p")).toContainText("段落 01");
   await reader.getByRole("button", { name: "阅读完整正文", exact: true }).click();
   const pager = page.getByRole("navigation", { name: "正文分页" });
   await pager.getByRole("button", { name: "下一页" }).click();

@@ -1678,3 +1678,22 @@ select {
 .overview-section li { margin:14px 0; line-height:1.75; }
 .content-state .overview-section p { font-size:14px; line-height:1.85; color:#344b3d; white-space:pre-wrap; margin:7px 0; }
 .overview-section .text-action { margin-top:8px; }
+
+.document-abstract { background:#f2f7f1; border-radius:8px; padding:20px; margin:16px 0 24px; border-left:3px solid #70947c; }
+.abstract-label { display:block; color:#687d6d; font-size:11px; margin-bottom:9px; }
+.document-abstract h4 { color:#173b2b; font-size:21px; margin:0 0 12px; }
+.content-state .document-abstract > p { font-size:15px; line-height:1.9; color:#294d37; margin:0; }
+.facts-heading { margin:20px 0 12px; color:#244c37; font-size:16px; }
+.fact-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.fact-card { border:1px solid #e0e8df; border-radius:7px; padding:16px; min-width:0; overflow-wrap:anywhere; }
+.fact-card h5 { color:#63766a; font-size:12px; font-weight:500; margin:0 0 12px; }
+.content-state .fact-value { color:#214732; font-size:19px; font-weight:600; line-height:1.6; margin:0; }
+.fact-card ul { padding-left:18px; font-size:14px; line-height:1.8; margin:0; color:#304b3b; }
+.fact-content { grid-column:1 / -1; }
+.content-state .fact-missing,.content-state .fact-note,.content-state .summary-method { color:#758078; font-size:12px; line-height:1.7; }
+.fact-sources { margin-bottom:0 !important; }
+.fact-sources summary { color:#718276; font-size:11px; cursor:pointer; }
+.fact-sources blockquote { margin:12px 0 0; padding:0 0 0 10px; border-left:2px solid #c8d8c9; }
+.content-state .fact-sources p { font-size:12px; line-height:1.7; white-space:pre-wrap; margin:0; }
+.summary-actions { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+@media(max-width:420px) { .fact-grid { grid-template-columns:minmax(0,1fr); } }

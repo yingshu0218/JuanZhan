@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-20摘要卡片：无新增依赖，新增npm test:summary使用已有Node原生测试运行器。rc.7镜像、.local/summary-cards-*.log、构建manifest、/tmp/juanzhan-summary-cards-*.png及本轮bundle/source归档为验证产物；无运行引用且无需复查时可按名称清理。实际文档只读验证截图按私有资料处理，不提交Git；原数据/认证/备份保留。
+
 2026-10-20内容概览：复用devtest依赖，无新安装。rc.6镜像、.local/content-overview-*.log、构建manifest、阅读/任务截图及本轮Git bundle/source.tar.gz为可按名称清理的验证产物；不删除运行数据卷、私有认证覆盖或备份。用户Word只读检查已有解析结构，无重新解析或改写。
 
 本轮同步文件为.local/juanzhan-content-overview.bundle和juanzhan-content-overview-source.tar.gz；构建manifest在/tmp/juanzhan-release-mgnd6hov。私有实例content-overview-browser.mjs/json/png及本机/tmp/juanzhan-word-overview-*.png含实际文档验证信息/截图，按私有业务资料保管，勿提交Git；无需复查时可按名称删除。
