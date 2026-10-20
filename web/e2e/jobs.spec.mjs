@@ -89,6 +89,7 @@ test("durable tasks and explicit real reprocessing on desktop and mobile", async
   await expect.poll(async () => (await api(page, `/documents/${upload.document_id}`)).data.processing_status, {timeout:30000}).toBe("completed");
   await page.reload(); await page.getByLabel("当前空间").selectOption(space);
   await page.getByRole("region",{name:"档案列表",exact:true}).getByRole("button").filter({hasText:"任务原件"}).click();
+  await page.getByText("重新解析与 OCR",{exact:true}).click();
   await page.getByRole("button",{name:"重新解析 / OCR",exact:true}).click();
   const dialog = page.getByRole("dialog", {name:"重新解析档案",exact:true});
   await expect(dialog.getByLabel("启用 OCR（耗时较长）")).not.toBeChecked();

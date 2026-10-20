@@ -31,7 +31,17 @@ test("real paginated reading, safe source text, explicit candidate adoption, his
   await page.reload();
   await open(page, "真实候选.docx", space);
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
+  await expect(reader.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
   await expect(reader.getByRole("heading", { name: "项目规划" })).toBeVisible();
+  await expect(reader.getByRole("columnheader", { name: "字段", exact: true })).toBeVisible();
+  await expect(reader.getByRole("cell", { name: "内容", exact: true })).toBeVisible();
+  await reader.getByRole("button", { name: "阅读本节完整内容", exact: true }).click();
+  await expect(reader.getByText("定位未知", { exact: true })).not.toBeVisible();
+  await reader.locator(".reader-diagnostics > summary").click();
+  await reader.getByLabel("显示每段来源定位与置信度").check();
+  await expect(reader.locator(".block-annotation").first()).toBeVisible();
+  await reader.getByLabel("显示每段来源定位与置信度").uncheck();
+  await reader.locator(".reader-diagnostics > summary").click();
   await expect(reader.getByRole("cell", { name: "内容", exact: true })).toBeVisible();
   const candidates = page.getByRole("region", { name: "提取候选", exact: true });
   await expect(candidates.getByText('"真实标题"', { exact: true })).toBeVisible();
@@ -68,7 +78,7 @@ test("real paginated reading, safe source text, explicit candidate adoption, his
   await reader.getByRole("button", { name: "返回当前成功正文" }).click();
   await page.screenshot({ path: "/tmp/juanzhan-t29-desktop.png", fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(reader.getByRole("heading", { name: "正文内容" })).toBeVisible();
+  await expect(reader.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: "/tmp/juanzhan-t29-mobile.png", fullPage: false });
   await page.getByRole("button", { name: "返回档案列表" }).click();
@@ -84,6 +94,7 @@ test("real multi-page blocks and untrusted markup remain safe across format chan
   await open(page, "分页.txt", space);
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
   await expect(reader.getByText("段落 01", { exact: false })).toBeVisible();
+  await reader.getByRole("button", { name: "阅读完整正文", exact: true }).click();
   const pager = page.getByRole("navigation", { name: "正文分页" });
   await pager.getByRole("button", { name: "下一页" }).click();
   await expect(reader.getByText("段落 21", { exact: false })).toBeVisible();
