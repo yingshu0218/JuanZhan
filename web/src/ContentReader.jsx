@@ -2,7 +2,7 @@ import { InfoTip } from "./ui.jsx";
 import { useEffect, useState } from "react";
 import { message } from "./api.js";
 import { ContentOverview } from "./ContentOverview.jsx";
-import { SummaryCards } from "./SummaryCards.jsx";
+import { DocumentSummary } from "./DocumentSummary.jsx";
 import { Dialog, Notice, processing, availability, formatDate } from "./ui.jsx";
 
 function usePage(api, path) {
@@ -110,13 +110,13 @@ export function ContentReader({ api, doc, definitions, onChanged }) {
   function selectRun(value) { setRun(value); setPage(1); setCandidatePage(1); }
   return <>
     <section className="content-state" aria-label="正文阅读">
-      <div className="reader-section-head"><h3>{format === "summary" ? "摘要与关键信息" : format === "overview" ? "章节摘录" : "正文内容"}</h3><button onClick={onChanged}>刷新内容</button><label>阅读格式<select value={format} onChange={(e) => { setFormat(e.target.value); setPage(1); }}><option value="summary">摘要与关键信息</option><option value="overview">章节摘录</option><option value="blocks">完整结构化正文</option><option value="text">纯文本</option><option value="markdown">Markdown 源文本</option></select></label></div>
+      <div className="reader-section-head"><h3>{format === "summary" ? "内容概览" : format === "overview" ? "章节摘录" : "正文内容"}</h3><button onClick={onChanged}>刷新内容</button><label>阅读格式<select value={format} onChange={(e) => { setFormat(e.target.value); setPage(1); }}><option value="summary">内容概览</option><option value="overview">章节摘录</option><option value="blocks">完整结构化正文</option><option value="text">纯文本</option><option value="markdown">Markdown 源文本</option></select></label></div>
       {run ? <Notice>正在查看指定历史结果。<button onClick={() => selectRun(null)}>返回当前成功正文</button></Notice> : null}
       {content.empty ? <p>尚无成功解析的正文。{processing[doc.processing_status] || "请刷新处理状态"}；原件和业务字段仍保留。</p> : content.loading ? <p role="status">正在读取正文…</p> : content.error ? content.error.code === "CONTENT_NOT_AVAILABLE" ? <p>尚无成功解析的正文。{processing[doc.processing_status] || "请刷新处理状态"}；原件和业务字段仍保留。</p> : <Notice error>{message(content.error)} 可使用顶部刷新重新读取。</Notice> : <>
         {content.data.stale_for_current_revision ? <Notice>这是已保存的缓存正文，可能来自旧版本或原件当前不可用；不代表当前原件已验证。</Notice> : null}
         {content.data.ocr_used && <Notice>正文含 OCR 识别内容，请复核。</Notice>}
         {!content.data.text_available ? <Notice>此次结果没有可读文本；扫描文件可能需要显式启用 OCR。</Notice> : null}
-        {format === "summary" ? <SummaryCards data={content.data} documentTitle={doc.title} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} onChapters={() => setFormat("overview")} /> : format === "overview" ? <ContentOverview data={content.data} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} /> : format === "blocks" ? <><Blocks blocks={content.data.body} annotations={annotations} />{!content.data.body.length ? <p>此次解析没有正文块。</p> : null}</> : <pre className="plain-content">{content.data.body || "此次解析没有文本。"}</pre>}
+        {format === "summary" ? <DocumentSummary data={content.data} documentTitle={doc.title} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} onChapters={() => setFormat("overview")} /> : format === "overview" ? <ContentOverview data={content.data} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} /> : format === "blocks" ? <><Blocks blocks={content.data.body} annotations={annotations} />{!content.data.body.length ? <p>此次解析没有正文块。</p> : null}</> : <pre className="plain-content">{content.data.body || "此次解析没有文本。"}</pre>}
         {format === "blocks" ? <Pager page={page} data={content.data} onChange={setPage} label="正文分页" /> : !condensed ? <InfoTip>以安全源文本显示，不执行 HTML 或外部资源。</InfoTip> : null}
         <details className="reader-diagnostics"><summary>正文来源与解析说明{content.data.warnings.length ? `（${content.data.warnings.length} 条提示）` : ""}</summary>
           <p>{availability[content.data.availability_status] || "原件待核验"} · {content.data.ocr_used ? "含 OCR 识别，请复核" : "未使用 OCR"}</p>

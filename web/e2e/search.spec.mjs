@@ -82,7 +82,7 @@ test("real Chinese search, typed combinations, URL history, exact batch scope an
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: "/tmp/juanzhan-t30-mobile.png", fullPage: false });
   await library(page).getByRole("button").filter({ hasText: "合同甲.txt" }).click();
-  await expect(page.getByRole("heading", { name: "摘要与关键信息", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "内容概览", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "返回档案列表" }).click();
   await expect(library(page).getByText("1 份", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);

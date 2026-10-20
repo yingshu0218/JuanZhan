@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-20通用分点概览：无新增依赖，继续在devtest构建/Playwright验证；临时源码包juanzhan-generic-source.tar.gz、Git同步juanzhan-generic.bundle/clean.tar.gz、.local/generic-*.log和/tmp/juanzhan-generic-overview-*.png在无需复查后可按名清理。实际用户Word截图与验证脚本/JSON仅保存在私有test-instance目录，按私有资料保管。运行数据卷、认证配置及回退镜像保留。
+
 2026-10-20信息提示迭代：无新增依赖，使用已有React/CSS及devtest的Playwright浏览器缓存。临时源码包为/tmp/juanzhan-info-source.tar.gz及服务器.local/同名包；验证日志为.local/info-reading.log、info-jobs.log及本机/tmp/juanzhan-info-broad.log，均可在无需复查后按名删除。保留运行数据卷、私有认证配置及备份。未在本机安装构建依赖。
 
 补充可清理产物：info-rc8-build.log，juanzhan-info.bundle/juanzhan-info-clean.tar.gz，/tmp/juanzhan-info-*-verified.log及/tmp/juanzhan-release-6h1k_xr9构建manifest。test-instance/info-overview-browser.mjs/json/png与本机/tmp/juanzhan-info-*.png包含用户文档截图，按私有资料保管，无需复查后可按名删除；运行中rc.8镜像与数据卷保留。旧rc.7回退镜像在无需回退时单独清理，禁止全局prune。

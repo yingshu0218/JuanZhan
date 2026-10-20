@@ -1,52 +1,46 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { summarizeDocument } from '../src/documentSummary.js';
-const p = text => ({ type:'paragraph',text });
-const h = (text,level=1) => ({ type:'heading',text,structure:{level} });
+const p = text => ({ type:'paragraph', text });
+const h = (text, level=1) => ({ type:'heading', text, structure:{level} });
 function data(items,total=items.length) { return { total,body:items.map((item,index)=>({id:'b'+index,index,...item})) }; }
-test('course facts use explicit opening price, not business quote examples or target-account audience',()=>{
-  const result=summarizeDocument(data([p('AI漫剧商业实战营'),p('6节直播课 · 12小时 · 1980元'),h('一、掌握的硬技能'),h('1. AI漫剧全流程创作能力',2),h('2. 平台运营能力',2),p('账号定位：确定账号的目标受众'),h('二、接单变现能力'),p('报价参考：200-500元/集，企业级5000元/集'),p('收入预期：10000元')]),'课程.docx');
-  assert.deepEqual(result.facts.price.values,['1980元']);
-  assert.deepEqual(result.facts.duration.values,['12小时']);
-  assert.deepEqual(result.facts.sessions.values,['6节直播课']);
-  assert.deepEqual(result.facts.audience.values,[]);
-  assert.equal(result.missing,'未说明');
-  assert.deepEqual(result.facts.content.values,['AI漫剧全流程创作能力','平台运营能力','接单变现能力']);
-  assert.ok(result.summary.includes('1980元'));
-  assert.ok(!result.summary.includes('5000'));
-  assert.equal(result.facts.price.sources[0].index,1);
+test('course text uses ordinary ordered points without specialized facts',()=>{
+ const result=summarizeDocument(data([p('AI漫剧商业实战营'),p('学员能获得什么'),p('6节直播课 · 12小时 · 1980元'),h('掌握的硬技能'),h('脚本设计',2),p('学会设计脚本。'),h('平台运营',2),h('接单变现'),p('报价参考：200-500元/集')]),'课程.docx');
+ assert.equal(result.title,'课程'); assert.equal(result.facts,undefined); assert.equal(result.course,undefined);
+ assert.ok(result.points[0].details[0].includes('1980元'));
+ assert.deepEqual(result.points.slice(1).map(point=>point.label),['掌握的硬技能','接单变现']);
+ assert.ok(result.points[1].details[0].includes('平台运营'));
+ assert.ok(result.points[1].sources.some(source=>source.text==='平台运营'));
+ assert.ok(!JSON.stringify(result).includes('适合人群'));
 });
-test('explicit later audience section is retained after an earlier course-content section',()=>{
-  const result=summarizeDocument(data([h('课程内容'),h('摄影基础',2),h('适合人群'),p('有基础的摄影爱好者'),{type:'list_item',text:'希望学习布光的创作者'}]));
-  assert.deepEqual(result.facts.audience.values,['有基础的摄影爱好者','希望学习布光的创作者']);
+test('report title wraps sections; representative source sentences carry actual content',()=>{
+ const result=summarizeDocument(data([h('项目报告'),p('本季度完成系统迁移。'),h('进展',2),p('完成三个服务的迁移。后续进入维护阶段。'),h('风险',2),p('风险：存量数据仍需抽样核验。')]),'报告.pdf');
+ assert.deepEqual(result.points.map(point=>point.label),['','进展','风险']);
+ assert.equal(result.points[1].details[0],'完成三个服务的迁移。');
+ assert.equal(result.points[2].index,4);
 });
-test('conflicting or conditional labelled fees remain separate and preserve four decimal source strings',()=>{
-  const result=summarizeDocument(data([p('课程价格：1980.5600元'),p('报名价格：早鸟1680元'),p('适合人群：内容创作者')]));
-  assert.deepEqual(result.facts.price.values,['1980.5600元','早鸟1680元']);
-  assert.equal(result.facts.price.sources.length,2);
-  assert.deepEqual(result.facts.audience.values,['内容创作者']);
+test('unstructured meeting prose and lists remain ordered generic points',()=>{
+ const result=summarizeDocument(data([p('讨论接口调整。确认周五交付。'),{type:'list_item',text:'李明负责测试。'},p('费用：早鸟1280-1980元/人，按班次收费')]),'会议纪要.txt');
+ assert.equal(result.points.length,4); assert.equal(result.points[1].details[0],'确认周五交付。');
+ assert.equal(result.points[3].details[0],'费用：早鸟1280-1980元/人，按班次收费');
 });
-test('partial input never asserts that the entire document omitted a field',()=>{
-  const result=summarizeDocument(data([h('项目规划'),p('这是一份项目说明。')],250),'项目.docx');
-  assert.equal(result.partial,true);
-  assert.equal(result.missing,'当前读取范围未说明');
-  assert.deepEqual(result.facts.price.values,[]);
-  assert.equal(result.course,false);
+test('table excerpts preserve actual column labels, values and source navigation',()=>{
+ const result=summarizeDocument(data([h('设备清单'),{type:'table',text:'',structure:{table:{headers:['设备','状态'],rows:[['主机','已验收'],['路由器','待验证']]}}}]));
+ assert.ok(result.points[0].details[0].includes('设备：主机；状态：已验收'));
+ assert.equal(result.points[0].sources[1].index,1);
 });
-test('unrelated budget, shot length and commercial example rates do not become course facts',()=>{
-  const result=summarizeDocument(data([h('课程大纲'),p('广告预算：5000元'),p('视频镜头长度为5分钟'),p('报价参考：价格：200元/集')]));
-  assert.deepEqual(result.facts.price.values,[]);
-  assert.deepEqual(result.facts.duration.values,[]);
-  assert.deepEqual(result.facts.audience.values,[]);
+test('bounded reads and omitted details never imply full-document coverage',()=>{
+ const result=summarizeDocument(data(Array.from({length:110},(_,i)=>p('第'+i+'段内容')),250));
+ assert.equal(result.partial,true); assert.equal(result.covered,100); assert.equal(result.points.length,8); assert.equal(result.omitted,true);
+ const long=summarizeDocument(data([p('长'.repeat(5000))])); assert.equal(long.partial,true); assert.ok(long.points[0].details[0].length<=141);
 });
-test('a document title heading still permits explicit opening logistics, without taking video length',()=>{
-  const result=summarizeDocument(data([h('剪辑实战营'),p('6节直播课 · 12小时 · 1980元'),p('视频时长：5分钟'),h('课程内容',2),h('脚本设计',3)]));
-  assert.deepEqual(result.facts.price.values,['1980元']);
-  assert.deepEqual(result.facts.duration.values,['12小时']);
-  assert.equal(result.title,'剪辑实战营');
+test('empty and image-only documents do not receive invented summaries or missing-field cards',()=>{
+ assert.equal(summarizeDocument(data([])).points.length,0);
+ assert.equal(summarizeDocument(data([{type:'image',text:''}])).points.length,0);
 });
-test('price ranges, per-person units and conditional fee descriptions are not reduced to one amount',()=>{
-  const result=summarizeDocument(data([p('课程价格：早鸟1280-1980元/人，按班次收费'),p('课次：第12节课程讲剪辑')]));
-  assert.deepEqual(result.facts.price.values,['早鸟1280-1980元/人，按班次收费']);
-  assert.deepEqual(result.facts.sessions.values,[]);
+test('source strings including unsafe markup stay literal and extraction never mutates input',()=>{
+ const input=data([p('<script>alert(1)</script>'),h('**处理事项**'),p('重要：保留原件。')]);
+ const original=JSON.stringify(input); const result=summarizeDocument(input);
+ assert.equal(JSON.stringify(input),original); assert.equal(result.points[0].details[0],'<script>alert(1)</script>');
+ assert.equal(result.points[1].details[0],'重要：保留原件。');
 });

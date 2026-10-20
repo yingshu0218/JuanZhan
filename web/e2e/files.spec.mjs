@@ -28,7 +28,7 @@ test("real original download, passive preview and return on desktop and mobile",
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:"/tmp/juanzhan-t32-mobile.png"});
   await dialog.getByRole("button",{name:"关闭关联原文件"}).click();
-  await expect(page.getByRole("heading",{name:"摘要与关键信息",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"内容概览",exact:true})).toBeVisible();
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);expect(errors).toEqual([]);
 });
 
