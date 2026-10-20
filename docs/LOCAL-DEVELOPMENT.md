@@ -131,3 +131,7 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 容器清理采用本轮随机名称及退出trap，最终无本轮服务遗留；保留原有nginx-proxy/simple-shell服务。后续删除镜像前先核对没有实例引用，仅选择本项目明确标签，禁止全局prune。业务/backups卷、恢复目录与测试夹具不同，按RELEASE操作，不能按本段缓存清理。
 
 最终同步使用的.local/final-history.bundle、final-source.tar.gz（两端）也可在无需复核后删除；final-audit.py属于只读核验脚本。本机/tmp/juanzhan-final-evidence仅保存本阶段报告副本，确认无需复查后可清理，不影响源码、依赖或业务数据。
+
+## 2026-10-20 任务进度中心迭代
+
+复用devtest现有npm/Python/Playwright/Docker，无安装依赖。新增rc.3镜像、.local/progress-*.log与/tmp/juanzhan-progress-center-*.png为本轮构建/验证产物；保留rc.2可回退。测试实例数据卷及私有认证覆盖保留，见DEVTEST，不能当缓存删除。

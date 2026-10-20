@@ -2,6 +2,34 @@ import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { login, createSpace, api } from "./helpers.mjs";
 
+test("upload links directly to persistent automatically refreshed task progress", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  page.on("console", entry => { if (entry.type() === "error") errors.push(entry.text()); });
+  await login(page); await createSpace(page, "进度入口验证");
+  const buffer = execFileSync("../.venv/bin/python", ["-c", "import sys;sys.path.insert(0,'../tests');from format_samples import docx;sys.stdout.buffer.write(docx())"]);
+  const responsePromise = page.waitForResponse(r => r.url().endsWith("/api/v1/documents/upload") && r.request().method() === "POST");
+  await page.getByLabel("选择上传文件", { exact: true }).setInputFiles({ name: "进度验证.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer });
+  const receipt = await (await responsePromise).json();
+  await page.getByRole("button", { name: "查看解析进度", exact: true }).click();
+  const center = page.getByRole("dialog", { name: "任务中心", exact: true });
+  await expect(center.getByRole("region", { name: "任务详情", exact: true }).getByText(receipt.job_id, { exact: true })).toBeVisible();
+  await expect(center.getByRole("heading", { name: "解析 · 已完成", exact: true })).toBeVisible({ timeout: 30000 });
+  const space = await page.getByLabel("当前空间").inputValue();
+  const csrf = (await api(page, "/auth/session")).data.csrf_token;
+  const response = await page.request.post("/api/v1/documents/upload", { headers: { "X-CSRF-Token": csrf }, multipart: { space_id: space, file: { name: "自动刷新.txt", mimeType: "text/plain", buffer: Buffer.from("New background task") } } });
+  expect(response.status()).toBe(201); const second = await response.json();
+  await expect(center.locator(".task-row").filter({ hasText: second.job_id })).toBeVisible({ timeout: 10000 });
+  await page.screenshot({ path: "/tmp/juanzhan-progress-center-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/juanzhan-progress-center-mobile.png" });
+  await center.getByRole("button", { name: "关闭任务中心", exact: true }).click();
+  await expect(page.getByRole("button", { name: "任务中心", exact: true })).toContainText(/排队 \d+ · 处理中 \d+/);
+  await page.reload(); await page.getByRole("button", { name: "任务中心", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "任务中心", exact: true }).locator(".task-row").filter({ hasText: receipt.job_id })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("batch reprocessing confirms options and tracks actual child tasks", async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await login(page); await createSpace(page, "批量解析验证");

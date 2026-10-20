@@ -145,7 +145,7 @@ function SavedState({ api, item }) {
     </small>
   );
 }
-export function Uploads({ queue, api, inputRef }) {
+export function Uploads({ queue, api, inputRef, onOpenTask }) {
   if (!queue.open) return null;
   return (
     <section className="upload-panel" aria-label="上传队列">
@@ -190,7 +190,7 @@ export function Uploads({ queue, api, inputRef }) {
                 ) : null}
                 {item.status === "waiting" ? <small>等待上传</small> : null}
                 {item.status === "saved" ? (
-                  <SavedState api={api} item={item} />
+                  <><SavedState api={api} item={item} /><button className="text-action" onClick={() => onOpenTask(item.result.job_id)}>查看解析进度</button></>
                 ) : null}
                 {item.error ? (
                   <Notice error={item.status !== "cancelled"}>

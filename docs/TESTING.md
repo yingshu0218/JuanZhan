@@ -649,3 +649,7 @@ backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/
 候选一致性：当前rc.2与工作区打包内容逐文件SHA-256比较，services 63文件、web/dist 208文件、licenses 17文件全部一致，.local/final-features-candidate-match.log。当前产品源码、配置和前端相对镜像构建提交16381a9无差异；后续仅文档/验证脚本和测试适配变动，不篡改候选源码追溯。实际升级/恢复、六格式/OCR、只读离线、自动备份/恢复验证见前一节。
 
 结束检查：仅原有nginx-proxy、simple-shell-terminal-1服务运行；本轮临时后端/来源/镜像演练容器及其随机卷/网络已退出清理。未推送Git标签、Release、镜像仓库，未替换用户业务实例。本轮范围是既定单管理员Linux产品与明确补充功能，不包含PRD明确排除的LLM/向量/多用户/在线Office或未确认扩展。浏览器范围为既有Linux Chromium桌面/窄屏，具体资源和复杂格式边界仍按DEVELOPMENT/PERFORMANCE，不声称真实手机/所有浏览器/硬件断电或无限容量均已实测。
+
+## 2026-10-20 后台任务进度可见性专项
+
+Browser plugin not available，本次使用已有Playwright，无新依赖。devtest执行npm run build及npm run test:e2e:jobs：4项通过（32.0秒），真实SQLite/文件存储/HTTP/Converter/worker，新增DOCX上传→查看解析进度→对应任务完成→新增任务自动出现→刷新保留；其余覆盖批量解析、显式重解析及损坏原件失败。检查1440×1000与390×844截图、无页面错误、无水平溢出。日志在服务器.local/progress-build.log与.local/progress-jobs.log，截图在/tmp/juanzhan-progress-center-{desktop,mobile}.png。此专项不替代此前全量验收，不声称重新运行481项后端。

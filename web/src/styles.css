@@ -1631,3 +1631,11 @@ select {
 .backup-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .backup-actions a { display:inline-flex; align-items:center; padding:8px 12px; border:1px solid var(--line); border-radius:6px; color:var(--green); }
 .backup-confirm { padding:12px; border:1px solid var(--green); border-radius:8px; margin-top:16px; overflow-wrap:anywhere; }
+
+/* Persistent background-task entry and honest per-job progress. */
+.task-entry { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; }
+.task-entry strong { font-size:13px; white-space:nowrap; }
+.task-entry small { font-size:10px; white-space:nowrap; color:var(--muted,#6d786f); }
+.task-progress { display:block; font-size:12px; margin-top:6px; }
+.task-row progress { width:100%; margin-top:6px; }
+@media(max-width:420px) { .header-actions .primary { padding:8px; } .header-actions .primary svg { display:none; } .brand strong { font-size:18px; } .task-entry { padding:5px; } }

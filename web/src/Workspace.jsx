@@ -1,4 +1,4 @@
-import { TaskCenter } from "./Tasks.jsx";
+import { TaskCenter, TaskEntry } from "./Tasks.jsx";
 import { BackupManager } from './BackupManager.jsx';
 import { CatalogManager } from './CatalogManager.jsx';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -44,6 +44,8 @@ const navIcons = {
 
 export function Workspace({ api, logout, authError }) {
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [taskId, setTaskId] = useState(null);
+  function openTasks(id) { setTaskId(id); setTasksOpen(true); }
   const [catalogOpen,setCatalogOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false),[backupOpen,setBackupOpen]=useState(false);
   const [initial] = useState(readLocation);
@@ -506,8 +508,8 @@ export function Workspace({ api, logout, authError }) {
           {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button></div></Dialog>}
           {backupOpen && <BackupManager api={api} onClose={()=>setBackupOpen(false)} />}
           {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
-          <button onClick={() => setTasksOpen(true)}>任务中心</button>
-          {tasksOpen && <TaskCenter api={api} onClose={() => setTasksOpen(false)} />}
+          <TaskEntry api={api} onOpen={openTasks} refreshKey={refresh} />
+          {tasksOpen && <TaskCenter api={api} initialId={taskId} onClose={() => setTasksOpen(false)} />}
           <button className="primary" disabled={!space} onClick={importFiles}>
             <UploadSimple size={18} />
             <span>导入文件</span>
@@ -781,7 +783,7 @@ export function Workspace({ api, logout, authError }) {
         )}
       </main>
       <Operations state={operations} catalog={catalog} />
-      <Uploads queue={queue} api={api} inputRef={inputRef} />
+      <Uploads queue={queue} api={api} inputRef={inputRef} onOpenTask={openTasks} />
       {dialog ? (
         <Dialog
           title={

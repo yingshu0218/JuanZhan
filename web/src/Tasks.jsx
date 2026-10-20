@@ -18,6 +18,26 @@ function ResultView({ value }) {
 }
 const kinds = { upload: "上传", scan: "来源扫描", scan_preview: "预扫描", parse: "解析", ocr: "OCR", reindex: "检索索引", batch: "批量操作", purge: "永久清理", gc: "存储清理" };
 function kindLabel(job) { return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
+// One visible-tab poller for the global entry; totals come from real paginated APIs.
+export function TaskEntry({ api, onOpen, refreshKey }) {
+  const [counts, setCounts] = useState(null), [error, setError] = useState(false);
+  useEffect(() => {
+    const abort = new AbortController(); let timer;
+    async function load() {
+      if (!document.hidden) {
+        try {
+          const [queued, running] = await Promise.all(["queued", "running"].map(status => api.request(`/jobs?status=${status}&page_size=1`, { signal: abort.signal })));
+          if (!abort.signal.aborted) { setCounts({ queued: queued.total, running: running.total }); setError(false); }
+        } catch { if (!abort.signal.aborted) setError(true); }
+      }
+      if (!abort.signal.aborted) timer = setTimeout(load, 5000);
+    }
+    load(); return () => { abort.abort(); clearTimeout(timer); };
+  }, [api, refreshKey]);
+  return <button className="task-entry" onClick={() => onOpen(null)} aria-label="任务中心" title="查看全部后台任务及处理进度">
+    <strong>任务中心</strong><small role="status">{error ? "状态待刷新" : counts ? `排队 ${counts.queued} · 处理中 ${counts.running}` : "读取状态…"}</small>
+  </button>;
+}
 export function TaskStatus({ api, id }) {
   const [job, setJob] = useState(null), [error, setError] = useState(""), [refresh, setRefresh] = useState(0), [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -56,24 +76,30 @@ export function TaskStatus({ api, id }) {
     <p className="muted">自动跟踪最多两分钟；关闭窗口不取消后台任务，可重新打开查看。</p>
   </section>;
 }
-export function TaskCenter({ api, onClose }) {
-  const [status, setStatus] = useState(""), [page, setPage] = useState(1), [data, setData] = useState(null), [id, setId] = useState(null), [error, setError] = useState(""), [refresh, setRefresh] = useState(0);
+export function TaskCenter({ api, onClose, initialId = null }) {
+  const [status, setStatus] = useState(""), [page, setPage] = useState(1), [data, setData] = useState(null), [id, setId] = useState(initialId), [error, setError] = useState(""), [refresh, setRefresh] = useState(0);
   useEffect(() => {
-    const abort = new AbortController(); setData(null); setError("");
-    api.request(`/jobs?page=${page}&page_size=20${status ? `&status=${status}` : ""}`, { signal: abort.signal })
-      .then(value => { if (!abort.signal.aborted) setData(value); })
-      .catch(e => { if (!abort.signal.aborted) setError(message(e)); });
-    return () => abort.abort();
+    const abort = new AbortController(); let timer; setData(null); setError("");
+    async function load() {
+      if (!document.hidden) {
+        try {
+          const value = await api.request(`/jobs?page=${page}&page_size=20${status ? `&status=${status}` : ""}`, { signal: abort.signal });
+          if (!abort.signal.aborted) { setData(value); setError(""); }
+        } catch (e) { if (!abort.signal.aborted) setError(message(e)); }
+      }
+      if (!abort.signal.aborted) timer = setTimeout(load, 3000);
+    }
+    load(); return () => { abort.abort(); clearTimeout(timer); };
   }, [api, status, page, refresh]);
   return <Dialog title="任务中心" wide onClose={onClose}>
-    <p>全部空间与系统维护任务。记录保存在服务器，刷新页面后仍可查询。</p>
+    <p>全部空间与系统维护任务。每 3 秒自动更新，刷新页面后仍可查询。关闭窗口不会取消任务。</p><p className="muted">排队中的任务尚未开始；处理中不代表已完成。总量未知时不显示估算百分比。</p>
     <label>任务状态 <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); setId(null); }}><option value="">全部状态</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     <button onClick={() => setRefresh(n => n + 1)}>刷新列表</button>
     {error && <Notice error>{error}</Notice>}
     <div className="tasks-layout"><div>
       {data?.items.length === 0 && <p>暂无任务</p>}
       {data?.items.map(job => <button className="task-row" key={job.id} onClick={() => setId(job.id)} aria-pressed={id === job.id}>
-        <strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
+        <strong>{kindLabel(job)} · {statuses[job.status]}</strong><span className="task-progress">{job.status === "queued" ? "等待后台执行" : job.progress_total > 0 ? `已处理 ${job.progress_done ?? 0} / ${job.progress_total}` : job.status === "running" ? "正在处理 · 总量未知" : statuses[job.status]}</span>{job.progress_total > 0 && <progress aria-label="任务处理进度" value={job.progress_done ?? 0} max={job.progress_total} />}<small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
       </button>)}
       {data && <div className="task-pages"><button disabled={page === 1} onClick={() => setPage(n => n - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 项</span><button disabled={page * 20 >= data.total} onClick={() => setPage(n => n + 1)}>下一页</button></div>}
     </div>{id && <TaskStatus key={id} api={api} id={id} />}</div>
