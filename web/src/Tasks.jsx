@@ -98,13 +98,18 @@ export function TaskCenter({ api, onClose, initialId = null }) {
     <label>任务状态 <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); setId(null); }}><option value="">全部状态</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     <button onClick={() => setRefresh(n => n + 1)}>刷新列表</button>
     {error && <Notice error>{error}</Notice>}
-    <div className="tasks-layout"><div>
+    <div className="tasks-layout">
+      {id && data && !data.items.some(job => job.id === id) && <TaskStatus key={id} api={api} id={id} />}
       {data?.items.length === 0 && <p>暂无任务</p>}
-      {data?.items.map(job => <button className="task-row" key={job.id} onClick={() => setId(job.id)} aria-pressed={id === job.id}>
-        <JobProgress job={job} /><strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
-      </button>)}
+      {data?.items.map(job => <div className="task-card" key={job.id}>
+        <button className="task-row" onClick={() => setId(id === job.id ? null : job.id)} aria-pressed={id === job.id}>
+          {id === job.id ? <strong className="job-filename">{job.document_name || kindLabel(job)}</strong> : <JobProgress job={job} />}
+          <strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
+        </button>
+        {id === job.id && <TaskStatus api={api} id={id} />}
+      </div>)}
       {data && <div className="task-pages"><button disabled={page === 1} onClick={() => setPage(n => n - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 项</span><button disabled={page * 20 >= data.total} onClick={() => setPage(n => n + 1)}>下一页</button></div>}
-    </div>{id && <TaskStatus key={id} api={api} id={id} />}</div>
+    </div>
   </Dialog>;
 }
 export function Reprocess({ api, doc }) {
