@@ -52,3 +52,14 @@ docker compose --env-file /opt/juanzhan-dev/test-instance/.env -p juanzhan-test 
 2026-10-20后续迭代：rc.3增强任务中心入口/真实活动计数/自动更新与上传任务直达，保留原测试数据卷及test认证覆盖。启动/更新也须叠加上面的test-auth.yaml；只对测试实例生效，上线前撤销覆盖并通过admin CLI设置正式密码。原rc.2镜像ID与验收记录为历史部署追溯。
 
 rc.3已于本日实际切换完成，镜像ID sha256:31b24ade3211667c943f6c2d33022dc0b756755c76f5d8112d11f8182902515c，干净构建提交c1f0a02。切换前一致备份保存在本实例备份卷/backups/before-progress-rc3（仅操作员路径）。部署后1440/390真实浏览器验证通过，原空间4份档案保留；三个服务健康。回退可将私有.env镜像改回rc.2并用两个Compose文件启动（本次无迁移变化）。
+# 2026-10-21 rc.11：MCP＋REST 与后端概要
+
+代码已推送 GitHub main：`bcf0cc76ad71c213dd94db688756643570098488`。使用本机已有 HTTP 代理进行单次 Git 传输，未修改全局 Git/代理设置，之前待推送提交已同步。
+
+devtest 从干净提交构建并部署 `juanzhan:0.1.0-rc.11`，镜像 `sha256:a153dc5acea1c0013e04de8d336f069c8dc0ca5244982292f9d436dad9fd1585`；manifest `/tmp/juanzhan-release-5t548sn5/manifest.json`（私有副本 `test-instance/rc11-manifest.json`），source_dirty=false，未发布镜像或公开站点。使用原 Compose 项目/数据卷与两份配置，认证私有覆盖从新 auth.py 重新生成，仅保留测试用户名差异；测试登录不变。
+
+升级前一致性备份：业务备份卷 `/backups/before-agent-rc11`，18个文件。实际11→12迁移，旧11份 SQL 校验和不变；4份档案的 ID、当前 Revision/ParseRun/document_version 及19份托管/派生文件哈希完全一致；SQLite integrity=ok，无FK错误。迁移前后核验记录 `test-instance/agent-before.json`、`agent-after.json`、`agent-upgrade-verified.json`。schema_migrations 是早期业务版本表（3条），文件迁移数以 migration_checksums 为准。回退需 rc.10 配合升级前备份恢复到新卷，不可将旧代码连接已迁移库。
+
+在线 Agent 实测9项通过：授权空间、检索、共享概要、自然语言问题的分析证据、两代 MCP、写入/全局API拒绝、撤销。临时凭据在 finally 中撤销，数据库无遗留Agent凭据；未保存明文。报告 `test-instance/agent-live-smoke.json`。用户 Word 默认分点概要、内联数字、章节强调、来源跳转、1440/390无溢出/控制台错误、档案未变通过；未重解析。报告 `test-instance/generic-overview-smoke.json`，截图同目录 generic-overview-desktop/mobile.png。
+
+三个生产容器健康；回环/SSH隧道 healthz=200，旧隧道失效后仅重建本项目转发。观测空闲内存约 archive46.6MiB、converter40.8MiB、worker29.7MiB（瞬时值，非峰值保证）。原 nginx-proxy 和 simple-shell-terminal-1 保留运行。依赖与可清理产物见 LOCAL-DEVELOPMENT；完整回归见 TESTING。

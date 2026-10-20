@@ -744,3 +744,7 @@ devtest原juanzhan-test实际10→11迁移完成，全部10个旧迁移SHA及原
 
 阅读浏览器6项已通过（52.7s），覆盖十份六格式真实文档和 Agent 设置/一次性密钥/撤销。Browser plugin 不可用，复用现有 Playwright。Chromium 使用专用 TMPDIR，未改变系统 /tmp 权限；桌面1440与手机390截图已核对，密钥隐藏后截图。
 
+浏览器回归首轮基础13项通过；来源组首轮3过1失败，唯一失败为部署 Compose 切换期间 Chromium 报两次 ERR_NETWORK_CHANGED（所有业务断言已完成，最后控制台检查失败）。部署稳定后不修改测试/代码重跑，来源4项全过（1.5m），搜索4项全过（27.0s）。保留 `.local/agent-browser-sources-first.log`，最终各组报告为 `.local/agent-browser-{base,sources,search,jobs,files,backups}.log`；非忽略控制台错误或放宽断言。
+
+最终浏览器7组43项全部通过：基础13、来源4、搜索4、任务4（29.4s）、文件9（38.8s）、备份3（15.5s）、阅读/Agent6。来源重跑后未再出现网络错误，测试断言未放宽。来源转换容器显式指定 rc.11，复用私有 Playwright 缓存/专用 TMPDIR；原业务实例保持健康，测试服务按各组退出清理。
+
