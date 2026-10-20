@@ -1,5 +1,13 @@
 # 测试与交付验收
 
+## 2026-10-20 摘要与关键信息卡片
+
+用户明确选摘要/卡片优先，原章节摘录保留为次级模式。本轮仅前端，未改HTTP契约/11迁移/后台/依赖；未重新执行无变化的484项后端。Node原生规则测试7项全部通过（120ms），日志.local/summary-cards-unit-verified.log：原文标价与报价/收益例子隔离、四位小数/早鸟条件/价格区间/单位原文保留、适合人群明示/未知、课程标题后的时长与镜头时长区分、部分读取边界、章节内容与出处。
+
+最终阅读浏览器4 passed（19.8s），任务4 passed（27.5s），.local/summary-cards-reading-verified.log及summary-cards-jobs-verified.log。真实SQLite/文件存储/HTTP/Converter/worker验证课程HTML样本、默认摘要/卡片、缺失受众、报价不进入学费、出处到正文、章节摘录/全文/分页/安全源文本/候选/历史/失败/次级重解析与手机布局。Browser插件未提供，复用现有Playwright，无新依赖。
+
+rc.7干净e04653c构建并部署：manifest /tmp/juanzhan-release-8x8je1ok/manifest.json，镜像sha256:f23eb175eb8f9badb0f6f3d77b00856a3fc56afa6513e825dfb255928e3af9b2。实际用户Word1440/390只读验证摘要优先、1980元/12小时/6节直播课、适合人群未说明、五类课程内容、原文依据到完整正文、无溢出/控制台错误；document_version/current_revision_id/current_parse_run_id前后相同，未重解析。三个服务健康，原有服务保留。私有实例summary-cards-browser-smoke.json/png记录，实际文档截图本机/tmp/juanzhan-word-summary-cards-*.png，不提交Git。当前提炼为可追溯规则摘要，未接LLM，未推断未知值或写入业务字段。
+
 ## 2026-10-20 内容概览优先与阅读降噪
 
 无后台/API/迁移/依赖变化。真实阅读浏览器3项通过（17.0s），.local/content-overview-reading-final-verified.log；任务4项通过（29.2s），.local/content-overview-jobs.log。覆盖默认原文章节摘录、语义表格、进入完整正文、逐段定位显式开关、分页/源文本安全、候选冲突/采纳、历史/失败/过期会话、次级重解析及手机布局。Browser插件未提供，复用现有Playwright。首轮旧正文标题断言及列头AX角色断言不适用于新默认视图/单列表格，分别改为验证新概览标题及真实thead/th值；原失败日志content-overview-reading.log、content-overview-reading-final.log保留。
