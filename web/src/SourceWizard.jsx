@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 
@@ -86,9 +87,9 @@ export function SourceWizard({
                 ))}
               </select>
             </label>
-            <p>
+            <InfoTip>
               仅可选择在线只读挂载。不能输入服务器路径；若没有可用项，请管理员配置挂载后刷新来源。
-            </p>
+            </InfoTip>
           </>
         ) : (
           <>
@@ -130,9 +131,9 @@ export function SourceWizard({
                 {folderOptions}
               </select>
             </label>
-            <p>
+            <InfoTip>
               后续新增统一待整理，不复制新物理目录。当前仅手动扫描。配置创建后不可在界面修改；创建不会自动扫描或导入。
-            </p>
+            </InfoTip>
             <p>
               <strong>{name}</strong> · {alias}
             </p>

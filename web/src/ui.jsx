@@ -1,5 +1,32 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId, useState } from "react";
 import { X, FileText } from "@phosphor-icons/react";
+export function InfoTip({ children, label = "信息说明" }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const trigger = useRef(null);
+  const [position, setPosition] = useState({});
+  function show() {
+    const box = trigger.current.getBoundingClientRect();
+    setPosition({ left: Math.max(12, Math.min(box.left, window.innerWidth - Math.min(320, window.innerWidth - 24) - 12)),
+      ...(box.top > window.innerHeight / 2 ? { bottom: window.innerHeight - box.top + 6 } : { top: box.bottom + 6 }) });
+    setOpen(true);
+  }
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const outside = event => { if (!trigger.current?.parentElement.contains(event.target)) close(); };
+    document.addEventListener("pointerdown", outside);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => { document.removeEventListener("pointerdown", outside); window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
+  }, [open]);
+  return <span className="info-tip" onMouseEnter={show} onMouseLeave={() => setOpen(false)}>
+    <button ref={trigger} type="button" className="info-trigger" aria-label={label} aria-describedby={open ? id : undefined}
+      aria-expanded={open} onFocus={show} onBlur={() => setOpen(false)}
+      onClick={show} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setOpen(false); } }}>ⓘ</button>
+    {open && <span id={id} role="tooltip" className="info-content" style={position}>{children}</span>}
+  </span>;
+}
 export function Dialog({ title, onClose, children, wide = false }) {
   const ref = useRef();
   useEffect(() => {

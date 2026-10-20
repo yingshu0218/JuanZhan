@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 // An extractive view of actual blocks, with no generated claims or inferred fields.
 function excerpt(block) {
   const text = block.text?.trim() || "";
@@ -8,7 +9,7 @@ function Excerpt({ block }) {
   if (block.type === "table" && table) return <div className="reader-table overview-table"><table>
     {table.headers?.length > 0 && <thead><tr>{table.headers.map((cell, index) => <th key={index}>{cell}</th>)}</tr></thead>}
     <tbody>{table.rows.slice(0, 4).map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody>
-  </table>{table.rows.length > 4 && <p className="muted">表格摘录前 4 行，完整表格见正文。</p>}</div>;
+  </table>{table.rows.length > 4 && <InfoTip>表格摘录前 4 行，完整表格见正文。</InfoTip>}</div>;
   return <p>{block.type === "list_item" ? "• " : ""}{excerpt(block)}</p>;
 }
 export function ContentOverview({ data, onRead }) {
@@ -31,7 +32,7 @@ export function ContentOverview({ data, onRead }) {
     }
   }
   return <div className="content-overview" aria-label="内容概览">
-    <p className="overview-note">按原文章节整理的内容摘录，可继续阅读完整正文。</p>
+    <InfoTip>按原文章节整理的内容摘录，可继续阅读完整正文。</InfoTip>
     {lead.length > 0 && <div className="overview-intro">{lead.slice(0, 6).map(block => <Excerpt key={block.id} block={block} />)}</div>}
     {sections.map(item => <div className="overview-section" key={item.index}>
       <h4>{item.title}</h4>
@@ -42,8 +43,8 @@ export function ContentOverview({ data, onRead }) {
       </li>)}</ul>}
       <button className="text-action" onClick={() => onRead(item.index)}>阅读本节完整内容</button>
     </div>)}
-    {!sections.length && lead.length > 6 && <p className="muted">以上为开篇摘录，更多内容请阅读完整正文。</p>}
-    {data.total > blocks.length && <p className="muted">此概览覆盖前 {blocks.length} 个内容块，全文共 {data.total} 个；后续章节请在完整正文中查看。</p>}
+    {!sections.length && lead.length > 6 && <InfoTip>以上为开篇摘录，更多内容请阅读完整正文。</InfoTip>}
+    {data.total > blocks.length && <InfoTip>此概览覆盖前 {blocks.length} 个内容块，全文共 {data.total} 个；后续章节请在完整正文中查看。</InfoTip>}
     <button onClick={() => onRead(0)}>阅读完整正文</button>
   </div>;
 }

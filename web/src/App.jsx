@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useState } from "react";
 import { Archive } from "@phosphor-icons/react";
 import { ApiClient, message } from "./api.js";
@@ -77,7 +78,7 @@ export function App() {
         <form onSubmit={login} className="login-form">
           <Archive size={38} weight="duotone" />
           <h1>欢迎回到档案库</h1>
-          <p>让资料有序，让信息可查。</p>
+          <InfoTip>让资料有序，让信息可查。</InfoTip>
           <label>
             用户名
             <input

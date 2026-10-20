@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import {useEffect,useRef,useState} from "react";
 import {getDocument,GlobalWorkerOptions,TextLayer,version} from 'pdfjs-dist/legacy/build/pdf.mjs';
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
@@ -94,7 +95,7 @@ export default function PDFReader({documentId,revisionId}){
   }
   return <section className="pdf-reader" aria-label="完整PDF阅读">
     <h3>完整 PDF 阅读</h3>
-    <p className="muted">逐页显示已核验的原件；不执行PDF脚本、附件或外部链接。最多64 MiB / 10000页，复杂页面可能降低分辨率，超过6400万像素的单幅图像可能省略。</p>
+    <InfoTip>逐页显示已核验的原件；不执行PDF脚本、附件或外部链接。最多64 MiB / 10000页，复杂页面可能降低分辨率，超过6400万像素的单幅图像可能省略。</InfoTip>
     {error && <Notice error>{error}</Notice>}
     {passwordNeeded && <form onSubmit={event=>{event.preventDefault();unlock.current?.(password);setPassword('');}}>
       {wrongPassword && <Notice error>密码不正确，请重试。</Notice>}

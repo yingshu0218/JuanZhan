@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import { UploadSimple, CheckCircle, XCircle, X } from "@phosphor-icons/react";
 import { message } from "./api.js";
@@ -155,7 +156,7 @@ export function Uploads({ queue, api, inputRef, onOpenTask }) {
           <X size={21} />
         </button>
       </div>
-      <p className="muted">原件保存与正文处理分别进行。</p>
+      <InfoTip>原件保存与正文处理分别进行。</InfoTip>
       <div className="upload-items">
         {queue.items.length ? (
           queue.items.map((item) => (
@@ -217,7 +218,7 @@ export function Uploads({ queue, api, inputRef, onOpenTask }) {
             </div>
           ))
         ) : (
-          <p className="muted">选择需要导入的原文件。</p>
+          <InfoTip>选择需要导入的原文件。</InfoTip>
         )}
       </div>
       <button className="primary" onClick={() => inputRef.current?.click()}>

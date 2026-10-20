@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
@@ -418,7 +419,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
           </select></label>
           {fieldAction === "set" && <MetadataInput field={field} value={rawValue} onChange={setRawValue} />}
           <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />确认对所选档案{fieldAction === "clear" ? "清空" : "设置"}此字段</label>
-          <p className="muted">其他业务字段保持原值。每份档案独立校验版本与归档规则；成功项可撤销，后续编辑冲突时不会覆盖。</p>
+          <InfoTip>其他业务字段保持原值。每份档案独立校验版本与归档规则；成功项可撤销，后续编辑冲突时不会覆盖。</InfoTip>
         </>}
       </fieldset>}
       {formError && <Notice error>{formError}</Notice>}
@@ -429,7 +430,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
           <option value="eng,chi_sim">英文与简体中文</option><option value="chi_sim">简体中文</option><option value="eng">英文</option>
         </select></label>}
         <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />确认重新处理所选原件，包括已有成功结果</label>
-        <p className="muted">保留人工字段和最近成功正文；每份档案独立排队，解析结果可在任务中心找回。提交后不能撤销。</p>
+        <InfoTip>保留人工字段和最近成功正文；每份档案独立排队，解析结果可在任务中心找回。提交后不能撤销。</InfoTip>
       </fieldset>}
       <Notice>
         {operation === "trash"

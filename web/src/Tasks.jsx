@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
@@ -75,7 +76,7 @@ export function TaskStatus({ api, id }) {
       {job.can_retry && <button disabled={busy} onClick={retry}>确认重试（沿用剩余次数）</button>}
     </>}
     <button onClick={() => setRefresh(n => n + 1)}>刷新任务</button>
-    <p className="muted">自动跟踪最多两分钟；关闭窗口不取消后台任务，可重新打开查看。</p>
+    <InfoTip>自动跟踪最多两分钟；关闭窗口不取消后台任务，可重新打开查看。</InfoTip>
   </section>;
 }
 export function TaskCenter({ api, onClose, initialId = null }) {
@@ -94,7 +95,7 @@ export function TaskCenter({ api, onClose, initialId = null }) {
     load(); return () => { abort.abort(); clearTimeout(timer); };
   }, [api, status, page, refresh]);
   return <Dialog title="任务中心" wide onClose={onClose}>
-    <p>全部空间与系统维护任务。每 3 秒自动更新，刷新页面后仍可查询。关闭窗口不会取消任务。</p><p className="muted">排队中的任务尚未开始；处理中不代表已完成。总量未知时不显示估算百分比。</p>
+    <InfoTip>全部空间与系统维护任务。每 3 秒自动更新，刷新页面后仍可查询。关闭窗口不会取消任务。</InfoTip><InfoTip>排队中的任务尚未开始；处理中不代表已完成。总量未知时不显示估算百分比。</InfoTip>
     <label>任务状态 <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); setId(null); }}><option value="">全部状态</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     <button onClick={() => setRefresh(n => n + 1)}>刷新列表</button>
     {error && <Notice error>{error}</Notice>}
@@ -125,7 +126,7 @@ export function Reprocess({ api, doc }) {
     <button disabled={!!doc.deleted_at || !doc.current_revision_id} onClick={() => { setOpen(true); setIntent(null); setJob(null); setError(""); setOcr(false); setConfirmed(false); }}>重新解析 / OCR</button>
     {open && <Dialog title="重新解析档案" onClose={() => setOpen(false)}>
       {job ? <><Notice>任务已受理，请跟踪实际结果。结束后关闭窗口并刷新档案查看正文。</Notice><TaskStatus api={api} id={job} /></> : <>
-        <p>处理当前版本原件，保留人工字段与最近成功正文；失败不会清空已有内容。</p>
+        <InfoTip>处理当前版本原件，保留人工字段与最近成功正文；失败不会清空已有内容。</InfoTip>
         <fieldset disabled={busy || !!intent}><label><input type="checkbox" checked={ocr} onChange={e => setOcr(e.target.checked)} />启用 OCR（耗时较长）</label>
         {ocr && <label>OCR 语言<select value={language} onChange={e => setLanguage(e.target.value)}><option value="eng">英文</option><option value="chi_sim">简体中文</option><option value="eng,chi_sim">英文与简体中文</option></select></label>}
         <label><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />确认对当前原件重新处理，包括已有成功结果</label></fieldset>

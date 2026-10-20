@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { summarizeDocument } from "./documentSummary.js";
 
 function Sources({ items, onRead }) {
@@ -18,12 +19,12 @@ export function SummaryCards({ data, documentTitle, onRead, onChapters }) {
     <div className="fact-grid">{Object.entries(result.facts).map(([key, fact]) => <article className={"fact-card fact-" + key} key={key} aria-label={fact.label}>
       <h5>{fact.label}</h5>
       {!fact.values.length ? <p className="fact-missing">{result.missing}</p> : fact.values.length === 1 ? <p className="fact-value">{fact.values[0]}</p> : <ul>{fact.values.map(value => <li key={value}>{value}</li>)}</ul>}
-      {key === "price" && fact.values.length > 1 && <p className="fact-note">文中有多个价格表述，请核对适用条件。</p>}
-      {fact.truncated && <p className="fact-note">另有表述未列出，请查阅原文。</p>}
+      {key === "price" && fact.values.length > 1 && <InfoTip>文中有多个价格表述，请核对适用条件。</InfoTip>}
+      {fact.truncated && <InfoTip>另有表述未列出，请查阅原文。</InfoTip>}
       <Sources items={fact.sources} onRead={onRead} />
     </article>)}</div>
-    <p className="summary-method">依据原文明确表述整理，未说明的信息不补写；不自动填入业务字段。</p>
-    {result.partial && <p className="muted">本摘要覆盖前 {result.covered} 个内容块（全文 {result.total} 个），长内容块最多读取前4000字；后续信息请查看完整正文。</p>}
+    <InfoTip>依据原文明确表述整理，未说明的信息不补写；不自动填入业务字段。</InfoTip>
+    {result.partial && <InfoTip>本摘要覆盖前 {result.covered} 个内容块（全文 {result.total} 个），长内容块最多读取前4000字；后续信息请查看完整正文。</InfoTip>}
     <div className="summary-actions"><button onClick={onChapters}>查看章节摘录</button><button onClick={() => onRead(0)}>阅读完整正文</button></div>
   </div>;
 }

@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useState } from "react";
 import { message } from "./api.js";
 import { ContentOverview } from "./ContentOverview.jsx";
@@ -78,7 +79,7 @@ function Candidate({ candidate, api, doc, definitions, onChanged }) {
     <strong>{candidate.key}</strong><pre>{JSON.stringify(candidate.value, null, 2)}</pre>
     <p className="muted">来源：{candidate.provenance?.source || "未提供"} · {position(candidate.provenance?.locator)} · {candidate.confidence == null ? "置信度未提供" : `置信度 ${Math.round(candidate.confidence * 100)}%（需复核）`}</p>
     <details><summary>版本来源</summary><small className="run-reference">解析 {candidate.parse_run_id} · 原件 {candidate.revision_id}</small></details>
-    {candidate.adoptable && candidate.value != null && !doc.deleted_at ? <button disabled={!active.length} onClick={() => { setOpen(true); setError(""); setField(""); }}>采纳此候选</button> : <p className="muted">仅供参考，当前不可采纳。</p>}
+    {candidate.adoptable && candidate.value != null && !doc.deleted_at ? <button disabled={!active.length} onClick={() => { setOpen(true); setError(""); setField(""); }}>采纳此候选</button> : <InfoTip>仅供参考，当前不可采纳。</InfoTip>}
     {open ? <Dialog title="确认采纳候选" onClose={() => { if (!busy) setOpen(false); }}>
       <form onSubmit={adopt}>
         <p>采纳后会覆盖所选业务字段的当前值，并标记为已确认。正文与其他字段不变。</p>
@@ -116,7 +117,7 @@ export function ContentReader({ api, doc, definitions, onChanged }) {
         {content.data.ocr_used && <Notice>正文含 OCR 识别内容，请复核。</Notice>}
         {!content.data.text_available ? <Notice>此次结果没有可读文本；扫描文件可能需要显式启用 OCR。</Notice> : null}
         {format === "summary" ? <SummaryCards data={content.data} documentTitle={doc.title} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} onChapters={() => setFormat("overview")} /> : format === "overview" ? <ContentOverview data={content.data} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} /> : format === "blocks" ? <><Blocks blocks={content.data.body} annotations={annotations} />{!content.data.body.length ? <p>此次解析没有正文块。</p> : null}</> : <pre className="plain-content">{content.data.body || "此次解析没有文本。"}</pre>}
-        {format === "blocks" ? <Pager page={page} data={content.data} onChange={setPage} label="正文分页" /> : !condensed ? <p className="muted">以安全源文本显示，不执行 HTML 或外部资源。</p> : null}
+        {format === "blocks" ? <Pager page={page} data={content.data} onChange={setPage} label="正文分页" /> : !condensed ? <InfoTip>以安全源文本显示，不执行 HTML 或外部资源。</InfoTip> : null}
         <details className="reader-diagnostics"><summary>正文来源与解析说明{content.data.warnings.length ? `（${content.data.warnings.length} 条提示）` : ""}</summary>
           <p>{availability[content.data.availability_status] || "原件待核验"} · {content.data.ocr_used ? "含 OCR 识别，请复核" : "未使用 OCR"}</p>
           <small className="run-reference">解析 {content.data.parse_run_id} · 原件 {content.data.content_revision_id}</small>
@@ -126,7 +127,7 @@ export function ContentReader({ api, doc, definitions, onChanged }) {
       </>}
     </section>
     <section aria-label="提取候选">
-      <h3>提取候选</h3><p className="muted">候选不会自动写入业务字段；请核对来源后再采纳。</p>
+      <h3>提取候选</h3><InfoTip>候选不会自动写入业务字段；请核对来源后再采纳。</InfoTip>
       {candidates.loading ? <p role="status">正在读取候选…</p> : candidates.error ? <Notice error>{message(candidates.error)}</Notice> : <>
         <ul className="candidate-list">{candidates.data.items.map((candidate) => <Candidate key={candidate.id} candidate={candidate} api={api} doc={doc} definitions={definitions} onChanged={onChanged} />)}</ul>
         {!candidates.data.total ? <p className="muted">此次结果没有提取候选。</p> : null}

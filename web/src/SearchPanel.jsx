@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useState } from "react";
 import { blankSearch, searchBody } from "./searchState.js";
 import { Notice } from "./ui.jsx";
@@ -44,7 +45,7 @@ export function SearchPanel({ applied, catalog, onApply, onClear }) {
         <button type="button" disabled={!fields.length || draft.metadata.length >= 8} onClick={() => set("metadata", [...draft.metadata, { key: "", kind: "text", operator: "eq", value: "", upper: "" }])}>添加字段条件</button>
         {!fields.length ? <p className="muted">尚无启用且可筛选的业务字段。</p> : null}
       </fieldset>
-      <p className="muted">提交后与当前空间、目录、类型及导航范围一起检索。</p>
+      <InfoTip>提交后与当前空间、目录、类型及导航范围一起检索。</InfoTip>
     </details>
     {applied ? <button type="button" onClick={onClear}>清除搜索</button> : null}
   </form>;

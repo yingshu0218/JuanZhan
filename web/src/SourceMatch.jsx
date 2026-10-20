@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import {useEffect,useState} from "react";
 import {Dialog,Notice,formatSize} from "./ui.jsx";
 import {TaskStatus} from "./Tasks.jsx";
@@ -30,7 +31,7 @@ export function SourceMatch({api,sourceId,entry,onClose,onDone}){
         <option value="match">关联已有档案</option><option value="new_document">登记为新档案</option>
       </select></label>
       {action==='match' ? <>
-        <p>候选具有相同已记录哈希和大小，请明确选择。只在旧路径已不存在且当前字节核验通过时重新关联；保留档案编号、人工字段与已有正文。</p>
+        <InfoTip>候选具有相同已记录哈希和大小，请明确选择。只在旧路径已不存在且当前字节核验通过时重新关联；保留档案编号、人工字段与已有正文。</InfoTip>
         <fieldset disabled={busy}><legend>选择原档案</legend>
           {data.items.map(candidate=><label className="check-label source-match-choice" key={candidate.document_id}>
             <input type="radio" name="match-document" checked={selected?.document_id===candidate.document_id} onChange={()=>{setSelected(candidate);setConfirmed(false);}} />

@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { TaskCenter, TaskEntry } from "./Tasks.jsx";
 import { BackupManager } from './BackupManager.jsx';
 import { CatalogManager } from './CatalogManager.jsx';
@@ -676,7 +677,7 @@ export function Workspace({ api, logout, authError }) {
         ) : !space && ready ? (
           <div className="workspace-empty">
             <Empty title="建立你的第一个空间">
-              <p>按工作、项目或生活，将资料归入独立空间。</p>
+              <InfoTip>按工作、项目或生活，将资料归入独立空间。</InfoTip>
               <button className="primary" onClick={() => openDialog("space")}>
                 <Folders size={18} />
                 新建空间

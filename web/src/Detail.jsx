@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { Original } from "./Original.jsx";
 import { Reprocess } from "./Tasks.jsx";
 import { useEffect, useState } from "react";
@@ -59,7 +60,7 @@ export function Detail({
     return (
       <section className="detail-shell">
         <Empty title="选择一份档案">
-          <p>在左侧选择资料，查看结构化信息。</p>
+          <InfoTip>在左侧选择资料，查看结构化信息。</InfoTip>
         </Empty>
       </section>
     );

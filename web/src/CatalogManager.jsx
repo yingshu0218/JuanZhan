@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import {useEffect,useMemo,useState} from 'react';
 import {Dialog,Notice} from './ui.jsx';
 import {message} from './api.js';
@@ -70,7 +71,7 @@ export function CatalogManager({api,spaceId,spaceName,onClose,onChanged}){
       <h3>{draft.id?'编辑':'新增'}{mode==='fields'?'业务字段':'文档类型'}</h3>
       <label>{mode==='fields'?'字段名称':'类型名称'}<input value={draft.label} maxLength={255} required onChange={event=>update({label:event.target.value})} /></label>
       <label>{mode==='fields'?'字段标识':'类型标识'}<input value={draft.key} pattern="[a-z][a-z0-9_]*" maxLength={255} required disabled={!!draft.id} onChange={event=>update({key:event.target.value})} /></label>
-      <p className="muted">标识以小写字母开头，可含数字和下划线；创建后固定。</p>
+      <InfoTip>标识以小写字母开头，可含数字和下划线；创建后固定。</InfoTip>
       {mode==='fields' ? <>
         <label>字段类型<select value={draft.type} disabled={!!draft.id} onChange={event=>{update({type:event.target.value,constraints:event.target.value==='single_select'?{options:[{id:'',label:''}]}:{}});setRulesDirty(true);}}>{Object.entries(kinds).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
         <label className="check-label"><input type="checkbox" checked={draft.searchable} onChange={event=>update({searchable:event.target.checked})} />允许文字检索</label>
@@ -84,11 +85,11 @@ export function CatalogManager({api,spaceId,spaceName,onClose,onChanged}){
           {['integer','decimal','date'].includes(draft.type) && !unsafe && <>
             <label>最小值<input type={draft.type==='date'?'date':'text'} value={draft.constraints.min??''} onChange={event=>rule('min',event.target.value)} /></label>
             <label>最大值<input type={draft.type==='date'?'date':'text'} value={draft.constraints.max??''} onChange={event=>rule('max',event.target.value)} /></label>
-            {draft.type==='decimal' && <p>小数最多四位，按原文本精确提交。</p>}
+            {draft.type==='decimal' && <InfoTip>小数最多四位，按原文本精确提交。</InfoTip>}
           </>}
-          {draft.type==='boolean' && <p>是 / 否字段无需额外规则。</p>}
+          {draft.type==='boolean' && <InfoTip>是 / 否字段无需额外规则。</InfoTip>}
           {draft.type==='single_select' && <>
-            <p>选项标识须唯一且稳定；更改标识或移除选项会影响已有值的有效性。</p>
+            <InfoTip>选项标识须唯一且稳定；更改标识或移除选项会影响已有值的有效性。</InfoTip>
             {(draft.constraints.options||[]).map((option,index)=><div className="catalog-option" key={index}>
               <label>选项标识 {index+1}<input value={option.id} maxLength={255} required onChange={event=>rule('options',draft.constraints.options.map((item,i)=>i===index?{...item,id:event.target.value}:item))} /></label>
               <label>选项名称 {index+1}<input value={option.label} maxLength={255} required onChange={event=>rule('options',draft.constraints.options.map((item,i)=>i===index?{...item,label:event.target.value}:item))} /></label>
@@ -110,10 +111,10 @@ export function CatalogManager({api,spaceId,spaceName,onClose,onChanged}){
             <button type="button" aria-label={`移除模板字段 ${index+1}`} onClick={()=>{update({fields:draft.fields.filter((_,i)=>i!==index)});setTemplateDirty(true);}}>移除</button>
           </li>)}</ol>
         </fieldset>
-        <p>模板指定显示顺序和归档必填项；不会自动覆盖已有档案值。</p>
+        <InfoTip>模板指定显示顺序和归档必填项；不会自动覆盖已有档案值。</InfoTip>
       </>}
       {draft.id && <label className="check-label"><input type="checkbox" checked={draft.is_active} onChange={event=>update({is_active:event.target.checked})} />启用此{mode==='fields'?'字段':'类型'}</label>}
-      <p className="muted">停用保留历史引用；更改规则不会自动重写业务字段。</p>
+      <InfoTip>停用保留历史引用；更改规则不会自动重写业务字段。</InfoTip>
       <div className="form-actions"><button type="button" disabled={busy} onClick={()=>setDraft(null)}>取消编辑</button><button className="primary" disabled={busy}>保存{mode==='fields'?'字段':'类型'}</button></div>
     </form> : <>
       <label>查找配置<input value={filter} onChange={event=>setFilter(event.target.value)} /></label>

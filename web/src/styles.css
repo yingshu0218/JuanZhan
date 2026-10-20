@@ -1697,3 +1697,8 @@ select {
 .content-state .fact-sources p { font-size:12px; line-height:1.7; white-space:pre-wrap; margin:0; }
 .summary-actions { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
 @media(max-width:420px) { .fact-grid { grid-template-columns:minmax(0,1fr); } }
+
+.info-tip { display: inline-flex; vertical-align: middle; margin: 2px 4px; }
+button.info-trigger { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; min-width: 28px; padding: 0; border: 0; border-radius: 50%; color: #577466; background: transparent; font-size: 19px; cursor: help; }
+button.info-trigger:hover, button.info-trigger:focus-visible { background: #e4eee7; outline: 2px solid #709380; outline-offset: 1px; }
+.info-content { position: fixed; z-index: 10000; width: min(320px, calc(100vw - 24px)); box-sizing: border-box; padding: 12px 14px; border: 1px solid #d3ded6; border-radius: 9px; background: #fffef9; color: #304d3f; box-shadow: 0 5px 24px #183b2926; font-size: 13px; line-height: 1.65; font-weight: normal; white-space: normal; overflow-wrap: anywhere; max-height: 40vh; overflow: auto; }

@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   HardDrives,
@@ -274,7 +275,7 @@ export function Sources({
         <div>
           <small>原地索引</small>
           <h1>来源</h1>
-          <p>连接只读目录，保留原文件所在位置。</p>
+          <InfoTip>连接只读目录，保留原文件所在位置。</InfoTip>
         </div>
         <button
           className="primary"
@@ -321,10 +322,10 @@ export function Sources({
         <div className="source-content">
           {!source ? (
             <Empty title="把资料留在原处">
-              <p>
+              <InfoTip>
                 首次可复制目录层次为逻辑目录，之后的人工整理独立于物理目录。
-              </p>
-              <p>外部原件不会被移动、覆盖或删除。</p>
+              </InfoTip>
+              <InfoTip>外部原件不会被移动、覆盖或删除。</InfoTip>
             </Empty>
           ) : (
             <>
@@ -423,9 +424,9 @@ export function Sources({
                         </span>
                       ))}
                   </nav>
-                  <p className="source-hint">
+                  <InfoTip>
                     按路径展示已登记文件；目录按钮可向下筛选。本页最多30项，空目录不在文件库存中。此处不接受拖入文件。
-                  </p>
+                  </InfoTip>
                   {!inventory ? (
                     <p role="status">
                       {error ? "读取未完成，请刷新重试。" : "正在读取文件…"}
@@ -533,15 +534,15 @@ export function Sources({
                       </div>
                     </>
                   )}
-                  <p className="source-hint">
+                  <InfoTip>
                     待核验失联：一次完整在线扫描未找到。已确认失联：另一次独立成功扫描再次未找到。匹配歧义不会自动关联档案。
-                  </p>
+                  </InfoTip>
                 </>
               ) : (
                 <>
-                  <p className="source-hint">
+                  <InfoTip>
                     精确相对路径排除，后续扫描不再导入。移除规则不会自动恢复回收站中的档案。
-                  </p>
+                  </InfoTip>
                   {rules.map((rule) => (
                     <article className="source-entry" key={rule.id}>
                       <div className="source-file">

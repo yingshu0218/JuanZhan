@@ -1,3 +1,4 @@
+import { InfoTip } from "./ui.jsx";
 import {useEffect,useRef,useState} from 'react';
 import {Dialog,Notice,formatDate,formatSize} from './ui.jsx';
 import {message} from './api.js';
@@ -35,7 +36,7 @@ export function BackupManager({api,onClose}){
   }
   function ask(kind,item){setConfirm({kind,item,request_id:crypto.randomUUID().replaceAll('-','')});setChecked(false);}
   return <Dialog title="备份与恢复" wide onClose={onClose}>
-    <p>全实例管理。备份包含业务数据库、托管原件和派生文件；不包含外部目录原件、环境配置、模型或容器镜像。ZIP内含敏感数据库，请保存在可信位置。</p>
+    <InfoTip>全实例管理。备份包含业务数据库、托管原件和派生文件；不包含外部目录原件、环境配置、模型或容器镜像。ZIP内含敏感数据库，请保存在可信位置。</InfoTip>
     {error&&<Notice error>{error}</Notice>}{notice&&<Notice>{notice}</Notice>}
     <section aria-label="创建和上传备份" className="backup-section">
       <h3>手动备份</h3>
@@ -50,7 +51,7 @@ export function BackupManager({api,onClose}){
           uploadId.current=crypto.randomUUID().replaceAll('-','');setPage(1);setNotice('上传已受理，正在校验备份；校验完成前不可恢复。');
         }finally{uploadAbort.current=null;}
       })}>{busy&&uploadAbort.current?'正在上传…':'上传并校验'}</button>
-      <p className="muted">同时最多一个备份或恢复任务。展开上限8 GiB、100000个数据成员；接收最多一小时，仍受磁盘和代理限制。关闭窗口会中止尚未完成的上传，已受理任务继续运行。</p>
+      <InfoTip>同时最多一个备份或恢复任务。展开上限8 GiB、100000个数据成员；接收最多一小时，仍受磁盘和代理限制。关闭窗口会中止尚未完成的上传，已受理任务继续运行。</InfoTip>
     </section>
     {confirm&&<section ref={confirmRef} className="backup-confirm" aria-label={confirm.kind==='restore'?'确认恢复':'确认删除备份'}>
       <h3>{confirm.kind==='restore'?'恢复到新目录':'删除备份文件'}</h3>
@@ -89,7 +90,7 @@ export function BackupManager({api,onClose}){
         <label>备份间隔（分钟，0关闭）<input type="number" min="0" max="525600" required value={draft.interval_minutes} disabled={busy} onChange={event=>setDraft({...draft,interval_minutes:event.target.value})} /></label>
         <label>最多保留自动备份数<input type="number" min="1" max="100" required value={draft.keep_count} disabled={busy} onChange={event=>setDraft({...draft,keep_count:event.target.value})} /></label>
         <label>自动备份最长天数<input type="number" min="1" max="3650" required value={draft.max_age_days} disabled={busy} onChange={event=>setDraft({...draft,max_age_days:event.target.value})} /></label>
-        <p className="muted">仅清理成功的自动备份，始终保留最近成功一次；手动和上传备份需手动删除。worker停止期间不运行，恢复后不补跑积压。修改保留规则在下一次成功自动备份时生效。</p>
+        <InfoTip>仅清理成功的自动备份，始终保留最近成功一次；手动和上传备份需手动删除。worker停止期间不运行，恢复后不补跑积压。修改保留规则在下一次成功自动备份时生效。</InfoTip>
         <p>下次计划：{plan?.next_run_at?new Date(plan.next_run_at).toLocaleString():'未启用'}</p>
         <div className="form-actions"><button type="button" disabled={busy||!plan} onClick={()=>act(async()=>{const latest=await api.request('/system/backup-schedule');setPlan(latest);setDraft(latest);setNotice('已重新读取服务器计划。');})}>重载计划</button><button className="primary" disabled={busy}>保存备份计划</button></div>
       </form>:<p>正在读取计划…</p>}
@@ -102,7 +103,7 @@ export function BackupManager({api,onClose}){
       </li>)}</ul>
       {!recoveries.items.length&&<p>尚无恢复记录。</p>}<Pager page={recoveryPage} total={recoveries.total} busy={busy} change={setRecoveryPage} />
     </section>
-    <p>后台任务详情和有限重试可在任务中心查看。恢复目录与历史测试文件的清理步骤见运维手册。</p>
+    <InfoTip>后台任务详情和有限重试可在任务中心查看。恢复目录与历史测试文件的清理步骤见运维手册。</InfoTip>
   </Dialog>;
 }
 function Pager({page,total,busy,change}){return <div className="task-pages"><button disabled={busy||page===1} onClick={()=>change(page-1)}>上一页</button><span>第{page}页 · 共{total}条</span><button disabled={busy||page*25>=total} onClick={()=>change(page+1)}>下一页</button></div>;}
