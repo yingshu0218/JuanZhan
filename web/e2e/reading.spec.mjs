@@ -29,7 +29,7 @@ test("generic overview uses source-bound bullets, emphasis and hover help withou
   const reader = page.getByRole("region", { name: "正文阅读", exact: true });
   await expect(reader.getByLabel("阅读格式")).toHaveValue("summary");
   await expect(reader.locator(".summary-points > li")).toHaveCount(3);
-  await expect(reader.locator(".summary-topic")).toHaveText(["工作安排", "资源与风险"]);
+  await expect(reader.locator(".summary-topic")).toHaveText(["项目计划", "工作安排", "资源与风险"]);
   await expect(reader.locator(".summary-label").filter({hasText:"预算："})).toBeVisible();
   await expect(reader.locator(".summary-points")).toContainText("1980元，分两期支付");
   await expect(reader.locator(".fact-grid, .fact-card")).toHaveCount(0);

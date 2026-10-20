@@ -15,7 +15,7 @@ test('course text uses ordinary ordered points without specialized facts',()=>{
 });
 test('report title wraps sections; representative source sentences carry actual content',()=>{
  const result=summarizeDocument(data([h('项目报告'),p('本季度完成系统迁移。'),h('进展',2),p('完成三个服务的迁移。后续进入维护阶段。'),h('风险',2),p('风险：存量数据仍需抽样核验。')]),'报告.pdf');
- assert.deepEqual(result.points.map(point=>point.label),['','进展','风险']);
+ assert.deepEqual(result.points.map(point=>point.label),['项目报告','进展','风险']);
  assert.equal(result.points[1].details[0],'完成三个服务的迁移。');
  assert.equal(result.points[2].index,4);
 });
@@ -23,6 +23,12 @@ test('unstructured meeting prose and lists remain ordered generic points',()=>{
  const result=summarizeDocument(data([p('讨论接口调整。确认周五交付。'),{type:'list_item',text:'李明负责测试。'},p('费用：早鸟1280-1980元/人，按班次收费')]),'会议纪要.txt');
  assert.equal(result.points.length,4); assert.equal(result.points[1].details[0],'确认周五交付。');
  assert.equal(result.points[3].details[0],'费用：早鸟1280-1980元/人，按班次收费');
+});
+test('uneven chapter levels retain the first chapter name and its source',()=>{
+ const result=summarizeDocument(data([h('第一章'),p('书籍第一段。'),h('第二章',2),p('书籍第二段。')]));
+ assert.deepEqual(result.points.map(point=>point.label),['第一章','第二章']);
+ assert.equal(result.points[0].details[0],'书籍第一段。');
+ assert.equal(result.points[0].sources[0].index,0);
 });
 test('table excerpts preserve actual column labels, values and source navigation',()=>{
  const result=summarizeDocument(data([h('设备清单'),{type:'table',text:'',structure:{table:{headers:['设备','状态'],rows:[['主机','已验收'],['路由器','待验证']]}}}]));

@@ -42,12 +42,12 @@ export function summarizeDocument(data, documentTitle = '文档') {
     const headings = blocks.filter(block => block.type === 'heading');
     let level = Math.min(...headings.map(block => block.structure?.level || 1));
     const roots = headings.filter(block => (block.structure?.level || 1) === level);
-    // A sole enclosing title is presentation, not a separate empty summary point.
+    // Keep the enclosing heading: inconsistent source levels may represent real chapters.
     if (roots.length === 1 && blocks[0] === roots[0] && headings.length > 1) {
       const next = headings.filter(block => block !== roots[0]);
       level = Math.min(...next.map(block => block.structure?.level || 1));
       const intro = blocks.slice(1, blocks.findIndex(block => block === next[0]));
-      if (intro.length) add('', [compact(intro.slice(0, 4))], intro[0]);
+      add(roots[0].text, intro.length ? [compact(intro.slice(0, 4))] : [], roots[0]);
     }
     const sections = blocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === 'heading' && (block.structure?.level || 1) === level);
     for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {

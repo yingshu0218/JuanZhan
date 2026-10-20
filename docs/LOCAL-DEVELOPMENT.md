@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-21多类型测验：无新增依赖。devtest浏览器因系统/tmp写入/共享内存权限失败导致Compositor崩溃，使用私有/opt/juanzhan-dev/.local/types-browser-tmp作为TMPDIR解决，未改系统/tmp权限。合成样本与隔离SQLite/文件存储由测试退出清理；该私有临时目录下juanzhan-types-*.png、juanzhan-overview-types-results.json及.local/overview-types*.log、types-browser-debug.log在无需复查且无测试运行时可按名删除。新测试源码为web/e2e/overview-formats.spec.mjs和overview_samples.py；无用户文档导入测试或修改。
+
 2026-10-20通用分点概览：无新增依赖，继续在devtest构建/Playwright验证；临时源码包juanzhan-generic-source.tar.gz、Git同步juanzhan-generic.bundle/clean.tar.gz、.local/generic-*.log和/tmp/juanzhan-generic-overview-*.png在无需复查后可按名清理。实际用户Word截图与验证脚本/JSON仅保存在私有test-instance目录，按私有资料保管。运行数据卷、认证配置及回退镜像保留。
 
 2026-10-20信息提示迭代：无新增依赖，使用已有React/CSS及devtest的Playwright浏览器缓存。临时源码包为/tmp/juanzhan-info-source.tar.gz及服务器.local/同名包；验证日志为.local/info-reading.log、info-jobs.log及本机/tmp/juanzhan-info-broad.log，均可在无需复查后按名删除。保留运行数据卷、私有认证配置及备份。未在本机安装构建依赖。
