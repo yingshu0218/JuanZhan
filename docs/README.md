@@ -7,6 +7,8 @@
 | [PRD](PRD.md) | 当前产品范围与验收规则 |
 | [技术架构](ARCHITECTURE.md) | 服务边界、数据流、部署与待选项 |
 | [数据库](DATABASE.md) | 实体关系与迁移约束 |
+| [Agent接入](AGENT-API.md) | MCP/REST只读凭据、协议、客户端和分析证据 |
+| [文件类型验证](FORMATS-VERIFIED.md) | 当前全部输入MIME、OCR及不支持边界 |
 | [API](API.md) | 两套 HTTP 契约、调用顺序与缺口 |
 | [转换器](CONVERTER.md) | 六格式、OCR 与标准输出 |
 | [解析依赖许可](THIRD-PARTY.md) | T20版本、许可及再分发入口 |

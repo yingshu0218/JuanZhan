@@ -97,9 +97,11 @@ def sniff(file,filename):
         finally:
             file.seek(0)
         return 'application/zip'
+    if head.lstrip().startswith(b'{\\rtf'):return 'application/rtf'
     if not head:return 'application/octet-stream'
     try:
-        text=codecs.getincrementaldecoder('utf-8')().decode(head,final=False)
+        encoding='utf-32' if head.startswith((b'\xff\xfe\x00\x00',b'\x00\x00\xfe\xff')) else 'utf-16' if head.startswith((b'\xff\xfe',b'\xfe\xff')) else 'utf-8-sig'
+        text=codecs.getincrementaldecoder(encoding)().decode(head,final=False)
         if any(ord(c)<32 and c not in '\t\n\r\f' for c in text):return 'application/octet-stream'
         if re.search(r'<(?:!doctype\s+html|html|head|body)(?:\s|>)',text[:4096],re.I):return 'text/html'
         return 'text/markdown' if Path(filename).suffix.lower() in ('.md','.markdown') else 'text/plain'

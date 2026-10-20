@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test:summary": "node --test tests/summary.test.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/copy-pdf-assets.mjs",
     "preview": "vite preview --host 127.0.0.1",

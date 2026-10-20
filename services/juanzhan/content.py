@@ -68,6 +68,13 @@ def router(settings):
     originals=ManagedStore(settings.data_dir/'managed')
     mounts=SourceMounts(settings.source_mounts)
 
+
+    @routes.get('/{id}/overview')
+    def overview(id: str,response: Response,parse_run_id: Annotated[str | None,Query(min_length=1,max_length=255)]=None):
+        from .overviews import view
+        headers(response)
+        with transaction(settings) as db:return bounded(view(db,settings,id,parse_run_id))
+
     @routes.get('/{id}/parse-runs')
     def history(id: str,response: Response,page: Page=1,page_size: PageSize=20):
         headers(response)

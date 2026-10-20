@@ -1,5 +1,7 @@
 # API 契约与接入
 
+2026-10-21 Agent扩展：Archive0.4.30，主契约74路径（原63＋11），新增路径引用[agent-openapi.json](reference/agent-openapi.json)。新增管理员凭据管理、只读Agent空间/目录字段发现、检索、概要、分页正文、分析证据及MCP；Web共用GET /documents/{id}/overview。精确参数/响应以扩展契约为准，权限、协议版本和客户端示例见[Agent接入](AGENT-API.md)。agent凭据只能使用专用只读接口，不具备原普通管理员Token权限。分析返回证据，不在服务端调用模型。
+
 ## 权威文件
 
 - 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（当前版本0.4.29），base `/api/v1`，63个path模板（含内部 healthz 与 T03 认证接口）。

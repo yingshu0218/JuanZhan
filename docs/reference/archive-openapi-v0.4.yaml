@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.29
+  version: 0.4.30
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,28 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /agent-tokens:
+    $ref: "./agent-openapi.json#/paths/~1agent-tokens"
+  /agent-tokens/{id}:
+    $ref: "./agent-openapi.json#/paths/~1agent-tokens~1{id}"
+  /agent/capabilities:
+    $ref: "./agent-openapi.json#/paths/~1agent~1capabilities"
+  /agent/spaces:
+    $ref: "./agent-openapi.json#/paths/~1agent~1spaces"
+  /agent/catalog:
+    $ref: "./agent-openapi.json#/paths/~1agent~1catalog"
+  /agent/search:
+    $ref: "./agent-openapi.json#/paths/~1agent~1search"
+  /agent/documents/{id}/overview:
+    $ref: "./agent-openapi.json#/paths/~1agent~1documents~1{id}~1overview"
+  /agent/documents/{id}/content:
+    $ref: "./agent-openapi.json#/paths/~1agent~1documents~1{id}~1content"
+  /agent/analysis-context:
+    $ref: "./agent-openapi.json#/paths/~1agent~1analysis-context"
+  /documents/{id}/overview:
+    $ref: "./agent-openapi.json#/paths/~1documents~1{id}~1overview"
+  /agent/mcp:
+    $ref: "./agent-openapi.json#/paths/~1agent~1mcp"
   /:
     servers:
     - url: /
@@ -3364,6 +3386,10 @@ paths:
               format: binary
 components:
   securitySchemes:
+    agentBearer:
+      type: http
+      scheme: bearer
+      description: 显式空间授权的只读Agent凭据，jza_前缀；仅访问agent接口
     bearerAuth:
       type: http
       scheme: bearer

@@ -101,7 +101,7 @@ export function ContentReader({ api, doc, definitions, onChanged }) {
   const root = `/documents/${doc.id}`;
   const selected = run ? `&parse_run_id=${encodeURIComponent(run)}` : "";
   const condensed = format === "summary" || format === "overview";
-  const content = usePage(api, doc.current_parse_run_id || run ? `${root}/content?format=${condensed ? "blocks" : format}&page=${format === "blocks" ? page : 1}&page_size=${condensed ? overviewSize : 20}${selected}` : null);
+  const content = usePage(api, doc.current_parse_run_id || run ? format === "summary" ? `${root}/overview?${run ? `parse_run_id=${encodeURIComponent(run)}` : ""}` : `${root}/content?format=${condensed ? "blocks" : format}&page=${format === "blocks" ? page : 1}&page_size=${condensed ? overviewSize : 20}${selected}` : null);
   useEffect(() => {
     if (condensed && overviewSize === 100 && content.error?.code === "CONTENT_RESPONSE_LIMIT") setOverviewSize(20);
   }, [condensed, overviewSize, content.error]);

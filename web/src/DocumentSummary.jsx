@@ -1,5 +1,4 @@
 import { InfoTip } from "./ui.jsx";
-import { summarizeDocument } from "./documentSummary.js";
 
 function Emphasis({ text }) {
   // Only explicit source markup / short colon labels are emphasized. Numbers have no special treatment.
@@ -8,7 +7,7 @@ function Emphasis({ text }) {
   return label ? <><strong className="summary-label">{parts(label[1])}</strong>{parts(label[2])}</> : parts(text);
 }
 export function DocumentSummary({ data, documentTitle, onRead, onChapters }) {
-  const result = summarizeDocument(data, documentTitle);
+  const result = data;
   return <div className="summary-view" aria-label="内容概览">
     <ul className="summary-points">{result.points.map((point, index) => <li key={index} className={/^(注意|风险|警告|禁止|重要)(?:[：:\s]|$)/u.test(point.label || point.details[0] || '') ? 'summary-caution' : ''}>
       {point.label && <strong className="summary-topic"><Emphasis text={point.label} /></strong>}

@@ -736,3 +736,11 @@ devtest原juanzhan-test实际10→11迁移完成，全部10个旧迁移SHA及原
 新增0011及Archive0.4.29。浏览器任务4项通过（28.3s），主界面13项通过（1.9m），真实DOCX/SQLite/文件存储/HTTP/Converter/worker，验证捕获文件名、五步独立条/总体完成步骤数、真实成功与损坏PDF失败所在步骤，1440×1000/390×844无水平溢出与控制台错误。截图本机/tmp/juanzhan-step-progress-{desktop,mobile}.png，服务器原图/tmp/juanzhan-progress-center-{desktop,mobile}.png，日志.local/step-progress-browser.log、step-progress-library.log。Browser插件未提供，复用现有Playwright，无新增依赖。
 
 首次两组后端36通过/3失败：新增测试观察列表不能跨worker子进程回传、测试重试未等持久退避，以及未指定现有CJK字体。分别改为同进程实际execute+HTTP转换观察、按持久时钟推进退避、复用现有字体，随后39项通过（32.38s）。初次完整后端482通过/1失败（320.52s），原租约测试在10ms预算内未完成begin即失效；改为先以正常租约begin，再将真实SQLite租约时间设为过去，继续验证失效围栏/重试新ParseRun与GC不丢失，未放松生产租约逻辑。原始日志保留.local/step-progress-backend.log、step-progress-backend-verified.log、step-progress-full.log/xml；当前新增顺序/回退/丢弃发布断言与最终完整复验另记录。
+# 2026-10-21 外部 Agent 与格式验收
+
+最终完整后端回归：544 passed（355.80s），真实 SQLite、文件存储与 HTTP；报告在 devtest `.local/agent-final-full.log`、`.local/agent-full-reports/final.xml`。包含真实 TCP REST/MCP、stdio 子进程、空间越权/撤销/到期/限流、备份恢复清除授权、精确数字及概要来源验证。3 个既有框架警告（弃用/自动 OpenAPI favicon operation ID），无跳过。
+
+真实格式矩阵见 FORMATS-VERIFIED.md：38项格式用例，包括全部声明格式、别名、BOM 编码、图像/扫描 PDF 实际 OCR、损坏与未支持格式；5份固定版本真实 Office 样本通过哈希验证后参与验收，不把 unsupported 算解析成功。概要规则8项；其余包含现有业务回归。
+
+阅读浏览器6项已通过（52.7s），覆盖十份六格式真实文档和 Agent 设置/一次性密钥/撤销。Browser plugin 不可用，复用现有 Playwright。Chromium 使用专用 TMPDIR，未改变系统 /tmp 权限；桌面1440与手机390截图已核对，密钥隐藏后截图。
+

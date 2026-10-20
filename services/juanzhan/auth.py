@@ -46,6 +46,7 @@ def set_password(settings, password):
                    (encoded, int(time.time())))
         db.execute('DELETE FROM auth_sessions')
         db.execute('DELETE FROM auth_api_tokens')
+        db.execute('DELETE FROM agent_tokens')
         db.execute('DELETE FROM auth_login_throttle')
         db.commit()
 
@@ -74,6 +75,9 @@ def authorize(settings, request):
             scheme, _, token = authorization.partition(' ')
             if scheme.lower() != 'bearer' or not token or len(token) > 256:
                 fail(401, 'UNAUTHORIZED', 'Valid authentication required')
+            if token.startswith('jza_'):
+                from .agent_access import authorize_agent
+                return authorize_agent(settings, request, token)
             row = db.execute('SELECT id FROM auth_api_tokens WHERE token_hash=? AND expires_at>?',
                              (digest(token), int(time.time()))).fetchone()
             if row is None:

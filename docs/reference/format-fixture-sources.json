@@ -1,0 +1,32 @@
+[
+  {
+    "name": "sample.doc",
+    "bytes": 27136,
+    "sha256": "717585c0a88f20862c86220163dd03da87cd743970354c6b29add32725f2e833",
+    "url": "https://github.com/apache/poi/blob/d91a76448f0963a93b6cd95fb97fbe1d8bad82c6/test-data/document/SampleDoc.doc"
+  },
+  {
+    "name": "sample.xls",
+    "bytes": 13824,
+    "sha256": "2b5ec8298bacffdca61c50f6f7607da0a4e63cf76fa011c62f203e6a66bc072a",
+    "url": "https://github.com/apache/poi/blob/d91a76448f0963a93b6cd95fb97fbe1d8bad82c6/test-data/spreadsheet/Simple.xls"
+  },
+  {
+    "name": "sample.xlsx",
+    "bytes": 8123,
+    "sha256": "119b6e70c5bbca6ca3e46f981e0719c154d87203adb4b5b61210d726deab9f7a",
+    "url": "https://github.com/apache/poi/blob/d91a76448f0963a93b6cd95fb97fbe1d8bad82c6/test-data/spreadsheet/SimpleMultiCell.xlsx"
+  },
+  {
+    "name": "sample.ppt",
+    "bytes": 15360,
+    "sha256": "e8fd4c38ad72ce3735acbca0b60dd5870fb60f819c169e3947d166f4f1bcc79d",
+    "url": "https://github.com/apache/poi/blob/d91a76448f0963a93b6cd95fb97fbe1d8bad82c6/test-data/slideshow/basic_test_ppt_file.ppt"
+  },
+  {
+    "name": "sample.pptx",
+    "bytes": 47215,
+    "sha256": "108d7219130a8460298896f45ff777dfe52b8b5527a4b4628b10731ed01d6a8e",
+    "url": "https://github.com/apache/poi/blob/d91a76448f0963a93b6cd95fb97fbe1d8bad82c6/test-data/slideshow/sample.pptx"
+  }
+]

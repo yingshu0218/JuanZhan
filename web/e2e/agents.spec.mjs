@@ -1,0 +1,34 @@
+import { test,expect } from '@playwright/test';
+import { login,createSpace,api } from './helpers.mjs';
+
+test('scoped Agent settings issue one-time secrets, interoperate with MCP and revoke on desktop/mobile',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await login(page);await createSpace(page,'Agent授权空间');
+ const space=await page.getByLabel('当前空间').inputValue();
+ const other=await api(page,'/spaces','POST',{name:'未授权空间'});expect(other.status).toBe(201);
+ await page.reload();
+ await page.getByRole('button',{name:'系统设置',exact:true}).click();
+ await page.getByRole('button',{name:'Agent 接入',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Agent 接入',exact:true});
+ await dialog.getByLabel('名称',{exact:true}).fill('只读测试Agent');
+ await dialog.getByLabel('Agent授权空间',{exact:true}).check();
+ await dialog.getByRole('button',{name:'创建凭据',exact:true}).click();
+ const secret=await dialog.getByLabel('Agent Token',{exact:true}).inputValue();expect(secret.startsWith('jza_')).toBe(true);
+ const result=await page.request.get('/api/v1/agent/spaces',{headers:{Authorization:'Bearer '+secret}});expect(result.status()).toBe(200);
+ expect((await result.json()).items.map(item=>item.id)).toEqual([space]);
+ const mcp=await page.request.post('/api/v1/agent/mcp',{headers:{Authorization:'Bearer '+secret,Accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25'},data:{jsonrpc:'2.0',id:1,method:'tools/list'}});
+ expect(mcp.status()).toBe(200);expect((await mcp.json()).result.tools).toHaveLength(7);
+ const forbidden=await page.request.post('/api/v1/spaces',{headers:{Authorization:'Bearer '+secret},data:{name:'Agent不应创建空间'}});expect(forbidden.status()).toBe(403);
+ await dialog.getByRole('button',{name:'隐藏凭据',exact:true}).click();
+ await expect(dialog.getByLabel('Agent Token',{exact:true})).toHaveCount(0);
+ expect(await page.evaluate(value=>JSON.stringify(localStorage).includes(value)||JSON.stringify(sessionStorage).includes(value),secret)).toBe(false);
+ await page.screenshot({path:'/tmp/juanzhan-agent-settings-desktop.png'});
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/juanzhan-agent-settings-mobile.png'});
+ await dialog.getByRole('button',{name:'撤销只读测试Agent',exact:true}).click();
+ await expect(dialog.getByText('暂无凭据',{exact:true})).toBeVisible();
+ expect((await page.request.get('/api/v1/agent/spaces',{headers:{Authorization:'Bearer '+secret}})).status()).toBe(401);
+ await dialog.getByRole('button',{name:'关闭Agent 接入',exact:true}).click();
+ expect(errors).toEqual([]);
+});

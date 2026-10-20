@@ -83,6 +83,8 @@ def create_app(kind, settings=None, *, converter_config=None):
 
     @app.middleware("http")
     async def boundary(request: Request, call_next):
+        if kind == "archive" and request.url.path == "/api/v1/agent/mcp" and request.headers.get("origin") is not None and request.headers["origin"] != str(request.base_url).rstrip("/"):
+            return error(403,"ORIGIN_REJECTED","Origin does not match this server")
         if kind == "converter" and request.url.path != "/healthz":
             expected = "Bearer " + settings.converter_token
             if not settings.converter_token or not secrets.compare_digest(
@@ -109,6 +111,9 @@ def create_app(kind, settings=None, *, converter_config=None):
         if kind == "converter":
             response.headers["Cache-Control"] = "no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"
+        if kind == 'archive' and (request.url.path.startswith('/api/v1/agent') or request.url.path.endswith('/overview')):
+            response.headers['Cache-Control']='no-store'
+            response.headers['X-Content-Type-Options']='nosniff'
         if kind == 'archive' and request.url.path.startswith('/api/v1/auth'):
             response.headers['Cache-Control'] = 'no-store'
             response.headers['Pragma'] = 'no-cache'
@@ -130,6 +135,10 @@ def create_app(kind, settings=None, *, converter_config=None):
 
     if kind == "archive":
         web.install(app)
+        from . import agent_access, agent_api, agent_mcp
+        app.include_router(agent_access.router(settings))
+        app.include_router(agent_api.router(settings))
+        app.include_router(agent_mcp.router(settings))
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))
         app.include_router(source_api.router(settings))
