@@ -138,4 +138,6 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 
 ## 2026-10-20 文件名与分步进度
 
+最终报告/夹具还包括.local/step-progress-full-verified.log/xml、.local/pytest-step-progress-verified、.local/step-progress-final-targeted.log、step-progress-browser-final.log及/tmp/juanzhan-release-se57y0ix、/tmp/juanzhan-release-drill-ka7sgrhr。同步中间文件.local/step-progress.bundle与step-progress-source.tar.gz可在无需复查时按名称清理。实例目录step-*.py/mjs、step-progress-*.json/png为私有验证记录，不能连同数据卷或升级前备份一起删除。
+
 复用devtest已有依赖/浏览器/Docker，无新增安装。rc.4镜像、.local/step-progress-*.log/xml、.local/pytest-step-progress、构建manifest和/tmp/juanzhan-step-progress-*.png为本轮产物，可在无需复查且无实例引用时按名称清理；运行数据卷/私有认证覆盖/升级前备份不可按缓存删除。0011迁移后不能直接用rc.3连接11迁移库；需按RELEASE使用rc.3与升级前备份恢复到新卷回退。

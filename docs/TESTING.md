@@ -658,6 +658,12 @@ Browser plugin not available，本次使用已有Playwright，无新依赖。dev
 
 ## 2026-10-20 文件名与分步进度验证
 
+最终验收：f951bff干净源码完整后端484 passed（310.68s），无失败/跳过；最终专项40 passed（29.22s），最终任务浏览器4 passed（38.0s），主界面13 passed（1.9m）。对应服务器.local/step-progress-full-verified.log/xml、step-progress-final-targeted.log、step-progress-browser-final.log、step-progress-library.log。未声称七组浏览器全部重跑，下文首轮失败报告保留。
+
+rc.4干净构建：manifest /tmp/juanzhan-release-se57y0ix/manifest.json，源码f951bff/source_dirty=false，镜像sha256:cbd33b3d2f91d5f380b1fd3144ef22d6d1ce2a2116879fd97b574530f78d937e。真实8→11迁移升级、一致备份、新卷恢复、登录/下载/正文/中文检索及integrity/FK演练通过（62.13s），报告/tmp/juanzhan-release-drill-ka7sgrhr/result.json，日志.local/step-progress-release-drill.log；随机演练容器/卷已清理。
+
+devtest原juanzhan-test实际10→11迁移完成，全部10个旧迁移SHA及原4档案的ID/原件Revision/正文引用/版本值保持，integrity=ok、FK=0，三个服务健康。只对最初虚构welcome.txt显式重解析，真实HTTP观察pending→validate→submit→extract→全步骤完成，文件名与列表/详情一致；未重跑用户Word。实际部署1440/390浏览器验证文件名、六条进度（总体+五步骤）、无溢出/控制台错误及test登录通过。私有实例目录保留before/after-rc4-schema.json、step-progress-deployment.json及step-progress-browser-smoke.json。
+
 新增0011及Archive0.4.29。浏览器任务4项通过（28.3s），主界面13项通过（1.9m），真实DOCX/SQLite/文件存储/HTTP/Converter/worker，验证捕获文件名、五步独立条/总体完成步骤数、真实成功与损坏PDF失败所在步骤，1440×1000/390×844无水平溢出与控制台错误。截图本机/tmp/juanzhan-step-progress-{desktop,mobile}.png，服务器原图/tmp/juanzhan-progress-center-{desktop,mobile}.png，日志.local/step-progress-browser.log、step-progress-library.log。Browser插件未提供，复用现有Playwright，无新增依赖。
 
 首次两组后端36通过/3失败：新增测试观察列表不能跨worker子进程回传、测试重试未等持久退避，以及未指定现有CJK字体。分别改为同进程实际execute+HTTP转换观察、按持久时钟推进退避、复用现有字体，随后39项通过（32.38s）。初次完整后端482通过/1失败（320.52s），原租约测试在10ms预算内未完成begin即失效；改为先以正常租约begin，再将真实SQLite租约时间设为过去，继续验证失效围栏/重试新ParseRun与GC不丢失，未放松生产租约逻辑。原始日志保留.local/step-progress-backend.log、step-progress-backend-verified.log、step-progress-full.log/xml；当前新增顺序/回退/丢弃发布断言与最终完整复验另记录。
