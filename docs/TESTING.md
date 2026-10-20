@@ -653,3 +653,5 @@ backup_archive模块与既有backup回归27 passed（8.89s），服务器.local/
 ## 2026-10-20 后台任务进度可见性专项
 
 Browser plugin not available，本次使用已有Playwright，无新依赖。devtest执行npm run build及npm run test:e2e:jobs：4项通过（32.0秒），真实SQLite/文件存储/HTTP/Converter/worker，新增DOCX上传→查看解析进度→对应任务完成→新增任务自动出现→刷新保留；其余覆盖批量解析、显式重解析及损坏原件失败。检查1440×1000与390×844截图、无页面错误、无水平溢出。日志在服务器.local/progress-build.log与.local/progress-jobs.log，截图在/tmp/juanzhan-progress-center-{desktop,mobile}.png。此专项不替代此前全量验收，不声称重新运行481项后端。
+
+后续主界面回归npm run test:e2e：13项全部通过（1.6分钟），服务器.local/progress-library.log。干净提交c1f0a02构建rc.3并部署到原juanzhan-test项目/持久卷，三个服务健康。部署后用test账号对18080实际浏览器验证常驻数量、任务列表、1440/390布局与无控制台错误；原空间4份档案保留（含用户追加资料），不读取或重导用户原件。部署报告在私有实例目录progress-deployment-smoke.json。

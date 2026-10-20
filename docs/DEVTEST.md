@@ -30,3 +30,5 @@ docker compose --env-file /opt/juanzhan-dev/test-instance/.env -p juanzhan-test 
 再次启动使用同参数up -d --wait --no-build。专属持久卷juanzhan-test_archive_data及juanzhan-test_archive_backups包含测试数据及备份，不作为缓存删除。maintenance运行时另建juanzhan-test_archive_recovery卷。确认不再需要时才移除本项目容器及对应卷，勿全局prune。私有配置/密码/报告与本机.local/devtest-access可单独按需清理；通用依赖边界见LOCAL-DEVELOPMENT。
 
 2026-10-20后续迭代：rc.3增强任务中心入口/真实活动计数/自动更新与上传任务直达，保留原测试数据卷及test认证覆盖。启动/更新也须叠加上面的test-auth.yaml；只对测试实例生效，上线前撤销覆盖并通过admin CLI设置正式密码。原rc.2镜像ID与验收记录为历史部署追溯。
+
+rc.3已于本日实际切换完成，镜像ID sha256:31b24ade3211667c943f6c2d33022dc0b756755c76f5d8112d11f8182902515c，干净构建提交c1f0a02。切换前一致备份保存在本实例备份卷/backups/before-progress-rc3（仅操作员路径）。部署后1440/390真实浏览器验证通过，原空间4份档案保留；三个服务健康。回退可将私有.env镜像改回rc.2并用两个Compose文件启动（本次无迁移变化）。
