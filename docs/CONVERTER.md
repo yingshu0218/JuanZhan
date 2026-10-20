@@ -1,5 +1,9 @@
 # 独立文档转换器
 
+2026-10-21本批新增适配见BATCH-2026-10-21.md：XLSX/PPTX/ODT/ODS/ODP/CSV/TSV，Converter0.4.4，16种输入MIME。无新增运行依赖，无物理页码推断；只提取存储值/公式缓存，不执行计算/宏/外链，缺失缓存明确提示。表格256列/100000个显式单元格，已有进程/ZIP/块数/输出限额保持。实际部署以DEVTEST为准。
+
+规范依据：[Microsoft单元格/共享字符串](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/working-with-the-shared-string-table)、[公式缓存](https://github.com/OfficeDev/open-xml-docs/blob/main/docs/spreadsheet/working-with-formulas.md)、[幻灯片顺序](https://learn.microsoft.com/en-us/office/open-xml/presentation/working-with-presentation-slides)、[OASIS ODF1.3结构与重复行列](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part3-schema/OpenDocument-v1.3-os-part3-schema.html)。采用存储结构顺序，不推断视觉布局或公式新鲜度。
+
 目的为档案库提供统一读取/分析数据，并非全格式任意双向互转工具。保留原件，输出 text、Markdown、JSON blocks、元数据候选及可选预览/缩略图；不使用 LLM。
 
 | 输入 | 最低结果 | 保真/定位边界 |

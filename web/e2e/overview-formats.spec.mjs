@@ -12,6 +12,35 @@ test.beforeAll(() => {
 });
 test.afterAll(() => { if(directory)rmSync(directory,{recursive:true,force:true}); });
 
+test('seven new office and delimited formats show source-backed overviews on desktop and mobile',async({page})=>{
+  test.setTimeout(180000);
+  const script="import sys,json,base64;sys.path[:0]=['../tests','../services'];from test_office_formats import workbook,presentation,odf,ODT,ODS,ODP;items=[('budget.xlsx',workbook()),('plan.pptx',presentation()),('report.odt',odf(ODT)),('budget.ods',odf(ODS)),('plan.odp',odf(ODP)),('inventory.csv','设备,状态\\n主机,已验收\\n'.encode()),('inventory.tsv','设备\\t状态\\n主机\\t已验收\\n'.encode())];print(json.dumps([{'name':name,'data':base64.b64encode(data).decode()} for name,data in items]))";
+  const cases=JSON.parse(execFileSync('../.venv/bin/python',['-c',script],{encoding:'utf8'}));
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);await createSpace(page,'Office概要验收');const space=await page.getByLabel('当前空间').inputValue();
+  for(const item of cases){
+    const session=await api(page,'/auth/session');
+    const response=await page.request.post('/api/v1/documents/upload',{headers:{'X-CSRF-Token':session.data.csrf_token},multipart:{space_id:space,file:{name:item.name,mimeType:'application/octet-stream',buffer:Buffer.from(item.data,'base64')}}});
+    expect(response.status()).toBe(201);const saved=await response.json();
+    await expect.poll(async()=> (await api(page,`/documents/${saved.document_id}`)).data.processing_status,{timeout:30000}).toBe('completed');
+    await page.reload();await page.getByLabel('当前空间').selectOption(space);
+    await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:item.name}).click();
+    const reader=page.getByRole('region',{name:'正文阅读',exact:true});
+    await expect(reader.locator('.summary-points > li').first()).toBeVisible();
+    await expect(reader.locator('.summary-points')).toContainText(/验收|主机/);
+    const source=reader.locator('.summary-points > li').first();await source.locator('summary').click();
+    await source.getByRole('button',{name:'查看对应正文',exact:true}).first().click();
+    await expect(reader.locator('.content-blocks')).toBeVisible();
+    await reader.getByLabel('阅读格式').selectOption('summary');
+    await page.screenshot({path:join(tmpdir(),'juanzhan-office-'+item.name+'-desktop.png')});
+    await page.setViewportSize({width:390,height:844});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),item.name).toBe(true);
+    await page.screenshot({path:join(tmpdir(),'juanzhan-office-'+item.name+'-mobile.png')});
+    await page.setViewportSize({width:1440,height:1000});
+  }
+  expect(errors).toEqual([]);
+});
+
 test('ten real documents across six formats produce truthful generic overviews', async ({ page }) => {
   test.setTimeout(180000);
   page.setDefaultTimeout(15000);

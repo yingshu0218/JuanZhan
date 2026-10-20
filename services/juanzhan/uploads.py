@@ -88,10 +88,16 @@ def sniff(file,filename):
                 names=set(archive.namelist())
                 if {'[Content_Types].xml','word/document.xml'}<=names:
                     return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                if {'[Content_Types].xml','xl/workbook.xml'}<=names:
+                    return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                if {'[Content_Types].xml','ppt/presentation.xml'}<=names:
+                    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
                 if 'mimetype' in names:
                     entry=archive.getinfo('mimetype')
                     if entry.file_size<=64 and entry.compress_size<=128 and not entry.flag_bits&1:
-                        if archive.read(entry)==b'application/epub+zip':return 'application/epub+zip'
+                        value=archive.read(entry)
+                        if value in (b'application/epub+zip',b'application/vnd.oasis.opendocument.text',b'application/vnd.oasis.opendocument.spreadsheet',b'application/vnd.oasis.opendocument.presentation'):
+                            return value.decode('ascii')
         except (ValueError,OSError,zipfile.BadZipFile,RuntimeError,NotImplementedError,zlib.error,EOFError,struct.error,OverflowError):
             pass
         finally:
@@ -104,7 +110,7 @@ def sniff(file,filename):
         text=codecs.getincrementaldecoder(encoding)().decode(head,final=False)
         if any(ord(c)<32 and c not in '\t\n\r\f' for c in text):return 'application/octet-stream'
         if re.search(r'<(?:!doctype\s+html|html|head|body)(?:\s|>)',text[:4096],re.I):return 'text/html'
-        return 'text/markdown' if Path(filename).suffix.lower() in ('.md','.markdown') else 'text/plain'
+        return {'.md':'text/markdown','.markdown':'text/markdown','.csv':'text/csv','.tsv':'text/tab-separated-values'}.get(Path(filename).suffix.lower(),'text/plain')
     except UnicodeDecodeError:
         return 'application/octet-stream'
 

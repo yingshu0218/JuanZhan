@@ -748,3 +748,9 @@ devtest原juanzhan-test实际10→11迁移完成，全部10个旧迁移SHA及原
 
 最终浏览器7组43项全部通过：基础13、来源4、搜索4、任务4（29.4s）、文件9（38.8s）、备份3（15.5s）、阅读/Agent6。来源重跑后未再出现网络错误，测试断言未放宽。来源转换容器显式指定 rc.11，复用私有 Playwright 缓存/专用 TMPDIR；原业务实例保持健康，测试服务按各组退出清理。
 
+## 2026-10-21 后续批次：原生Office/CSV适配
+
+首轮新增五类Office及既有格式：40过/9失败（64.86s），9项均因容器未挂测试字体而在样本生成前报cannot open resource，未掩盖错误；日志`.local/office-first-tests.log`。补挂现有Noto字体后，格式/转换/上传专项99项通过（106.87s），无跳过，日志`.local/office-verified-tests.log`。之后补充公式空缓存/重复行边界，当前完整回归另行执行并以最终报告为准。
+
+浏览器首轮6项通过/1项失败，失败为新增样本生成子进程缺少services模块搜索路径；修正测试脚本后只重跑该新增用例通过（28.7s），实际七份XLSX/PPTX/ODT/ODS/ODP/CSV/TSV逐一真实上传/转换/持久正文与概要/来源跳转、桌面1440和手机390验证。既有六格式十份样本与其他阅读用例均在首轮通过（共6项）。无放宽断言。Browser plugin不可用，沿用Playwright；未修改系统/tmp或安装浏览器。日志`.local/office-browser-reading-first.log`和`.local/office-browser-new-formats.log`；截图位于私有TMPDIR下juanzhan-office-*.png，已实际查看XLSX桌面与PPTX手机截图，通用分点/内联数字/布局正常。
+

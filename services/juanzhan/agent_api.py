@@ -38,9 +38,9 @@ class AnalysisInput(SpaceInput):
 class AgentSearch(SearchRequest):
     page_size: int=Field(default=20,ge=1,le=20,strict=True)
 
-FORMATS={'text_fallback':['csv'],'supported':['pdf','docx','md','markdown','html','htm','txt','epub','png','jpg','jpeg','tif','tiff'],
+FORMATS={'text_fallback':[],'supported':['pdf','docx','md','markdown','html','htm','txt','epub','png','jpg','jpeg','tif','tiff','xlsx','pptx','odt','ods','odp','csv','tsv'],
          'ocr':{'formats':['pdf','png','jpg','jpeg','tif','tiff'],'languages':['eng','chi_sim'],'default':False,'requires_explicit_reprocessing':True,'availability':'deployment-dependent'},
-         'not_supported':['doc','xls','xlsx','ppt','pptx','odt','ods','odp','rtf','gif','bmp','webp','zip'],
+         'not_supported':['doc','xls','ppt','rtf','gif','bmp','webp','zip'],
          'note':'Original storage is independent of parsing. MIME sniffing determines processing; extension alone is not proof of support.'}
 
 

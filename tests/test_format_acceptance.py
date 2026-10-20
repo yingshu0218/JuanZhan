@@ -74,13 +74,13 @@ def test_corrupt_protected_and_unsupported_originals_remain_available(pipeline,n
     assert not summary['points'] and not summary['parse_run_id']
 
 
-def test_csv_is_plain_text_fallback_not_a_structured_spreadsheet_parser(pipeline):
+def test_csv_is_structured_text_without_type_inference(pipeline):
     _,_,summary=process(pipeline,'设备,状态\n主机,已验收\n'.encode(),'inventory.csv')
-    assert summary['points'] and '主机,已验收' in str(summary['points'])
+    assert summary['points'] and '主机' in str(summary['points']) and '已验收' in str(summary['points'])
 
 
 @pytest.mark.parametrize('name',['sample.doc','sample.xls','sample.xlsx','sample.ppt','sample.pptx'])
-def test_real_office_formats_outside_declared_support_are_not_false_success(pipeline,name):
+def test_real_office_formats_respect_current_adapter_support(pipeline,name):
     directory=os.environ.get('JUANZHAN_FORMAT_FIXTURES')
     if not directory:pytest.skip('Set JUANZHAN_FORMAT_FIXTURES to pinned Apache POI acceptance samples')
     data=(Path(directory)/name).read_bytes()
@@ -92,7 +92,8 @@ def test_real_office_formats_outside_declared_support_are_not_false_success(pipe
         from zipfile import ZipFile
         with ZipFile(BytesIO(data)) as package:assert ('xl/workbook.xml' if name.endswith('.xlsx') else 'ppt/presentation.xml') in package.namelist()
     else:assert data.startswith(bytes.fromhex('d0cf11e0a1b11ae1'))
-    process(pipeline,data,name,'unsupported')
+    _,_,summary=process(pipeline,data,name,'completed' if name.endswith(('.xlsx','.pptx')) else 'unsupported')
+    if name.endswith(('.xlsx','.pptx')):assert summary['points'] and summary['text_available']
 
 
 @pytest.mark.parametrize('format,extension',[('GIF','gif'),('BMP','bmp'),('WEBP','webp')])
@@ -101,6 +102,6 @@ def test_other_real_image_formats_are_explicitly_unsupported(pipeline,format,ext
 
 
 @pytest.mark.parametrize('extension,mime',[('odt','application/vnd.oasis.opendocument.text'),('ods','application/vnd.oasis.opendocument.spreadsheet'),('odp','application/vnd.oasis.opendocument.presentation')])
-def test_other_zip_document_families_do_not_claim_text_parsing(pipeline,extension,mime):
+def test_incomplete_odf_packages_fail_without_fake_body(pipeline,extension,mime):
     data=zipped({'mimetype':mime,'content.xml':'<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"><office:body/></office:document-content>'})
-    process(pipeline,data,'document.'+extension,'unsupported')
+    process(pipeline,data,'document.'+extension,'failed')

@@ -12,6 +12,7 @@ def parse(directory, options, limits):
     from .conversion_formats import (DOCX, EPUB, SUPPORTED, FormatError, Output, text_format,
                                      markdown_format, docx_format, epub_format, pdf_format, markdown_artifact)
     from .conversion_html import html_format
+    from .conversion_office import OFFICE_TYPES, XLSX, PPTX, xlsx_format, pptx_format, odf_format, delimited_format
     from .conversion_raster import Raster, IMAGES
     from contextlib import nullcontext
     with (directory / 'input').open('rb') as file:
@@ -20,11 +21,12 @@ def parse(directory, options, limits):
     declared = options['declared_mime']
     # Text subtypes cannot be identified reliably from bytes alone. Accept a validated
     # MIME hint only for textual bytes/BOM; binary signatures always take precedence.
-    if mime == 'text/plain' and declared in ('text/markdown','text/html'):
+    text_types=('text/plain','text/markdown','text/html','text/csv','text/tab-separated-values')
+    if mime == 'text/plain' and declared in text_types:
         mime = declared
     elif data.startswith((b'\xff\xfe', b'\xfe\xff', b'\x00\x00\xfe\xff')):
-        mime = declared if declared in ('text/plain','text/markdown','text/html') else 'text/plain'
-    elif not data and declared in ('text/plain','text/markdown','text/html'):
+        mime = declared if declared in text_types else 'text/plain'
+    elif not data and declared in text_types:
         mime = declared
     out = Output(limits)
     raster_mime=mime in IMAGES or mime=='application/pdf'
@@ -41,6 +43,9 @@ def parse(directory, options, limits):
         return {'result':result}
     adapters={'text/plain':text_format,'text/markdown':markdown_format,'text/html':html_format,
               DOCX:docx_format,EPUB:epub_format,'application/pdf':pdf_format}
+    adapters.update({mime:odf_format for mime in OFFICE_TYPES})
+    adapters.update({XLSX:xlsx_format,PPTX:pptx_format})
+    adapters.update({'text/csv':delimited_format,'text/tab-separated-values':lambda data,out:delimited_format(data,out,'\t')})
     try:
         needs_raster=raster_mime and (options['ocr_enabled'] or options['generate_preview'] or mime in IMAGES)
         with Raster(data,mime,out,options) if needs_raster else nullcontext() as raster:

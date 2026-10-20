@@ -1,5 +1,7 @@
 # API 契约与接入
 
+2026-10-21本批：Converter能力契约0.4.4，新增XLSX/PPTX/ODT/ODS/ODP/CSV/TSV；ParseResult1.0、现有块和section定位结构不变，Archive仍0.4.30/74路径、12迁移。上传根据有界ZIP内容识别Office包，CSV/TSV仅对可解码文本接受扩展名语义提示；来源候选扩展名同步增加七类，真实解析结果仍由Converter决定。Agent get_formats与Converter声明同步。上批部署基线仍见DEVTEST。
+
 2026-10-21 Agent扩展：Archive0.4.30，主契约74路径（原63＋11），新增路径引用[agent-openapi.json](reference/agent-openapi.json)。新增管理员凭据管理、只读Agent空间/目录字段发现、检索、概要、分页正文、分析证据及MCP；Web共用GET /documents/{id}/overview。精确参数/响应以扩展契约为准，权限、协议版本和客户端示例见[Agent接入](AGENT-API.md)。agent凭据只能使用专用只读接口，不具备原普通管理员Token权限。分析返回证据，不在服务端调用模型。
 
 ## 权威文件

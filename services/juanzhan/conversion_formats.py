@@ -12,7 +12,13 @@ from defusedxml import ElementTree as XML
 
 DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 EPUB = 'application/epub+zip'
-SUPPORTED = ['text/plain', 'text/markdown', 'text/html', DOCX, 'application/pdf', EPUB]
+XLSX='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+PPTX='application/vnd.openxmlformats-officedocument.presentationml.presentation'
+ODT='application/vnd.oasis.opendocument.text'
+ODS='application/vnd.oasis.opendocument.spreadsheet'
+ODP='application/vnd.oasis.opendocument.presentation'
+OFFICE_TYPES=[XLSX,PPTX,ODT,ODS,ODP]
+SUPPORTED = ['text/plain', 'text/markdown', 'text/html', DOCX, 'application/pdf', EPUB]+OFFICE_TYPES+['text/csv','text/tab-separated-values']
 
 
 class FormatError(Exception):

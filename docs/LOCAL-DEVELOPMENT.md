@@ -163,3 +163,7 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 
 无新增本机或服务器运行依赖；复用 devtest Python/npm/Docker/Playwright。额外下载仅测试数据：`.local/juanzhan-office-fixtures`（约112KB，来源/哈希见 reference/format-fixture-sources.json），不进入运行镜像。可清理本轮 `.local/agent-*.log`、`.local/agent-full-reports`、专用 `.local/types-browser-tmp`、`/tmp/juanzhan-agent-settings-*.png` 与明确命名的 agent bundle/source 中间包。保留源码、迁移、锁文件、测试实例业务卷、私有认证文件和升级前备份；镜像仅在无容器引用后按明确标签清理，不运行全局 prune。
 
+## 2026-10-21 Office 原生解析迭代
+
+XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新增依赖/系统办公套件。测试仅在devtest隔离容器与临时HTTP服务执行。专用产物包括`.local/office-*.log`、`.local/agent-full-reports/office-full.xml`、`.local/juanzhan-office-*-work.tar.gz`、私有TMPDIR下的`juanzhan-office-*.png`；无需复查后可按明确名称清理，不删除业务卷/备份或共享浏览器缓存。固定版本Office夹具沿用上批约112KB测试数据。
+
