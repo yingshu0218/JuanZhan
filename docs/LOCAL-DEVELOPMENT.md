@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-20单列布局：无新增依赖。新增rc.5镜像、.local/task-column-*.log、.local/juanzhan-task-column.bundle及juanzhan-task-column-source.tar.gz、/tmp/juanzhan-release-8nsk0677/manifest.json和/tmp/juanzhan-task-column-*.png；无需复查且无运行引用时可按名称清理。私有实例task-column-browser.mjs/json/png为部署验证记录；原数据/备份/认证文件保留。
+
 PDF阅读增量（2026-10-19，专项已通过）：仅在服务器web/安装固定pdfjs-dist6.4.299，npm --save-exact --ignore-scripts；官方registry元数据核对完整性sha512-AVl138zALtfaAPvADulE0PZThbYzCBS79nL4pOSL/6Sm/4AH5A21BD9VHt97OlCuzJuCpmeZtAtkinisF4Vb1g==与锁文件一致，安装沿用已有镜像解析。主包约35MiB、可选间接@napi-rs/canvas1.0.11相关目录约35MiB（浏览器不使用）；项目npm-cache当前约48MiB，可在开发结束后按项目范围清理。构建产物当前约6.2MiB，其中本地PDF字体/CMap/ICC/WASM资源约4MiB；worker约1.3MB、PDF阅读模块约550kB按需加载，不新增Archive运行时Node进程。
 
 记录及可清理产物位于服务器`.local/pdf-reader*.log`、`.local/pdf-web.log/xml`、`.local/pytest-pdf-web/`、`.local/pdf-budget-sample.pdf`和两端`.local/pdfjs-licenses.tar.gz`；截图服务器`/tmp/juanzhan-full-pdf-{desktop,mobile}.png`及本机`/tmp/juanzhan-remote-qa/`副本。源码、package.json/lock、licenses/pdfjs/、licenses/napi-canvas-LICENSE.txt及文本层CSS许可须保留。本机仅同步源码/锁文件/许可，没有安装PDF依赖或新增系统软件；服务器没有新系统服务/模型/数据库迁移，也未覆盖既有候选镜像。完整后端/全部浏览器/新发行验收仍待最终阶段。

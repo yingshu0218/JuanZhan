@@ -1,5 +1,11 @@
 # 测试与交付验收
 
+## 2026-10-20 任务中心单列竖向调整
+
+仅UI布局调整，后台/63路径契约/11迁移/依赖不变。devtest构建及任务浏览器4项全部通过（30.8s），真实DOCX/失败任务/刷新持久性/原位详情/1440与390视口，日志.local/task-column-build.log、task-column-browser.log，截图本机/tmp/juanzhan-task-column-{desktop,mobile}.png。Browser插件未提供，复用已有Playwright；未重复运行无改动的484项后端。
+
+rc.5已从干净3f81626构建并更新juanzhan-test，镜像sha256:ccb4ae85cc237372697d9806ef3f94f43c87fe2560600422e7de2d5d152b31e6，manifest /tmp/juanzhan-release-8nsk0677/manifest.json。部署后三个服务健康；实际1440/390浏览器验证卡片横坐标/宽度相同且纵向不重叠、详情在原任务内、六条真实进度、无溢出/控制台错误、test登录及原4份档案保留。私有实例目录task-column-browser-smoke.json及task-column-*.png保存结果。
+
 ## PDF全页阅读专项 · 2026-10-19
 
 服务器实际构建产物/HTTP/浏览器：原件组9 passed（最终代码34.5秒），日志`/opt/juanzhan-dev/.local/pdf-reader-browser-final-code.log`。覆盖原有下载/被动预览/HTML隔离/历史下载，新增真实8页PDF（超出缩略图范围）、跳页/旋转/缩放、高DPR画布像素预算、文字选择和跨页查找、PDF脚本/URI不执行、中文本地CMap、真实扫描页非白像素、加密文件错误密码后纠正、版本冲突/损坏、快速关闭重开后worker数为0、真实10001页拒绝。最后加载失败/超限后worker释放断言专项2 passed（9.6秒），日志`.local/pdf-reader-failure-cleanup.log`；正常方向/宽度适配截图流程1 passed（8.5秒），日志`.local/pdf-reader-browser-final-visual.log`。
