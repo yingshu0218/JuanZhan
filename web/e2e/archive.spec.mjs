@@ -44,7 +44,7 @@ test("real login, first space, upload, duplicate decision, details, responsive a
     .click();
   await expect(page.getByText("结构化信息", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "正文内容", exact: true }),
+    page.getByRole("heading", { name: "摘要与关键信息", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "业务字段", exact: true }),
