@@ -1,4 +1,5 @@
 // Browser-relative names only. Never send a client filesystem path to the server.
+import { uploadExclusion } from './uploadExclusions.js';
 export const MAX_UPLOAD_ENTRIES = 1000;
 const abort = signal => { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); };
 function parts(path) {
@@ -7,7 +8,14 @@ function parts(path) {
   return result;
 }
 function tree() {
-  const directories = new Set(), files = [];
+  const directories = new Set(), files = [], skipped = { total: 0, samples: [] };
+  function exclude(path, isDirectory = false) {
+    const reason = uploadExclusion(path, isDirectory);
+    if (!reason) return false;
+    skipped.total++;
+    if (skipped.samples.length < 20) skipped.samples.push({ path, reason });
+    return true;
+  }
   function directory(path) {
     const names = parts(path);
     for (let i = 1; i <= names.length; i++) directories.add(names.slice(0, i).join('/'));
@@ -16,15 +24,18 @@ function tree() {
   function limit() { if (directories.size + files.length > MAX_UPLOAD_ENTRIES) throw Error('单批最多1000个文件和目录，请拆分后上传；本批尚未上传。'); }
   return {
     directory,
+    exclude,
     file(file, path) {
       const names = parts(path);
+      if (exclude(path)) return;
       if (names.length > 1) directory(names.slice(0, -1).join('/'));
       files.push({ kind: 'file', file, path, parentPath: names.slice(0, -1).join('/') }); limit();
     },
-    result() { return [...[...directories].sort((a, b) => a.split('/').length - b.split('/').length).map(path => ({ kind: 'folder', file: { name: path.split('/').at(-1), size: 0 }, path, parentPath: path.split('/').slice(0, -1).join('/') })), ...files]; },
+    result() { return Object.assign([...[...directories].sort((a, b) => a.split('/').length - b.split('/').length).map(path => ({ kind: 'folder', file: { name: path.split('/').at(-1), size: 0 }, path, parentPath: path.split('/').slice(0, -1).join('/') })), ...files], { skipped }); },
   };
 }
 export function selectedFiles(files) {
+  if (files.length > 10000) throw Error('读取项目超过10000项，请拆分文件夹后上传；本批尚未上传。');
   const result = tree();
   for (const file of files) result.file(file, file.webkitRelativePath || file.name);
   return result.result();
@@ -49,8 +60,9 @@ export async function droppedFiles(transfer, signal, onCount = () => {}) {
     abort(signal);
     const path = parent ? parent + '/' + entry.name : entry.name;
     parts(path);
-    if (++count > MAX_UPLOAD_ENTRIES) throw Error('单批最多1000个文件和目录，请拆分后上传；本批尚未上传。');
+    if (++count > 10000) throw Error('读取项目超过10000项，请拆分文件夹后上传；本批尚未上传。');
     onCount(count);
+    if (result.exclude(path, entry.isDirectory)) return;
     if (entry.isDirectory) {
       result.directory(path);
       const reader = entry.createReader();

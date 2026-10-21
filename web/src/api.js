@@ -93,6 +93,7 @@ const messages = {
   UPLOAD_CAPACITY: "上传繁忙，请稍后重试。",
   UPLOAD_TIMEOUT: "上传等待超时，请刷新核对后重试。",
   CATALOG_CONFLICT: "名称或引用发生冲突，请检查是否重名。",
+  UPLOAD_EXCLUDED: "此文件属于系统辅助文件或临时锁文件，已排除上传。",
   INVALID_REQUEST: "输入内容不符合要求，请检查后重试。",
   NOT_FOUND: "所选资料已不可用，请刷新后重试。",
   STORAGE_UNAVAILABLE: "原件暂时无法安全保存，请稍后重试。",

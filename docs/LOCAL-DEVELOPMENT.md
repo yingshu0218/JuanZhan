@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-22 T51辅助文件排除：无新增运行/构建依赖；新增仓库自有JSON规则，由Python标准库和Vite共同读取。测试样本仅在devtest的/tmp/juanzhan-upload-exclusions-*创建并finally清理，真实上传只进入隔离SQLite/存储，未导入业务库。/tmp/juanzhan-exclusions-*的传输包、bundle/tar、测试截图及临时验收脚本可清理；业务数据卷、证书、私有认证、备份和现役镜像保留。未安装本机依赖。
+
 2026-10-22 T50文件夹上传：无新增包/系统依赖，使用浏览器原生目录选择、FileSystemEntry分批读取、XHR、IntersectionObserver和现有逻辑目录/托管上传API。devtest已有Node/Playwright完成真实目录选择及CDP操作系统文件/文件夹混合拖放；样本位于/tmp/juanzhan-upload-folder-*、juanzhan-upload-drag-*，测试finally按批清理，不导入业务空间。源码传输包/tmp/juanzhan-folder-changes.tgz、folder-fixes.tgz和后续folder bundle/tar及验收截图可清理；业务卷/私有认证/证书/升级前备份不清理。本机未安装运行时。
 
 2026-10-21 T48/T49资料列表与系统概览：无新增依赖，在devtest使用已有Node/Python/Playwright构建验证，本机未安装包。系统概览仅复用鉴权统计/档案/任务API，不新增服务或迁移。传输包/tmp/juanzhan-home-changes.tgz以及后续home源码tar/bundle、/tmp/juanzhan-home-*.png和expanded-list截图均为可清理开发文件；私有在线QA报告/截图在test-instance保管。保留业务数据卷、原件、证书、认证配置和升级前备份。

@@ -35,6 +35,29 @@ def send(client,headers,space,content=b'hello',filename='file.txt',**metadata):
                        files={'file':(filename,content,'application/pdf')},headers=headers)
 
 
+@pytest.mark.parametrize('filename',['.DS_Store','.ds_store','.localized','Thumbs.db','ehthumbs_vista.db','desktop.ini','._report.docx','~$report.docx','.~lock.report.odt#','.report.swp'])
+def test_auxiliary_uploads_are_excluded_without_persistence(uploads,filename):
+    app,settings,client,headers,space,bearer=uploads
+    stored=lambda: {str(path.relative_to(settings.data_dir/'managed')):path.read_bytes() for path in (settings.data_dir/'managed').rglob('*') if path.is_file()}
+    files_before=stored()
+    with connect(settings.database) as db:
+        before={table:db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in ('documents','file_revisions','managed_objects','jobs')}
+    for auth in (headers,{'Authorization':'Bearer '+bearer}):
+        response=send(client,auth,space,filename=filename)
+        assert response.status_code==422,response.text
+        assert response.json()['error']['code']=='UPLOAD_EXCLUDED'
+    with connect(settings.database) as db:
+        assert before=={table:db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in before}
+    assert stored()==files_before
+
+
+@pytest.mark.parametrize('filename',['.env','.gitignore','notes.tmp','notes.bak','report.docx~','Thumbs.db.txt','~$budget.txt','desktop.ini.pdf'])
+def test_hidden_documents_and_backups_are_preserved(uploads,filename):
+    app,settings,client,headers,space,bearer=uploads
+    response=send(client,headers,space,filename=filename)
+    assert response.status_code==201,response.text
+
+
 def counts(settings):
     with connect(settings.database) as db:
         return [db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in

@@ -1791,3 +1791,7 @@ button.info-trigger:hover, button.info-trigger:focus-visible { background: #e4ee
 }
 .upload-info > strong { overflow-wrap: anywhere; }
 .upload-panel > button { flex-shrink: 0; }
+.upload-skipped { margin: 12px 0; font-size: 12px; }
+.upload-skipped ul { padding-left: 20px; }
+.upload-skipped li { margin: 8px 0; overflow-wrap: anywhere; }
+.upload-skipped small { display: block; color: var(--muted); }

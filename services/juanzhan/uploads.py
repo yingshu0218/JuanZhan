@@ -20,6 +20,7 @@ from .catalog import required, same_space, transaction
 from .documents import Registration
 from .jobs import JobSpec
 from .storage import IntegrityError, SizeLimitExceeded
+from .upload_exclusions import excluded_file
 
 
 class BoundedParser(MultiPartParser):
@@ -193,6 +194,8 @@ def router(settings):
                                       mime_type='application/octet-stream',**metadata)
                 except (ValidationError,TypeError):
                     fail(422,'INVALID_REQUEST','Invalid upload metadata')
+                if excluded_file(info.original_filename):
+                    fail(422,'UPLOAD_EXCLUDED','System metadata or temporary lock file is excluded from upload')
                 def save():
                     with transaction(settings) as db:
                         required(db,'spaces',info.space_id)

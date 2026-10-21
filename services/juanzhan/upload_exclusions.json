@@ -1,0 +1,5 @@
+{
+  "files": [".DS_Store", ".localized", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini"],
+  "directories": ["__MACOSX", ".AppleDouble", ".Spotlight-V100", ".Trashes", ".fseventsd", ".TemporaryItems", "$RECYCLE.BIN", "System Volume Information"],
+  "patterns": ["^\\._.+$", "^~\\$.+\\.(doc|docx|docm|dot|dotx|dotm|xls|xlsx|xlsm|xlsb|ppt|pptx|pptm)$", "^\\.~lock\\..+#$", "^\\..+\\.(swp|swo)$"]
+}

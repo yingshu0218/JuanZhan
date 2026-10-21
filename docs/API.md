@@ -1,5 +1,7 @@
 # API 契约与接入
 
+rc.19契约0.4.33（仍93路径）：POST /documents/upload新增保守辅助文件名排除，422 UPLOAD_EXCLUDED，不建档案/任务/托管对象。Web与服务端共享upload_exclusions.json，完整规则与目录层边界见UPLOAD-EXCLUSIONS。原上传鉴权/CSRF/大小/重复策略不变，无数据库迁移。
+
 rc.16 Document增加只读可空字段：overview_excerpt（最多240字，最近成功解析前12块的通用摘录）、size_bytes、thumbnail_asset_id（仅当前版本已有安全PNG）。普通列表与检索共用投影，不增加逐行HTTP请求，不触发文件读取或转换；content_stale继续标识旧版内容。完整概要仍由overview接口提供。无数据库迁移。
 
 当前已部署契约为0.4.32/93路径，新增源文件版本、副本任务、固定版本阅读预览、存储统计/清理和显式历史版本删除，精确结构见reference/source-files-openapi.json。私有renderer的两路径契约独立于Archive，见reference/office-preview-openapi.yaml；服务边界见NATIVE-READING。当前业务rc.15已应用15迁移，逐项验收见BATCH-SOURCE-FILES。
