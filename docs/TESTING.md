@@ -796,3 +796,5 @@ rc.14真实镜像/部署验收已完成：独立新安装→8到13迁移升级�
 浏览器：更新后的reading整组8项通过；概览/原生XLSX/存储清理2项通过；PDF与原件阅读9项通过；附件流最终调整后当前/历史中文名及精确下载字节2项通过。主界面首轮12通过/1项旧“业务字段”标题断言失败，改为概览不显示该标题后单项复验1项通过；字段管理和整理仍通过真实HTTP及业务值断言验证。中文下载名异常由非UTF8测试浏览器环境独立复现，固定测试launch locale后保持原文件名断言，不放宽为任意名称。日志以source-*.log留在devtest私有.local。
 
 成品候选fbf1aaa：业务与独立renderer均clean source；11项关键接口回归通过，真实只读source_snapshot_drill的相同大小/mtime变化、新旧两版失联可读、人工说明与未变不增版通过。独立发布演练53.71秒实际8→15迁移及一致备份/新卷恢复通过，记录test-instance/rc15-release-drill.json。前端附件流调整尚需重建，不以旧候选代替最终部署镜像。完整交付门槛见BATCH-SOURCE-FILES，当前业务仍rc.14。
+
+最终交付补充：源码045901e双镜像clean构建，最终独立发布演练49.09秒实际8→15升级/备份/新卷恢复通过。devtest实际13→15迁移，source-upgrade-verified.json的原4档案/全部原业务表/19文件不变；公网Word源文件阅读新增1份缓存后，source-final-data-verified.json的旧19文件及业务表仍完全相同。source-public-browser.json真实TLS/1440/390/原生Word/存储入口通过，source-agent-live.json公网REST/MCP9项通过且凭据撤销。另加PNG/JPEG原图浏览器1项/11.3秒通过，未改业务数据。T43～T47逐项验收及边界见BATCH-SOURCE-FILES，当前业务已rc.15；本节之前的“未部署”为过程状态。

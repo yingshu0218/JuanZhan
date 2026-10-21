@@ -1,6 +1,6 @@
 # 源文件阅读与副本管理（开发中）
 
-本批尚未部署，当前业务仍为rc.14/13迁移。开发契约Archive0.4.32/93路径，0014服务器副本、0015阅读缓存。执行范围与验收见[BATCH-SOURCE-FILES](BATCH-SOURCE-FILES.md)。压缩延期，原件完整保留。
+本批已部署devtest rc.15，Archive0.4.32/93路径、15迁移；0014服务器副本、0015阅读缓存已应用。执行范围与验收见[BATCH-SOURCE-FILES](BATCH-SOURCE-FILES.md)。压缩延期，原件完整保留。
 
 ## 用户流程
 
@@ -28,4 +28,4 @@ reading_previews按Revision登记不可变派生对象；任务有lease栅栏、
 
 依赖记录：[LOCAL-DEVELOPMENT](LOCAL-DEVELOPMENT.md)。187个Debian包精确大小/SHA256见office-preview-tools.lock.json；脚本验证后离线构建deploy/OfficePreview.Dockerfile。镜像保留Debian包版权文件和系统包清单，不在宿主安装办公软件。源文件、锁文件和备份不属于可随意删除的开发缓存。
 
-实物矩阵由scripts/verify_native_reading.py运行，所有凭据从环境读取。当前9类真实Office/ODF/RTF样本经私有HTTP成功；DOCX和两页TIFF经真实SQLite/文件/HTTP任务测试通过。桌面1440和手机390打开XLSX并清理缓存的浏览器测试已通过。完整安全、来源增量、契约和升级恢复验收仍以批次状态为准，不能以这些专项替代。
+实物矩阵由scripts/verify_native_reading.py运行，所有凭据从环境读取。当前9类真实Office/ODF/RTF样本经私有HTTP成功；DOCX和两页TIFF经真实SQLite/文件/HTTP任务测试通过。桌面1440和手机390打开XLSX并清理缓存的浏览器测试已通过。来源实物增量/失联双版本、契约、完整615项后端、最终成品升级恢复及公网实际Word阅读已通过，逐项证据见批次最终记录。

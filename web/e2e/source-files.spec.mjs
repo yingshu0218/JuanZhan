@@ -45,3 +45,21 @@ test('native source opens inside platform and cache cleanup preserves its origin
   await page.screenshot({path:'/tmp/juanzhan-storage-mobile.png'});
   expect(errors).toEqual([]);
 });
+
+test('PNG and JPEG originals open as actual images without executing document markup',async({page})=>{
+  const {execFileSync}=await import('node:child_process');
+  const samples=JSON.parse(execFileSync('../.venv/bin/python',['-c',"from PIL import Image;from io import BytesIO;import json,base64;a=[]\nfor kind in ('PNG','JPEG'):\n b=BytesIO();Image.new('RGB',(240,160),'green').save(b,format=kind);a.append({'name':'image.'+kind.lower(),'mime':'image/'+('jpeg' if kind=='JPEG' else 'png'),'bytes':base64.b64encode(b.getvalue()).decode()})\nprint(json.dumps(a))"],{encoding:'utf8'}));
+  await login(page);await createSpace(page,'原始图片阅读');const space=await page.getByLabel('当前空间').inputValue();
+  for(const sample of samples){
+    const bytes=Buffer.from(sample.bytes,'base64');
+    const uploaded=await page.request.post('/api/v1/documents/upload',{headers:{'X-CSRF-Token':(await api(page,'/auth/session')).data.csrf_token},multipart:{space_id:space,file:{name:sample.name,mimeType:sample.mime,buffer:bytes}}});
+    expect(uploaded.status()).toBe(201);
+    await page.reload();await page.getByLabel('当前空间').selectOption(space);
+    await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:sample.name}).click();
+    await page.locator('.inspector').getByRole('button',{name:'查看源文件',exact:true}).click();
+    const source=page.getByRole('dialog',{name:'源文件',exact:true});
+    await expect.poll(()=>source.getByRole('img',{name:sample.name,exact:true}).evaluate(img=>img.complete&&img.naturalWidth===240&&img.naturalHeight===160)).toBe(true);
+    await expect(source.locator('iframe,object,embed,script')).toHaveCount(0);
+    await page.getByRole('button',{name:'关闭源文件',exact:true}).click();
+  }
+});

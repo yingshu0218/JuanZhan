@@ -196,3 +196,13 @@ IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0
 本批真实来源版本演练脚本scripts/source_snapshot_drill.py只创建随机juanzhan-source-drill-*容器/卷/网络及合成临时目录，退出按名称回收；不访问业务卷或凭据。源目录对容器只读，宿主只改合成测试文件，验证相同大小/mtime变化、幂等扫描、历史版本离线读取与人工说明保护。source-snapshot-real-drill.log为成功证据，可复核后清理。source-full-backend-final.log最终615通过/无跳过，source-contract.log额外2项通过，source-reading-backup.log额外2项通过。新代码已分后端/前端提交，尚未推送/部署；发布脚本将另建rc.15业务与原生阅读两个镜像，均带源码追溯标签。
 
 PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下载名统一退为download，独立英文/中文Blob探针复现；仅测试浏览器launchOptions设置LANG/LC_ALL=C.UTF-8，未安装/修改主机locale。source-files-pdf-utf8.log最终9项通过，保留中文名和原件字节断言。source-download-{diagnostic,probe}.log仅含合成测试正文/文件名，可复核后清理。rc15初次双镜像ID及干净来源见test-instance/rc15-manifest.json，恢复演练见rc15-release-drill.json，后续前端附件流调整需重建，不在此时切换业务实例。
+
+## rc.15最终运行与清理状态 · 2026-10-21
+
+业务已升级13→15迁移并公网验收。最终源码045901e（source_dirty=false）的业务33e6e75f...、Office b692c95a...镜像保留，精确ID见DEVTEST和私有rc15-final-manifest.json。业务Word首次阅读新增约302.7KiB可重建PDF（存储页显示值），原件不压缩、不替换；全站旧19文件和全部原业务表保持。阅读缓存现有1份，不自动清理用户内容。
+
+运行瞬时观测约Archive46.98MiB、Converter33.28MiB、worker41.82MiB、Office94.85MiB、gateway4.613MiB；非峰值保证。Office硬上限768MiB/1CPU/128进程、192MiB临时区，原件下载在数据卷准备私有匿名临时文件，并发两路最大约2GiB磁盘暂存预算；服务器实际内存约3.477GiB，应按这些硬上限和临时磁盘预算配置并发。
+
+本次两个测试renderer容器juanzhan-office-preview-test/juanzhan-office-rc15-verify、juanzhan-source-office-test网络、preview-dev镜像已按确切名称删除。最终业务五服务、rc.14回退镜像、原件卷/备份卷/证书/续期工具继续保留。app/office-packages约199MiB可在不构建时清理，凭187包锁恢复；旧.local/office-preview-debs约2MiB、source-*.log/pytest-source-*合成测试目录、源码tar/bundle/传输AppleDouble备份可复核后按名清理，禁止全局Docker prune。用户正文截图/状态报告和source-before.env在test-instance为私有资料，权限与现有0700目录一致，不提交Git。source-before.env含部署凭据，仅在不需要操作回溯且当前.env已保留时按名删除。
+
+未新增Mac依赖、压缩器、Java、模型或主机全局包。独立Office依赖及字体187包的copyright在成品镜像全部存在，许可与将来再分发边界见THIRD-PARTY。

@@ -1,6 +1,6 @@
 # 项目开发知识库
 
-当前新目标“把最新的规划全部完成”：BATCH-SOURCE-FILES的T43～T47执行中，覆盖概览专用详情、平台内源文件阅读、外部快照、版本更新和存储管理，压缩延期。下文rc.14/T37～T42是上一批已交付基线；新批尚未部署，不能混作完成证据。
+当前交付：BATCH-SOURCE-FILES的T43～T47已完成并部署devtest rc.15（15迁移、Archive0.4.32/93路径），包括概览专用详情、平台源文件/历史版本阅读、外部服务器副本与存储管理。完整测试/最终升级恢复/公网Word及Agent验证见BATCH-SOURCE-FILES、DEVTEST、TESTING；依赖与清理见LOCAL-DEVELOPMENT。原4档案及业务表不变、旧19文件完整保留，新增1份可重建阅读PDF。压缩和正式域名/发布按用户决定延期。下文rc.14/T37～T42为历史交付。
 
 2026-10-21当前交付：T37～T42完成，devtest rc.14、20种输入MIME、REST/OpenAPI/MCP/stdio及OAuth、IP HTTPS已验证。入口与数据保护见DEVTEST，逐项验收见BATCH-2026-10-21，外部模型联调见AGENT-INTEROP，授权见OAUTH，IP证书续期/停用见IP-TEST，依赖与清理见LOCAL-DEVELOPMENT。正式域名和正式上线按用户决定延期。
 
@@ -14,6 +14,8 @@
 | [Agent接入](AGENT-API.md) | MCP/REST只读凭据、协议、客户端和分析证据 |
 | [文件类型验证](FORMATS-VERIFIED.md) | 当前全部输入MIME、OCR及不支持边界 |
 | [当前后续批次](BATCH-2026-10-21.md) | 旧Office/RTF、通用Agent/API/OAuth及IP端口测试的完整执行范围 |
+| [源文件批次](BATCH-SOURCE-FILES.md) | T43～T47交付范围及逐项验证 |
+| [源文件阅读](NATIVE-READING.md) | 服务器副本、版本、隔离预览与清理规则 |
 | [API](API.md) | 两套 HTTP 契约、调用顺序与缺口 |
 | [转换器](CONVERTER.md) | 六格式、OCR 与标准输出 |
 | [解析依赖许可](THIRD-PARTY.md) | T20版本、许可及再分发入口 |

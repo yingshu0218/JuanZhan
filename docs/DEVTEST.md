@@ -91,3 +91,13 @@ devtest 从干净提交构建并部署 `juanzhan:0.1.0-rc.11`，镜像 `sha256:a
 test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案ID/当前Revision/ParseRun/业务版本、19份文件哈希、数据库完整性ok且无FK错误。在线Agent9项、旧Word1440/390只读概览/来源跳转/无控制台错误均通过，未重解析，临时Agent凭据已撤销；报告legacy-agent-live-smoke.json及generic-overview-smoke.json。两个原有无关服务保持运行，阅读Converter退出清理已复验。最新证据提交只改测试退出清理/文档，不改变已构建运行源码。
 
 当前18080仍是回环/SSH隧道，IP公网入口待后续配置；不把测试实例当正式上线，不发布镜像或GitHub Release。rc.12及升级前备份保留作回退，依赖/测试产物清理边界见LOCAL-DEVELOPMENT。
+
+## 当前rc.15源文件管理 · 2026-10-21（覆盖上文rc.14现状）
+
+入口仍为[https://8.153.19.221:443/](https://8.153.19.221:443/)，测试test/111，原私有auth覆盖逐字核对仅用户名不同，密码/生产规则不改。最终构建源码045901e3978fb18879af2f257ad4731daa52833c已推送，source_dirty=false；业务镜像sha256:33e6e75f2f8ad89211a9cb7f4218ce67552df83dcc399c82893f7494e000513f，原生阅读镜像sha256:b692c95aff4fc62ae85fa63dfbd88692ce1d122fa96046499e930d68b41fc0dd，私有rc15-final-manifest.json。Archive0.4.32/93路径/15迁移，Converter仍20种MIME。
+
+切换前一致备份/backups/before-source-rc15-final（18引用对象），source-before-final.json留存原档案/Revision/ParseRun/人工字段/目录标签/来源表及文件哈希。实际13→15迁移后source-upgrade-verified.json证明4档案及原业务表/19文件完全不变，integrity=ok，FK=0。原生Word预览后source-final-data-verified.json证明所有旧19文件完整保留，现20文件，只新增1份可重建PDF；业务表/文档版本/原ParseRun仍相同，未重解析。
+
+公网source-public-browser.json经真实TLS、1440/390概览/实际Word四页源文件阅读与存储入口通过，无控制台错误/溢出；未执行生产清理。source-agent-live.json公网REST/MCP9项通过且临时凭据撤销。源码完整615后端/契约与备份/确认来源专项、多格式阅读8项/PDF9项/PNG-JPEG1项/主界面12+1复验通过，详见TESTING。最终成品独立发布恢复演练49.09秒通过，见rc15-final-release-drill.json。
+
+五个项目服务均健康。Office仅私有Docker网络，不挂业务卷/宿主端口，uid10001、只读根、无capabilities、768MiB/1CPU/128进程和192MiB临时区实查通过；现有nginx-proxy/simple-shell-terminal-1未修改。两个专用测试Office容器、测试网络与preview-dev镜像已清理，保留rc.14和最终rc.15。rc.14不能直接连接15迁移库；回退须旧镜像配合升级前13迁移备份恢复到新卷，不能仅回退.env标签。压缩和正式发布延期，无Mac新依赖。

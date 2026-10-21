@@ -1,5 +1,7 @@
 # 技术架构
 
+rc.15新增源文件生命周期：外部Revision通过revision_snapshots关联托管副本而不切换来源；reading_previews登记独立阅读PDF，原件/成功解析/人工字段不被替换。新增独立无业务卷Office/TIFF renderer，worker私有传输经鉴权的字节，固定资源和网络隔离；Web概览与原文件版本阅读分开。备份/GC统一引用视图覆盖副本与阅读缓存。当前共Archive/Converter/worker/renderer及可选HTTPS gateway五个项目服务，无新消息队列/模型/向量库。实现、界限与实测见NATIVE-READING和BATCH-SOURCE-FILES。
+
 T38新增conversion_legacy（DOC受限CLI、XLS/RTF只读库）与conversion_ppt（当前MS-PPT UserEdit/PersistDirectory/形状/备注引用）。不扫描废弃编辑记录、不开外部链接、不执行宏，PPT与PPTX备注以真实section来源进入同一持久正文/概要/检索链路。未知原件布局不编造定位；CFB识别在Archive也受4MiB/FAT头预算控制。新增依赖/离线锁及对应源码见THIRD-PARTY，仍无新业务服务/迁移/LLM/向量库。
 
 2026-10-21 Agent阶段实现：overviews.py成为后端共享概要引擎，Web与agent API读取同一按需结果；原前端算法及规则测试已由后端回归替代。agent_api.py提供只读工具，agent_mcp.py提供现代/旧协议Streamable HTTP适配，agent_stdio.py为仅依赖标准库的客户端桥接。agent_access.py及0012迁移管理独立空间授权凭据，禁止agent凭据调用通用写接口。模型在外部agent运行；服务只做字面/结构化检索、概要和单一读取快照的证据打包。正式业务字段以确认状态和当前文档版本独立返回，整数/Decimal不丢精度；历史正文不冒充历史业务字段。详见ADR-058/059、API和AGENT-API。
