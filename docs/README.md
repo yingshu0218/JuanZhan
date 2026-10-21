@@ -1,5 +1,7 @@
 # 项目开发知识库
 
+最新交付：T48紧凑资料列表、T49系统概览与自适应列表已部署devtest rc.17。根入口显示全空间真实统计/近期档案/任务入口，未选文件列表全宽、选中才展开详情，保留显式URL/筛选/批量/拖放。15项浏览器流程及公网1440/390复验通过，原4档案/业务表/20文件不变，无新增依赖/迁移。精确证据见STATUS、TESTING、DEVTEST。下文为历史交付记录。
+
 当前交付：BATCH-SOURCE-FILES的T43～T47已完成并部署devtest rc.15（15迁移、Archive0.4.32/93路径），包括概览专用详情、平台源文件/历史版本阅读、外部服务器副本与存储管理。完整测试/最终升级恢复/公网Word及Agent验证见BATCH-SOURCE-FILES、DEVTEST、TESTING；依赖与清理见LOCAL-DEVELOPMENT。原4档案及业务表不变、旧19文件完整保留，新增1份可重建阅读PDF。压缩和正式域名/发布按用户决定延期。下文rc.14/T37～T42为历史交付。
 
 2026-10-21当前交付：T37～T42完成，devtest rc.14、20种输入MIME、REST/OpenAPI/MCP/stdio及OAuth、IP HTTPS已验证。入口与数据保护见DEVTEST，逐项验收见BATCH-2026-10-21，外部模型联调见AGENT-INTEROP，授权见OAUTH，IP证书续期/停用见IP-TEST，依赖与清理见LOCAL-DEVELOPMENT。正式域名和正式上线按用户决定延期。

@@ -1,5 +1,7 @@
 # devtest 测试实例
 
+2026-10-21 rc.17/T49已部署：业务源码be797b8，image sha256:06fa97cb221b607172424b2037273d05936dc940d7f9d3b8e635658f1146ccd3，Office保留rc.15，五服务healthy。入口https://8.153.19.221:443/，test/111不变。升级前备份before-home-rc17；私有证据home-before/after/after-qa.json、home-deploy.json、home-live.json和home-desktop/mobile及expanded-list截图在test-instance。原4档案、业务表、20文件不变，15迁移不变。全局概览复用/system/summary、全局最近6档案和排队/处理中任务计数，进入具体列表仍遵循当前空间；近期档案可跨空间打开。无新增依赖/服务。home传输tar/tgz/bundle及/tmp/home-live.mjs、home-deploy.py为可清理临时文件，备份/镜像/数据卷不自动清理。
+
 2026-10-21 rc.16紧凑资料列表部署：运行源码7f55ab0，业务image sha256:b99f259d9164615758fb85833dd66c005c56cce024e8a4b5ddf7e1c92aea7063；Office沿用rc.15，五服务healthy。https://8.153.19.221:443/，账号test/111。备份before-library-rc16；私有证据library-before/after.json、library-deploy.json、library-live.json和library-desktop/mobile.png位于test-instance。升级前后原4档案、业务表及20文件哈希完全一致，无迁移、无新增依赖、本机未安装开发运行时。已有显式URL view=grid会继续显示网格，点击列表即可保存新偏好。
 
 清理记录：本轮仅新增rc.16业务镜像、升级前备份、私有QA报告/截图；旧镜像及备份保留供回退。/tmp/juanzhan-library*.tar/tgz/bundle、library-live.mjs、library-deploy.py为传输/验收临时文件，用后可删除；不要删除业务卷、原件、现役镜像、证书或.env。依赖仍使用既有Node/Python/Playwright与锁定wheelhouse，未新增包。
