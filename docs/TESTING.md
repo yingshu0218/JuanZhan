@@ -768,3 +768,10 @@ Python层首轮RTF/CFB/CSV及真实RTF9项通过；固定真实XLS/XLSX2项通�
 T38语义复核：首轮完整583项虽通过，截图与上游样本预期比对发现catppt仅提取主题、漏备注，原先“非空即通过”的PPT断言不足，未以此作为最终发布验收。改为本库有界当前persist引用读取，增加Gothic/Bullet/表格内容及补充平面字符实际断言、备注标志、循环编辑链/越界拒绝；PPTX新增实际notesSlide关系读取及来源断言。对应43项专项通过（62.21s），首轮完整583报告保留，最终完整回归另行执行。
 
 浏览器截图切换阅读格式后增加等待概览内容稳定，再复核真实桌面截图；原先捕获过“正在读取”状态的图片不作为最终视觉通过证据。最终以legacy-browser-semantic-final.log及其对应截图为准。
+T38最终完整回归：586 passed、3既有框架警告、无跳过，500.83s；`.local/legacy-full-final.log`及JUnit `.local/agent-full-reports/legacy-full-final.xml`。它覆盖最终PPT当前引用/备注和PPTX notes逻辑；此前583结果不代替此最终结果。
+
+最终阅读整组8项全过（1.4m，无跳过），使用干净rc.13镜像及真实固定blob样本，日志`.local/legacy-browser-release-final.log`。此前新增UI断言误要求“前两条摘录”必须出现较后段Gothic正文，失败记录为legacy-browser-summary-expectation-first.log；改为核对实际首段表格内容Row 1，同时完整正文API仍强制Gothic/Bullet/表格及Unicode语义断言。没有让后端遗漏正文靠非空判断过关。最终DOC桌面/PPT手机截图已人工查看，等待内容完成后再拍，不用加载态截图作为证据。
+
+测试退出清理发现4个本轮隔离Converter遗留容器：核对image=legacy-dev/无业务挂载后按完整容器名删除。新增SIGTERM→SystemExit处理，确保Uvicorn重放信号时展开worker和容器finally；在rc.13新增用例和最终8项全组退出后均核对无reading-converter遗留。未清理其他容器/镜像/全局缓存。
+
+最终发布镜像验收：`JUANZHAN_SMOKE_IMAGE=juanzhan:0.1.0-rc.13 JUANZHAN_EXTRA_FORMAT_FIXTURES=... .venv/bin/python scripts/smoke_formats.py --persist --external --office --legacy`通过，17类非图片文档（包含旧四格式）的内核只读来源→解析→持久化/文件哈希→鉴权HTTP读取/幂等重解析→源变更拒绝与离线缓存均通过，另强制PPT真实Gothic/表格与非BMP正文内容。全部随机容器/卷/网络退出清理，日志legacy-rc13-image-smoke.log；三类图片及扫描PDF OCR由最终完整回归覆盖。

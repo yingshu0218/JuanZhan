@@ -70,3 +70,12 @@ devtest 从干净提交构建并部署 `juanzhan:0.1.0-rc.11`，镜像 `sha256:a
 升级前备份`/backups/before-office-rc12`（18个文件）；test-instance/office-before.json与office-after.json完全一致：4份档案当前Revision/ParseRun/版本、19份文件哈希、完整性ok/无FK错误。认证私有覆盖逐字验证只含原测试用户名差异，不改密码。上线后Converter实际声明16种输入MIME；原Word1440/390默认概览与来源跳转只读验证通过，未重解析，Agent在线9项通过且临时凭据已撤销（office-agent-live-smoke.json）。三个容器healthy，两个无关服务保留。rc.11镜像和升级前备份保留可回退，镜像未对外发布。
 
 用户最新选择先devtest/IP端口测试，暂不正式域名/发布；公网IP入口配置在后续任务中，当前18080仍为回环/SSH隧道，不虚称已经外网可达。
+## 2026-10-21 rc.13 旧Office/RTF与PPT备注
+
+功能提交`f697ec81c0317c052d44e0ed9108b2a2c71ca3cd`已推送GitHub main；干净候选`juanzhan:0.1.0-rc.13`，镜像`sha256:f65cc713840261349d3d6cd4226d3790d796f7fbf9ae6de3a918ffa534cd4c1d`，source_dirty=false，manifest `/tmp/juanzhan-release-24u78le4/manifest.json`（私有副本test-instance/rc13-manifest.json）。Docker逻辑镜像大小由rc.12的101271340变为102519467字节，新增1248127字节（约1.2MiB），无Java/LibreOffice/新OCR模型。运行新增三包及catdoc/对应源码见THIRD-PARTY，主机系统未安装原生工具。
+
+完整586项/最终8项阅读浏览器/17类文档镜像只读来源实测通过。备份`/backups/before-legacy-rc13`（18文件）后升级原Compose三服务与原私有test-auth覆盖，三服务healthy。Archive仍0.4.30/74路径、12迁移，Converter0.4.5/6路径，在线capabilities实际20种输入MIME。API源字段/原SQL未改。
+
+test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案ID/当前Revision/ParseRun/业务版本、19份文件哈希、数据库完整性ok且无FK错误。在线Agent9项、旧Word1440/390只读概览/来源跳转/无控制台错误均通过，未重解析，临时Agent凭据已撤销；报告legacy-agent-live-smoke.json及generic-overview-smoke.json。两个原有无关服务保持运行，阅读Converter退出清理已复验。最新证据提交只改测试退出清理/文档，不改变已构建运行源码。
+
+当前18080仍是回环/SSH隧道，IP公网入口待后续配置；不把测试实例当正式上线，不发布镜像或GitHub Release。rc.12及升级前备份保留作回退，依赖/测试产物清理边界见LOCAL-DEVELOPMENT。

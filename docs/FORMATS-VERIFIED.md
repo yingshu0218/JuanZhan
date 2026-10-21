@@ -1,8 +1,8 @@
 # 文件类型验证范围 · 2026-10-21
 
-rc.12已部署新增7种MIME（XLSX/PPTX/ODT/ODS/ODP/CSV/TSV），当前声明16种输入MIME；实际部署证据见DEVTEST。不宣称能解析任意文件。全部样本经真实HTTP上传、独立转换进程、SQLite/文件存储和共享概要API；不支持或失败也核验原件下载字节SHA-256不变。
+rc.13已部署，共20种输入MIME：六种原有文档＋XLSX/PPTX/ODT/ODS/ODP/CSV/TSV/DOC/XLS/PPT/RTF＋PNG/JPEG/TIFF。实际证据见TESTING/DEVTEST。不宣称能解析任意文件或所有历史版本。全部样本经真实HTTP上传、独立转换进程、SQLite/文件存储和共享概要API；失败/未支持仍核验原件下载字节SHA-256不变。
 
-T38源码新增DOC/XLS/PPT/RTF，共20种MIME，正在最终验收；实际运行版本以DEVTEST为准。PPT/PPTX备注现进入正文并区分来源，旧PPT仅读取当前persist引用，不以主题或废弃编辑冒充正文。
+PPT/PPTX备注已进入正文并区分来源；旧PPT仅读取当前persist引用，不以主题或废弃编辑冒充正文。真实DOC含中文与补充平面字符；旧Office加密样本明确失败，宏和嵌入物不执行。当前legacy适配以CFB Word97+/Excel BIFF/PPT97+为范围，不承诺任意早期非CFB格式。
 
 | 文件类型 | 当前结果 |
 |---|---|

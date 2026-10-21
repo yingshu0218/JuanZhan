@@ -10,6 +10,7 @@ import subprocess
 import time
 import urllib.request
 import uuid
+import signal
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'services'),str(ROOT/'tests')]
@@ -50,6 +51,10 @@ def converter_server(root,token):
 
 
 def main():
+    def stop_on_signal(signum,frame):raise SystemExit(0)
+    # Uvicorn replays captured SIGTERM to the original handler. SystemExit unwinds
+    # our worker/context cleanup instead of the OS default terminating immediately.
+    signal.signal(signal.SIGTERM,stop_on_signal)
     with TemporaryDirectory(prefix='juanzhan-reading-browser-') as temp:
         root=Path(temp);token=secrets.token_urlsafe(32)
         with converter_server(root,token) as base:
