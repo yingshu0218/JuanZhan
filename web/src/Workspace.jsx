@@ -22,7 +22,7 @@ import {
   Gear,
 } from "@phosphor-icons/react";
 import { SearchPanel } from "./SearchPanel.jsx";
-import { encodedState, readLocation, searchBody } from "./searchState.js";
+import { encodedState, readLocation, searchBody, preferredView, rememberView } from "./searchState.js";
 import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
 import { Sources } from "./Sources.jsx";
@@ -68,7 +68,7 @@ export function Workspace({ api, logout, authError }) {
   });
   const [documents, setDocuments] = useState([]);
   const [total, setTotal] = useState(0);
-  const [view, setView] = useState(initial.state.view || "grid");
+  const [view, setView] = useState(initial.state.view || preferredView);
   const [section, setSection] = useState(initial.state.section || "all");
   const [folder, setFolder] = useState(initial.state.folder || "");
   const [selected, setSelected] = useState(null);
@@ -181,7 +181,7 @@ export function Workspace({ api, logout, authError }) {
       setNotice(saved.error || (!available && value.space ? "链接中的空间不可用，已回到默认列表并清空检索。" : ""));
       setSpace(available ? value.space : (spaces[0]?.id || ""));
       setSection(available ? value.section : "all"); setFolder(available ? value.folder : ""); setType(available ? value.type : "");
-      setPage(available ? value.page : 1); setSort(available ? value.sort : "-imported_at"); setView(available ? value.view : "grid");
+      setPage(available ? value.page : 1); setSort(available ? value.sort : "-imported_at"); setView(available ? value.view : preferredView());
       setSearch(available ? value.search : null); setSelected(null); setMobileDetail(false); setChecked(new Map());
     }
     window.addEventListener("popstate", restore);
@@ -730,7 +730,7 @@ export function Workspace({ api, logout, authError }) {
                     setSelected(null);
                   }}
                   view={view}
-                  setView={setView}
+                  setView={value => { rememberView(value); setView(value); }}
                   selected={selected}
                   onSelect={(id) => {
                     setSelected(id);

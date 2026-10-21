@@ -78,7 +78,7 @@ test("real login, first space, upload, duplicate decision, details, responsive a
   expect((await api(page, '/documents/'+id+'/metadata')).data.find(value=>value.key==='amount').value).toBe('2.0000');
   await expect(page.locator('.business-fields')).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "档案属性" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "网格视图" })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: "列表视图" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -93,6 +93,11 @@ test("real login, first space, upload, duplicate decision, details, responsive a
     "aria-pressed",
     "true",
   );
+  await page.getByRole('button', { name: '网格视图' }).click();
+  await expect(page.locator('.file-collection')).toHaveClass(/grid/);
+  expect(await page.evaluate(() => localStorage.getItem('juanzhan.library-view.v1'))).toBe('grid');
+  await page.getByRole('button', { name: '列表视图' }).click();
+  await page.locator('.file-tile').first().click();
   await page.getByLabel("选择上传文件").setInputFiles(file);
   await expect(
     page.getByRole("button", { name: "仍要另存为独立档案" }),

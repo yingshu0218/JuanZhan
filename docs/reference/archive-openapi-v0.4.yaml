@@ -3993,6 +3993,17 @@ components:
     Document:
       type: object
       properties:
+        overview_excerpt:
+          type: [string, 'null']
+          maxLength: 240
+          description: 最近成功解析的前12个内容块提炼的一行摘录；无正文为null，旧版由content_stale标识。不读取原件或触发解析。
+        thumbnail_asset_id:
+          type: [string, 'null']
+          description: 当前原件版本已有的首个安全PNG预览ID；通过鉴权preview接口读取，无可用缩略图为null。
+        size_bytes:
+          type: [integer, 'null']
+          minimum: 0
+          description: 当前原件字节数
         id:
           type: string
           description: 不透明 ID，调用方不得假设自增或文件路径格式

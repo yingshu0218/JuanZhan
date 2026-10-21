@@ -114,7 +114,25 @@ def project(db,id,store,mounts=None):
     keys=('id','space_id','folder_id','title','description','document_date','document_type_id','tag_ids',
           'triage_status','is_favorite','document_version','current_revision_id','current_parse_run_id',
           'origin_kind','source_id','availability_status','processing_status','content_stale','imported_at','deleted_at')
-    return {key:result[key] for key in keys}
+    public={key:result[key] for key in keys}
+    public['size_bytes']=revision['size_bytes'] if revision else None
+    public['overview_excerpt']=None
+    public['thumbnail_asset_id']=None
+    if current and current['status']=='completed':
+        # Bounded list projection: no extra HTTP requests, original reads or conversion jobs.
+        from .overviews import summarize
+        rows=db.execute('SELECT block_index,block_type,substr(text_content,1,1000),structural_json FROM content_blocks WHERE parse_run_id=? ORDER BY block_index LIMIT 12',
+                        (result['current_parse_run_id'],)).fetchall()
+        blocks=[{'index':r[0],'type':r[1],'text':r[2],'structure':{}} for r in rows]
+        summary=summarize({'body':blocks,'total':len(blocks)},result['title'])
+        if summary['points']:
+            point=summary['points'][0]
+            public['overview_excerpt']=' · '.join(filter(None,[point['label'],*point['details']]))[:240] or None
+        if current['revision_id']==result['current_revision_id']:
+            asset=db.execute("SELECT a.id FROM derived_assets a JOIN parse_asset_order o ON o.derived_asset_id=a.id WHERE a.parse_run_id=? AND a.asset_kind IN ('preview','thumbnail') AND a.media_type='image/png' ORDER BY o.asset_index LIMIT 1",
+                             (result['current_parse_run_id'],)).fetchone()
+            public['thumbnail_asset_id']=asset[0] if asset else None
+    return public
 
 
 def router(settings):

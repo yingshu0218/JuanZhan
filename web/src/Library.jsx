@@ -6,6 +6,20 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { Empty, Notice, InfoTip, processing, formatDate } from "./ui.jsx";
+import { useState } from "react";
+function Thumbnail({ doc, view }) {
+  const [failed, setFailed] = useState(null);
+  const asset = doc.thumbnail_asset_id;
+  const url = asset ? `/api/v1/documents/${encodeURIComponent(doc.id)}/preview/${encodeURIComponent(asset)}?expected_revision_id=${encodeURIComponent(doc.current_revision_id)}` : null;
+  const extension = doc.title.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() || 'FILE';
+  return <div className="thumbnail" title={doc.origin_kind === 'external' ? '外部来源' : '上传原件'}>
+    {view === 'grid' && url && failed !== url ? <img loading="lazy" src={url} alt="" onError={() => setFailed(url)} /> : <><FileText size={view === 'grid' ? 32 : 24} weight="thin" /><span>{extension}</span></>}
+  </div>;
+}
+function sizeText(value) {
+  if (value == null) return '';
+  return value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
+}
 export function Library({
   searchPanel,
   searching,
@@ -177,22 +191,17 @@ export function Library({
                 aria-pressed={selected === doc.id}
                 onClick={() => onSelect(doc.id)}
               >
-                <div className="thumbnail">
-                  <FileText size={view === "grid" ? 52 : 26} weight="thin" />
-                  <span>
-                    {doc.origin_kind === "external" ? "关联档案" : "托管档案"}
-                  </span>
-                </div>
+                <Thumbnail doc={doc} view={view} />
                 <div className="file-caption">
                   <strong>{doc.title}</strong>
-                  <small>{formatDate(doc.imported_at)}</small>
+                  {doc.overview_excerpt ? <p className="file-excerpt" title={doc.overview_excerpt}>{doc.overview_excerpt}</p> : null}
+                  <small title="文件大小 · 导入日期">{[sizeText(doc.size_bytes), formatDate(doc.imported_at)].filter(Boolean).join(' · ')}</small>
                   <div className="badges">
-                    <span>
-                      {doc.triage_status === "filed" ? "已整理" : "待整理"}
-                    </span>
-                    <span>
+                    {doc.triage_status !== 'filed' ? <span>待整理</span> : null}
+                    {doc.processing_status !== 'completed' ? <span>
                       {processing[doc.processing_status] || "状态未知"}
-                    </span>
+                    </span> : null}
+                    {doc.content_stale ? <span>旧版本概览</span> : null}
                     {doc.search_index && doc.search_index.status !== "current" ? <span>{doc.search_index.status === "failed" ? "索引更新失败" : "索引尚未更新"}</span> : null}
                     {doc.search_index?.content_incomplete ? <span>正文可能不完整</span> : null}
                   </div>

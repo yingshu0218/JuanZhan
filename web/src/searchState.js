@@ -1,5 +1,12 @@
 const sections = ["all", "inbox", "favorite", "trash", "sources"];
 const sorts = ["-imported_at", "imported_at", "title", "-document_date", "-relevance"];
+export function preferredView() {
+  try { return localStorage.getItem('juanzhan.library-view.v1') === 'grid' ? 'grid' : 'list'; }
+  catch { return 'list'; }
+}
+export function rememberView(view) {
+  try { localStorage.setItem('juanzhan.library-view.v1', view); } catch { /* Storage may be disabled. */ }
+}
 export const blankSearch = () => ({ text: "", type_ids: [], tag_ids: [], match: "any", descendants: false, source_kind: "", source_id: "", availability_status: "", processing_status: "", date_from: "", date_to: "", metadata: [] });
 const string = (value, max = 1000) => typeof value === "string" && value.length <= max;
 export function searchBody(search) {

@@ -139,10 +139,16 @@ def test_availability_and_old_parse_snapshot_are_independent(api):
     with connect(settings.database) as db:
         db.execute("INSERT INTO parse_runs(id,document_id,revision_id,parser_name,parser_version,schema_version,status,created_at) VALUES ('old',?,?,'test','1','1.0','completed','2026-10-15T00:00:00Z')",(id,saved['revision_id']))
         db.execute("UPDATE documents SET current_parse_run_id='old' WHERE id=?",(id,))
+        db.execute("INSERT INTO content_blocks(id,parse_run_id,block_id,block_index,block_type,text_content) VALUES ('excerpt','old','excerpt',0,'paragraph','Source summary. Preserve the original.')")
         db.commit()
+    listing=client.get('/api/v1/documents',params={'space_id':space}).json()['items'][0]
+    assert listing['overview_excerpt']=='Source summary. Preserve the original.'
+    assert listing['size_bytes']==len(b'original') and listing['thumbnail_asset_id'] is None
     obj=app.state.storage.put(io.BytesIO(b'new original'),max_bytes=100)
     app.state.documents.append_managed_revision(id,obj,RevisionChange(expected_document_version=1,original_filename='new.txt',mime_type='text/plain'))
     assert detail(client,id)['content_stale'] is True
+    assert detail(client,id)['overview_excerpt']=='Source summary. Preserve the original.'
+    assert detail(client,id)['thumbnail_asset_id'] is None
     assert detail(client,id)['processing_status']=='not_started'
     (app.state.storage.root/obj.storage_key).unlink()
     doc=detail(client,id)
