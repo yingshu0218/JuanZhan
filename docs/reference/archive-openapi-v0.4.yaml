@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.31
+  version: 0.4.32
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,22 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /documents/{id}/source-files:
+    $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1source-files"
+  /documents/{id}/source-snapshot:
+    $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1source-snapshot"
+  /sources/{id}/source-snapshots:
+    $ref: "./source-files-openapi.json#/paths/~1sources~1{id}~1source-snapshots"
+  /documents/{id}/reading-preview:
+    $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1reading-preview"
+  /documents/{id}/reading-preview/file:
+    $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1reading-preview~1file"
+  /system/storage:
+    $ref: "./source-files-openapi.json#/paths/~1system~1storage"
+  /system/storage/cleanup:
+    $ref: "./source-files-openapi.json#/paths/~1system~1storage~1cleanup"
+  /documents/{id}/revisions/{revision_id}:
+    $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1revisions~1{revision_id}"
   /.well-known/oauth-authorization-server:
     $ref: "./oauth-openapi.json#/paths/~1.well-known~1oauth-authorization-server"
   /.well-known/oauth-protected-resource:
@@ -3774,7 +3790,7 @@ components:
       properties:
         code:
           type: string
-          enum: [validate, submit, extract, assets, publish, process]
+          enum: [validate, submit, extract, assets, publish, process, copy, render]
         status:
           type: string
           enum: [pending, running, completed, failed, discarded]

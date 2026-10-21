@@ -68,7 +68,7 @@ def router(settings):
                 db.row_factory=sqlite3.Row
                 revision=download_revision(db,id,revision_id,expected_revision_id)
             if revision['size_bytes']>MAX_BYTES: fail(413,'DOWNLOAD_LIMIT','Original exceeds download limit')
-            copy=tempfile.TemporaryFile(); digest=hashlib.sha256(); size=0
+            copy=tempfile.TemporaryFile(dir=settings.data_dir); digest=hashlib.sha256(); size=0
             try:
                 with original(settings,revision,MAX_BYTES) as file:
                     while chunk:=file.read(min(65536,MAX_BYTES-size+1)):

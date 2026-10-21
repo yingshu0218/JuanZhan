@@ -29,7 +29,7 @@ def collect(db,job,root,settings,clock=time.time):
                         info=os.stat(name,dir_fd=bucket,follow_symlinks=False)
                         if not stat.S_ISREG(info.st_mode) or info.st_size!=size:
                             counts['ignored_files']+=1;continue
-                        if db.execute('SELECT 1 FROM derived_assets WHERE storage_key=? LIMIT 1',(key,)).fetchone():
+                        if db.execute('SELECT 1 FROM derived_object_references WHERE storage_key=? LIMIT 1',(key,)).fetchone():
                             db.execute('DELETE FROM derived_gc_candidates WHERE storage_key=?',(key,))
                             counts['retained_objects']+=1;continue
                         candidate=db.execute('SELECT eligible_after FROM derived_gc_candidates WHERE storage_key=?',(key,)).fetchone()
@@ -47,7 +47,7 @@ def collect(db,job,root,settings,clock=time.time):
     for key, in db.execute('SELECT storage_key FROM derived_gc_candidates WHERE eligible_after<=?',(now,)).fetchall():
         try:parse_key(key)
         except ValueError:continue
-        if not db.execute('SELECT 1 FROM derived_assets WHERE storage_key=?',(key,)).fetchone() and ManagedStore(settings.data_dir/'derived').probe(key)=='missing':
+        if not db.execute('SELECT 1 FROM derived_object_references WHERE storage_key=?',(key,)).fetchone() and ManagedStore(settings.data_dir/'derived').probe(key)=='missing':
             db.execute('DELETE FROM derived_gc_candidates WHERE storage_key=?',(key,))
     future=db.execute('SELECT min(eligible_after) FROM derived_gc_candidates').fetchone()[0]
     if future is not None:schedule_gc(db,settings,'derived-followup:'+job['id'],max(now,future))

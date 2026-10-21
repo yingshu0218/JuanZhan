@@ -21,12 +21,18 @@ def ensure(settings,revision,job):
     from .maintenance import gc_job
     import time
     if revision['size_bytes']>MAX_BYTES:raise ParseFailure('SNAPSHOT_INPUT_LIMIT')
+    store=ManagedStore(settings.data_dir/'managed');store.initialize()
     with connect(settings.database) as db:
-        if stored(db,revision['id']):return
+        copy=stored(db,revision['id'])
         source=db.execute('SELECT s.root_ref,s.status,e.relative_path_norm FROM source_entries e '
             'JOIN sources s ON s.id=e.source_id WHERE e.id=?',(revision['source_entry_id'],)).fetchone()
+    if copy:
+        if (copy[1],copy[2])!=(revision['sha256'],revision['size_bytes']):raise ParseFailure('ORIGINAL_INTEGRITY')
+        try:
+            with store.open(copy[0]):return
+        except FileNotFoundError:pass
+        except (IntegrityError,OSError,ValueError):raise ParseFailure('ORIGINAL_INTEGRITY') from None
     if not source or source[1]=='disabled':raise ParseFailure('SOURCE_OFFLINE',True)
-    store=ManagedStore(settings.data_dir/'managed');store.initialize()
     with store.locked():
         # Schedule orphan recovery before publishing any bytes, including failed attempts.
         with JobQueue(settings).write() as db:

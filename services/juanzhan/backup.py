@@ -33,7 +33,7 @@ def digest(path):
 def references(db):
     return sorted(set([('managed/'+r[0]) for r in db.execute(
         'SELECT DISTINCT o.storage_key FROM managed_objects o JOIN original_object_references r ON r.managed_object_id=o.id')]
-        + [('derived/'+r[0]) for r in db.execute('SELECT DISTINCT storage_key FROM derived_assets')]))
+        + [('derived/'+r[0]) for r in db.execute('SELECT DISTINCT storage_key FROM derived_object_references')]))
 
 
 def safe_name(name):

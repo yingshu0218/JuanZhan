@@ -69,6 +69,29 @@ def _handler(job,data_dir,connection,source_mounts=(),converter_token='',backup_
             except SourcePathError as exc:
                 _send(connection,('failure',exc.code,'External original could not be opened safely',exc.code in ('SOURCE_OFFLINE','SOURCE_CHANGED','SOURCE_FILE_MISSING')))
             return
+        if job['kind']=='batch' and job['target_type'] in ('document_snapshot','source_snapshot_batch','document_reading_preview','document_revision_cleanup','storage_cleanup'):
+            from .parsing import ParseFailure
+            from .source_paths import SourcePathError
+            from fastapi import HTTPException
+            settings=Settings(data_dir=Path(data_dir),converter_token=converter_token,source_mounts=source_mounts)
+            try:
+                if job['target_type'] in ('document_snapshot','source_snapshot_batch'):
+                    from .source_files import execute_snapshot
+                    execute_snapshot(settings,job)
+                elif job['target_type']=='document_reading_preview':
+                    from .reading_previews import execute
+                    execute(settings,job)
+                else:
+                    from .storage_management import execute
+                    execute(settings,job)
+                _send(connection,('committed',))
+            except HTTPException as exc:
+                _send(connection,('failure',exc.detail['code'],'Source file operation no longer applies',False))
+            except ParseFailure as exc:
+                _send(connection,('failure',exc.code,'Source file operation could not complete',exc.retryable))
+            except SourcePathError as exc:
+                _send(connection,('failure',exc.code,'External file could not be verified',exc.code in ('SOURCE_OFFLINE','SOURCE_CHANGED','SOURCE_FILE_MISSING')))
+            return
         if job['kind']=='reindex' and job['target_type']=='document_search':
             import resource
             resource.setrlimit(resource.RLIMIT_AS,(512*1024*1024,512*1024*1024))

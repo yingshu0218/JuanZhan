@@ -86,11 +86,14 @@ def test_offline_readonly_source_keeps_actual_cached_content(source_api,pipeline
     with TestClient(create_app('archive',offline),base_url='https://archive.test') as after:
         after.cookies.update(client.cookies)
         root='/api/v1/documents/'+document
-        doc=after.get(root).json();assert doc['availability_status']=='source_offline'
+        doc=after.get(root).json();assert doc['availability_status']=='available'
+        inventory=after.get(root+'/source-files').json()['items'][0]
+        assert inventory['server_copy'] and inventory['storage_kind']=='external'
+        assert inventory['source']['id']==source
         assert doc['processing_status']=='completed'
         cached=after.get(root+'/content?format=text').json();assert cached['body'].strip()==content.decode().strip()
-        assert cached['stale_for_current_revision'] and not doc['content_stale']
-        assert after.get(root+'/download').status_code==409
+        assert not cached['stale_for_current_revision'] and not doc['content_stale']
+        assert after.get(root+'/download').content==content
     assert rows(settings,'PRAGMA foreign_key_check')==[]
 
 

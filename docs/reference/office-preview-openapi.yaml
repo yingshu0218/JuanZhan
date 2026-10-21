@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: JuanZhan private original reading renderer
+  version: 0.1.0
+  description: Private isolated service. No user paths, URLs or business volumes. Office and multipage TIFF to passive reading PDF; never replaces original bytes.
+paths:
+  /healthz:
+    get:
+      responses:
+        '200':
+          description: Process ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {status: {const: ok}}
+                required: [status]
+  /v1/render:
+    post:
+      security: [{serviceToken: []}]
+      parameters:
+        - in: header
+          name: X-Original-Mime
+          required: true
+          schema:
+            enum: [application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/msword, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/rtf, image/tiff]
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary, maxLength: 33554432}
+      responses:
+        '200':
+          description: Verified PDF signature, at most 64 MiB. No-store, nosniff, sandbox. Child limited to 90 wall seconds; one active request including response send. TIFF at most 100 frames, 12M pixels per frame and 24M total.
+          headers:
+            X-Renderer: {schema: {type: string}}
+            X-Content-SHA256: {schema: {type: string, pattern: '^[0-9a-f]{64}$'}}
+          content:
+            application/pdf:
+              schema: {type: string, format: binary, maxLength: 67108864}
+        '401': {description: Invalid private service token}
+        '413': {description: Input byte budget exceeded}
+        '422': {description: Unsupported or mismatched MIME, native failure, timeout or output limit; sanitized error.code only}
+        '429': {description: Renderer busy; caller may retry within finite job policy}
+components:
+  securitySchemes:
+    serviceToken: {type: http, scheme: bearer}

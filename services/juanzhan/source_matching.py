@@ -131,7 +131,8 @@ def execute(settings,job):
     if not baseline or mounts.digest(source['root_ref'])!=baseline[0]:raise SourcePathError('SOURCE_ROOT_CHANGED')
     if old:missing_previous(mounts,source,old)
     revision={'storage_kind':'external','source_entry_id':entry['id'],'sha256':payload['sha256'],'size_bytes':payload['size_bytes']}
-    with original(settings,revision,MAX_BYTES) as file:
+    # Incoming entries have no Revision yet; verify their live bytes, never a saved snapshot.
+    with original(settings,revision,MAX_BYTES,allow_snapshot=False) as file:
         mime=sniff(file,entry['relative_path_norm'].rsplit('/',1)[-1])
         def publish(db,owned):
             db.row_factory=sqlite3.Row

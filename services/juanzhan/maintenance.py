@@ -81,7 +81,7 @@ def purge(db,job,settings):
     for pending in db.execute("SELECT * FROM jobs WHERE target_type IN ('document_adoption','document_match') AND target_id=? AND status IN ('queued','running')",(id,)).fetchall():
         release_barrier(db,pending,True)
     db.execute("UPDATE jobs SET status='cancelled',retryable=0,error_json=?,lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,updated_at=? "
-               "WHERE target_type IN ('document','document_adoption','document_match') AND target_id=? AND status IN ('queued','running')",
+               "WHERE target_type IN ('document','document_adoption','document_match','document_snapshot','document_reading_preview','document_revision_cleanup') AND target_id=? AND status IN ('queued','running')",
                (encoded({'code':'DOCUMENT_PURGED','message':'Document was purged','retryable':False}),timestamp,id))
     db.execute('DELETE FROM document_search WHERE document_id=?',(id,))
     db.execute('UPDATE documents SET current_revision_id=NULL,current_parse_run_id=NULL WHERE id=?',(id,))

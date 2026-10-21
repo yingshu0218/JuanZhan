@@ -107,7 +107,7 @@ def original(settings,revision,max_bytes,*,allow_snapshot=True):
                               'WHERE e.id=?',(revision['source_entry_id'],)).fetchone()
         if not source or source[1]=='disabled':raise ParseFailure('SOURCE_OFFLINE',True)
         # Pin current bytes in Archive-private temporary storage. Size/mtime are not proof.
-        with SourceMounts(settings.source_mounts).open(source[0],source[2]) as file, tempfile.TemporaryFile() as copy:
+        with SourceMounts(settings.source_mounts).open(source[0],source[2]) as file, tempfile.TemporaryFile(dir=settings.data_dir) as copy:
             before=os.fstat(file.fileno());digest=hashlib.sha256();size=0
             while chunk:=file.read(min(65536,max_bytes-size+1)):
                 size+=len(chunk)

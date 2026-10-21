@@ -1,5 +1,7 @@
 # API 契约与接入
 
+当前源码契约已扩展为0.4.32/93路径，新增源文件版本、副本任务、固定版本阅读预览、存储统计/清理和显式历史版本删除，精确结构见reference/source-files-openapi.json。私有renderer的两路径契约独立于Archive，见reference/office-preview-openapi.yaml；服务边界见NATIVE-READING。此为开发状态，业务仍rc.14/0.4.31/85路径。
+
 新批开发中：外部Revision若已有完整性校验匹配的服务器快照，availability_status反映该可读原件副本，下载/解析优先快照；origin_kind仍external、source_id不变，不冒充外部来源在线。0014统一快照引用用于备份和GC保护。新增源文件/存储管理路径的精确契约将随实现另行扩展，当前业务部署仍为rc.14/85路径/13迁移。
 
 当前rc.14：Archive契约0.4.31/85路径、13迁移，新增[OAuth扩展](reference/oauth-openapi.json)，公开发行者发现、动态注册、授权码PKCE/刷新/撤销与Cookie同意授权。扩展路径以根服务器 `/` 覆盖主契约 `/api/v1`，避免公开OAuth路径错误嵌套。协议及预算见[OAUTH](OAUTH.md)。通用客户端可导入[七路径只读REST契约](reference/agent-rest-openapi.json)，不包含凭据管理/业务写接口。以下T37/T38为历史协议变更记录。

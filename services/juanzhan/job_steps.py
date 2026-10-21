@@ -5,7 +5,9 @@ PARSE_STEPS = ('validate', 'submit', 'extract', 'assets', 'publish')
 
 
 def initial(job):
-    codes = PARSE_STEPS if job['kind'] in ('parse', 'ocr') and job['target_type']=='document' else ('process',)
+    if job['target_type']=='document_snapshot':codes=('validate','copy','publish')
+    elif job['target_type']=='document_reading_preview':codes=('validate','render','publish')
+    else:codes = PARSE_STEPS if job['kind'] in ('parse', 'ocr') and job['target_type']=='document' else ('process',)
     return [{'code':code,'status':'pending','done':0,'total':None} for code in codes]
 
 
@@ -23,7 +25,7 @@ def finish(db, job, status):
 def enrich(db, job, result):
     """Use the captured revision name, never an external source's absolute path."""
     result['document_name']=None
-    if job['target_type'] in ('document','document_search') and job['target_id']:
+    if job['target_type'] in ('document','document_search','document_snapshot','document_reading_preview','document_revision_cleanup') and job['target_id']:
         revision=json.loads(job['payload_json']).get('revision_id')
         if not isinstance(revision,str):revision=None
         named=db.execute('SELECT r.original_filename FROM documents d JOIN file_revisions r '

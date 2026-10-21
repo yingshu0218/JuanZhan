@@ -126,6 +126,9 @@ def create_app(kind, settings=None, *, converter_config=None):
         if kind == 'archive' and (request.url.path.startswith('/api/v1/agent') or request.url.path.endswith('/overview')):
             response.headers['Cache-Control']='no-store'
             response.headers['X-Content-Type-Options']='nosniff'
+        if kind=='archive' and (request.url.path.endswith(('/source-files','/source-snapshot','/source-snapshots','/reading-preview','/reading-preview/file')) or request.url.path.startswith('/api/v1/system/storage')):
+            response.headers['Cache-Control']='no-store'
+            response.headers['X-Content-Type-Options']='nosniff'
         if kind == 'archive' and request.url.path.startswith('/api/v1/auth'):
             response.headers['Cache-Control'] = 'no-store'
             response.headers['Pragma'] = 'no-cache'
@@ -148,6 +151,10 @@ def create_app(kind, settings=None, *, converter_config=None):
     if kind == "archive":
         web.install(app)
         app.include_router(oauth.router(settings))
+        from . import source_files,reading_previews,storage_management
+        app.include_router(source_files.router(settings))
+        app.include_router(reading_previews.router(settings))
+        app.include_router(storage_management.router(settings))
         from . import agent_access, agent_api, agent_mcp
         app.include_router(agent_access.router(settings))
         app.include_router(agent_api.router(settings))
