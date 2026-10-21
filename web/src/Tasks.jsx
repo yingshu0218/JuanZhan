@@ -1,5 +1,5 @@
 import { InfoTip } from "./ui.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
 import { JobProgress } from "./JobProgress.jsx";
@@ -19,7 +19,7 @@ function ResultView({ value }) {
     : <p key={key}>{resultLabels[key] || key}：{item === null ? "未知" : typeof item === "boolean" ? (item ? "是" : "否") : statuses[item] || ({succeeded:"成功",skipped:"跳过",discarded:"未发布"}[item]) || String(item)}</p>)}</div>;
 }
 const kinds = { upload: "上传", scan: "来源扫描", scan_preview: "预扫描", parse: "解析", ocr: "OCR", reindex: "检索索引", batch: "批量操作", purge: "永久清理", gc: "存储清理" };
-function kindLabel(job) { return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
+function kindLabel(job) { const sourceKinds={document_snapshot:'保存原件副本',source_snapshot_batch:'来源副本任务',document_reading_preview:'源文件阅读预览',document_revision_cleanup:'清理历史版本',storage_cleanup:'清理存储缓存'}; if(sourceKinds[job.target_type])return sourceKinds[job.target_type]; return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
 // One visible-tab poller for the global entry; totals come from real paginated APIs.
 export function TaskEntry({ api, onOpen, refreshKey }) {
   const [counts, setCounts] = useState(null), [error, setError] = useState(false);
@@ -40,8 +40,10 @@ export function TaskEntry({ api, onOpen, refreshKey }) {
     <strong>任务中心</strong><small role="status">{error ? "状态待刷新" : counts ? `排队 ${counts.queued} · 处理中 ${counts.running}` : "读取状态…"}</small>
   </button>;
 }
-export function TaskStatus({ api, id }) {
+export function TaskStatus({ api, id, onTerminal, compact = false }) {
   const [job, setJob] = useState(null), [error, setError] = useState(""), [refresh, setRefresh] = useState(0), [busy, setBusy] = useState(false);
+  const terminal=useRef(onTerminal);
+  useEffect(()=>{terminal.current=onTerminal;},[onTerminal]);
   useEffect(() => {
     const abort = new AbortController(); let timer, polls = 0;
     setJob(null); setError("");
@@ -50,6 +52,7 @@ export function TaskStatus({ api, id }) {
         const result = await api.request("/jobs/" + id, { signal: abort.signal });
         if (abort.signal.aborted) return;
         setJob(result);
+        if(['completed','failed','cancelled'].includes(result.status))terminal.current?.(result);
         if (["queued", "running"].includes(result.status) && ++polls < 60) timer = setTimeout(load, 2000);
       } catch (e) { if (!abort.signal.aborted) setError(message(e)); }
     }
@@ -64,15 +67,15 @@ export function TaskStatus({ api, id }) {
     {error && <Notice error>{error}</Notice>}
     {job && <>
       <JobProgress job={job} />
-      <p>关联对象：{job.target_id || "系统维护"}</p>
+      {!compact && <p>关联对象：{job.target_id || "系统维护"}</p>}
       <h3>{kindLabel(job)} · {job.status === "completed" && job.result?.failed > 0 ? "已结束（存在失败项）" : statuses[job.status]}</h3>
-      <p>任务编号：<code>{id}</code></p>
-      <p>尝试 {job.attempts} / {job.max_attempts}；已处理 {job.progress_done ?? 0}{job.progress_total == null ? "，总量未知" : ` / ${job.progress_total}`}</p>
+      {!compact && <p>任务编号：<code>{id}</code></p>}
+      {!compact && <p>尝试 {job.attempts} / {job.max_attempts}；已处理 {job.progress_done ?? 0}{job.progress_total == null ? "，总量未知" : ` / ${job.progress_total}`}</p>}
       {job.progress_total > 0 && <progress value={job.progress_done || 0} max={job.progress_total} />}
       {job.status === "queued" && <p>最早可执行：{new Date(job.available_at).toLocaleString()}。受理不代表处理成功。</p>}
       {job.error && <Notice error>错误代码：{job.error.code}。请核对服务和原件后再操作。</Notice>}
       {job.result?.status === "discarded" && <Notice>任务已结束，但结果未发布，请核对当前版本。</Notice>}
-      {job.result && <details><summary>结果记录（可能包含逐项失败）</summary><ResultView value={job.result} /></details>}
+      {job.result && !compact && <details><summary>结果记录（可能包含逐项失败）</summary><ResultView value={job.result} /></details>}
       {job.can_retry && <button disabled={busy} onClick={retry}>确认重试（沿用剩余次数）</button>}
     </>}
     <button onClick={() => setRefresh(n => n + 1)}>刷新任务</button>

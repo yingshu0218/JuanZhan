@@ -25,14 +25,10 @@ test('seven new office and delimited formats show source-backed overviews on des
     await expect.poll(async()=> (await api(page,`/documents/${saved.document_id}`)).data.processing_status,{timeout:30000}).toBe('completed');
     await page.reload();await page.getByLabel('当前空间').selectOption(space);
     await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:item.name}).click();
-    const reader=page.getByRole('region',{name:'正文阅读',exact:true});
+    const reader=page.getByRole('region',{name:'文档概览',exact:true});
     await expect(reader.locator('.summary-points > li').first()).toBeVisible();
     await expect(reader.locator('.summary-points')).toContainText(/验收|主机/);
-    const source=reader.locator('.summary-points > li').first();await source.locator('summary').click();
-    await source.getByRole('button',{name:'查看对应正文',exact:true}).first().click();
-    await expect(reader.locator('.content-blocks')).toBeVisible();
-    await reader.getByLabel('阅读格式').selectOption('summary');
-    await expect(reader.locator('.summary-points > li').first()).toBeVisible();
+    await expect(reader.locator('.summary-sources,.summary-actions')).toHaveCount(0);
     await page.screenshot({path:join(tmpdir(),'juanzhan-office-'+item.name+'-desktop.png')});
     await page.setViewportSize({width:390,height:844});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),item.name).toBe(true);
@@ -62,8 +58,8 @@ test('ten real documents across six formats produce truthful generic overviews',
       console.log("Parsed",item.name);
       await page.reload(); await page.getByLabel('当前空间').selectOption(space);
       await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:item.name}).click();
-      const reader=page.getByRole('region',{name:'正文阅读',exact:true});
-      await expect(reader.getByLabel('阅读格式')).toHaveValue('summary');
+      const reader=page.getByRole('region',{name:'文档概览',exact:true});
+      await expect(reader.getByLabel('阅读格式')).toHaveCount(0);
       await expect(reader.locator('.fact-grid,.fact-card,img,script,iframe')).toHaveCount(0);
       if(item.empty) {
         await expect(reader.getByText('暂无可提炼的文本内容。')).toBeVisible();
@@ -77,10 +73,7 @@ test('ten real documents across six formats produce truthful generic overviews',
           await expect(reader.getByRole('tooltip')).toContainText('并非全文');
           await page.mouse.move(0,0);
         }
-        const source=reader.locator('.summary-points > li').first(); await source.locator('summary').click();
-        await source.getByRole('button',{name:'查看对应正文',exact:true}).first().click();
-        await expect(reader.locator('.content-blocks')).toBeVisible();
-        await reader.getByLabel('阅读格式').selectOption('summary');
+        await expect(reader.locator('.summary-sources,.summary-actions')).toHaveCount(0);
       }
       await page.screenshot({path:join(tmpdir(),'juanzhan-types-'+item.name.replace(/\..+$/,'')+'-desktop.png')});
       await page.setViewportSize({width:390,height:844});

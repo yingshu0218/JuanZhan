@@ -18,13 +18,10 @@ test('legacy Office and RTF show generic overviews, Unicode and source navigatio
     await expect.poll(async()=> (await api(page,`/documents/${saved.document_id}`)).data.processing_status,{timeout:30000,message:name}).toBe('completed');
     await page.reload();await page.getByLabel('当前空间').selectOption(space);
     await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:name}).click();
-    const reader=page.getByRole('region',{name:'正文阅读',exact:true});await expect(reader.locator('.summary-points > li').first()).toBeVisible();
+    const reader=page.getByRole('region',{name:'文档概览',exact:true});await expect(reader.locator('.summary-points > li').first()).toBeVisible();
     if(name==='testPPT_various.ppt')await expect(reader.locator('.summary-points')).toContainText('Row 1');
     expect(await reader.locator('.summary-points').innerText()).not.toContain('\uFFFD');
-    const source=reader.locator('.summary-points > li').first();await source.locator('summary').click();
-    await source.getByRole('button',{name:'查看对应正文',exact:true}).first().click();await expect(reader.locator('.content-blocks')).toBeVisible();
-    await reader.getByLabel('阅读格式').selectOption('summary');
-    await expect(reader.locator('.summary-points > li').first()).toBeVisible();
+    await expect(reader.locator('.summary-sources,.summary-actions')).toHaveCount(0);
     await page.screenshot({path:join(tmpdir(),'juanzhan-legacy-'+name+'-desktop.png')});
     await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name).toBe(true);
     await page.screenshot({path:join(tmpdir(),'juanzhan-legacy-'+name+'-mobile.png')});await page.setViewportSize({width:1440,height:1000});

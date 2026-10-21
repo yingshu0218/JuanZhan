@@ -1,4 +1,5 @@
 import { AgentManager } from "./AgentManager.jsx";
+import { StorageManager } from "./StorageManager.jsx";
 import { InfoTip } from "./ui.jsx";
 import { TaskCenter, TaskEntry } from "./Tasks.jsx";
 import { BackupManager } from './BackupManager.jsx';
@@ -51,6 +52,7 @@ export function Workspace({ api, logout, authError }) {
   const [catalogOpen,setCatalogOpen]=useState(false);
   const [agentOpen,setAgentOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false),[backupOpen,setBackupOpen]=useState(false);
+  const [storageOpen,setStorageOpen]=useState(false);
   const [initial] = useState(readLocation);
   const urlStarted = useRef(false);
   const restoringUrl = useRef(false);
@@ -508,9 +510,10 @@ export function Workspace({ api, logout, authError }) {
         </div>
         <div className="header-actions">
           <button aria-label="系统设置" title="系统设置" onClick={()=>setSettingsOpen(true)}><Gear size={22} /></button>
-          {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button><button onClick={()=>{setSettingsOpen(false);setAgentOpen(true);}}>Agent 接入</button></div></Dialog>}
+          {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button onClick={()=>{setSettingsOpen(false);setStorageOpen(true);}}>存储管理</button><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button><button onClick={()=>{setSettingsOpen(false);setAgentOpen(true);}}>Agent 接入</button></div></Dialog>}
           {agentOpen && <AgentManager api={api} spaces={spaces} onClose={()=>setAgentOpen(false)} />}
           {backupOpen && <BackupManager api={api} onClose={()=>setBackupOpen(false)} />}
+          {storageOpen && <StorageManager api={api} onClose={()=>setStorageOpen(false)} />}
           {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
           <TaskEntry api={api} onOpen={openTasks} refreshKey={refresh} />
           {tasksOpen && <TaskCenter api={api} initialId={taskId} onClose={() => setTasksOpen(false)} />}

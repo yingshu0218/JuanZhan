@@ -7,6 +7,17 @@ export class ApiError extends Error {
   }
 }
 const messages = {
+  SNAPSHOT_INPUT_LIMIT: "原件超过1 GiB副本上限。",
+  READING_PREVIEW_FAILED: "源文件阅读预览未生成，可以下载原件。",
+  READING_PREVIEW_UNAVAILABLE: "阅读预览服务暂不可用，请稍后重试。",
+  READING_PREVIEW_INPUT_LIMIT: "文件超过32 MiB阅读预览上限，可以下载原件。",
+  READING_PREVIEW_TIMEOUT: "阅读预览生成超时，可重试或下载原件。",
+  READING_PREVIEW_BUSY: "阅读预览服务忙碌，请稍后重试。",
+  CURRENT_REVISION_PROTECTED: "当前原件版本不能删除。",
+  SUCCESSFUL_CONTENT_PROTECTED: "此版本仍是当前成功概览的来源，不能删除。",
+  BUSINESS_PROVENANCE_PROTECTED: "业务字段仍引用此版本，不能删除。",
+  REVISION_BUSY: "后台任务仍在使用此版本，请等待完成。",
+
   BACKUP_OPERATION_BUSY: "已有备份/恢复任务或下载正在使用存储，请稍后重试。",
   BACKUP_SCHEDULE_CONFLICT: "备份计划已被更新，请刷新记录并重载计划后重试。",
   BACKUP_STORAGE_UNAVAILABLE: "私有备份存储不可用，请管理员核对挂载与权限。",

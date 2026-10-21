@@ -34,6 +34,7 @@ const jobStates = {
   cancelled: "已取消",
 };
 const labels = {
+  scheduled_count: "已安排副本任务",
   estimated_files: "预计文件",
   estimated_bytes: "预计大小",
   ignored_files: "忽略文件",
@@ -84,6 +85,7 @@ export function Sources({
   const [pollError, setPollError] = useState("");
   const [pollEpoch, setPollEpoch] = useState(0);
   const [notice, setNotice] = useState("");
+  const snapshotIntent = useRef(null);
   const prepareRequest = useRef(null);
   useEffect(() => () => prepareRequest.current?.abort(), [id, active]);
   const alive = useRef(true);
@@ -245,6 +247,16 @@ export function Sources({
         );
     });
   }
+  async function saveCopies() {
+    await perform(async () => {
+      if (!snapshotIntent.current || snapshotIntent.current.source !== source.id)
+        snapshotIntent.current = { source: source.id, request_id: crypto.randomUUID() };
+      const result = await api.request(`/sources/${source.id}/source-snapshots`, {
+        method: 'POST', body: {request_id: snapshotIntent.current.request_id, page_size: 100},
+      });
+      if (alive.current) { track(result, '保存服务器副本', source.name); snapshotIntent.current = null; }
+    });
+  }
   async function prepareExclusion(entry) {
     const controller = new AbortController();
     prepareRequest.current?.abort();
@@ -347,6 +359,8 @@ export function Sources({
                   </p>
                 </div>
                 <div className="source-actions">
+                  <button disabled={!ready || blocked || !source.initial_import_completed_at} onClick={saveCopies}>保存服务器副本</button>
+                  <InfoTip>为已导入档案的当前原件安排分页副本任务，保留来源关联并且不修改外部文件。详细进度可在任务中心查看。</InfoTip>
                   <button
                     disabled={!ready || blocked}
                     onClick={() => scan("preview")}

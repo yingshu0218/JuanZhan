@@ -56,7 +56,7 @@ def main():
     # our worker/context cleanup instead of the OS default terminating immediately.
     signal.signal(signal.SIGTERM,stop_on_signal)
     with TemporaryDirectory(prefix='juanzhan-reading-browser-') as temp:
-        root=Path(temp);token=secrets.token_urlsafe(32)
+        root=Path(temp);token=os.environ.get('JUANZHAN_E2E_SERVICE_TOKEN') or secrets.token_urlsafe(32)
         with converter_server(root,token) as base:
             os.environ['CONVERTER_URL']=base
             settings=Settings(root/'archive',token,cookie_secure=False)

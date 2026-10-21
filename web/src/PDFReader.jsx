@@ -10,7 +10,7 @@ GlobalWorkerOptions.workerSrc=workerUrl;
 const MAX_BYTES=64*1024*1024,MAX_PIXELS=8*1024*1024;
 const assets=`/assets/pdfjs/${version}/`;
 
-export default function PDFReader({documentId,revisionId}){
+export default function PDFReader({documentId,revisionId,sourceUrl,preview=false}){
   const [pdf,setPdf]=useState(null),[error,setError]=useState(''),[page,setPage]=useState(1),[draft,setDraft]=useState('1');
   const [zoom,setZoom]=useState(1),[rotation,setRotation]=useState(0),[width,setWidth]=useState(500),[rendering,setRendering]=useState(false);
   const [passwordNeeded,setPasswordNeeded]=useState(false),[password,setPassword]=useState(''),[wrongPassword,setWrongPassword]=useState(false);
@@ -27,7 +27,7 @@ export default function PDFReader({documentId,revisionId}){
     const deadline=()=>{clearTimeout(timer);timer=setTimeout(()=>{timedOut=true;abort.abort();task?.destroy();if(live)setError('PDF读取超时，请重试或下载原件。');},45000);};
     deadline();
     (async()=>{
-      const response=await fetch(`/api/v1/documents/${documentId}/download?expected_revision_id=${encodeURIComponent(revisionId)}`,{credentials:'same-origin',signal:abort.signal});
+      const response=await fetch(sourceUrl || `/api/v1/documents/${documentId}/download?expected_revision_id=${encodeURIComponent(revisionId)}`,{credentials:'same-origin',signal:abort.signal});
       if(!response.ok){const value=await response.json();throw new ApiError(response.status,value.error);}
       if(Number(response.headers.get('content-length'))>MAX_BYTES){await response.body?.cancel();throw Error('PDF_LIMIT');}
       const bytes=await response.arrayBuffer();if(bytes.byteLength>MAX_BYTES)throw Error('PDF_LIMIT');
@@ -42,7 +42,7 @@ export default function PDFReader({documentId,revisionId}){
       clearTimeout(timer);setPdf(loaded);
     })().catch(e=>{clearTimeout(timer);task?.destroy().catch(()=>{});if(live && !timedOut && e.name!=='AbortError')setError(e instanceof ApiError ? message(e) : e.message==='PDF_LIMIT' ? 'PDF超过64 MiB阅读上限，请下载原件。' : e.message==='PDF_PAGE_LIMIT' ? 'PDF超过10000页阅读上限，请下载原件。' : '无法读取此PDF，请下载原件核对文件。');});
     return ()=>{live=false;searchEpoch.current++;clearTimeout(timer);abort.abort();unlock.current=null;task?.destroy();};
-  },[documentId,revisionId]);
+  },[documentId,revisionId,sourceUrl]);
   useEffect(()=>{
     if(!pdf)return;
     let live=true,renderTask,layer,pageObject,timer;
@@ -95,7 +95,7 @@ export default function PDFReader({documentId,revisionId}){
   }
   return <section className="pdf-reader" aria-label="完整PDF阅读">
     <h3>完整 PDF 阅读</h3>
-    <InfoTip>逐页显示已核验的原件；不执行PDF脚本、附件或外部链接。最多64 MiB / 10000页，复杂页面可能降低分辨率，超过6400万像素的单幅图像可能省略。</InfoTip>
+    <InfoTip>{preview ? '这是根据所选原件版本生成的阅读预览，原件保持不变；复杂排版或字体可能存在差异。' : '逐页显示已核验的原件。'}不执行PDF脚本、附件或外部链接。最多64 MiB / 10000页，复杂页面可能降低分辨率，超过6400万像素的单幅图像可能省略。</InfoTip>
     {error && <Notice error>{error}</Notice>}
     {passwordNeeded && <form onSubmit={event=>{event.preventDefault();unlock.current?.(password);setPassword('');}}>
       {wrongPassword && <Notice error>密码不正确，请重试。</Notice>}
