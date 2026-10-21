@@ -33,7 +33,7 @@ export function Original({ api, doc, revisions, onClose, onRefresh }) {
       link.href=url;link.download=revision.original_filename || "original";link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
     }catch(e){setDownloadError(message(e));}finally{setBusy(false);}
   }
-  return <Dialog title="关联原文件" wide onClose={onClose}>
+  return <Dialog title="源文件" wide onClose={onClose}>
     <p>{current?.original_filename || doc.title} · {current?.mime_type} · {current ? formatSize(current.size_bytes) : "大小未知"}</p>
     {!readingPDF && <InfoTip>下载前重新核验版本和完整性。历史外部原件若已变化或离线，将明确提示不可用。</InfoTip>}
     {current?.size_bytes > 64 * 1024 * 1024 && <Notice>当前浏览器下载入口限64 MiB；更大原件请使用已鉴权下载API（上限1 GiB）。</Notice>}

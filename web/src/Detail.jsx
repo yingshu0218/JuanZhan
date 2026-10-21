@@ -1,6 +1,5 @@
 import { InfoTip } from "./ui.jsx";
 import { Original } from "./Original.jsx";
-import { Reprocess } from "./Tasks.jsx";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -8,7 +7,7 @@ import {
   Paperclip,
   ArrowClockwise,
 } from "@phosphor-icons/react";
-import { ContentReader } from "./ContentReader.jsx";
+import { DocumentOverview } from "./DocumentOverview.jsx";
 import { message } from "./api.js";
 import {
   Dialog,
@@ -43,13 +42,12 @@ export function Detail({
     if (id)
       Promise.all([
         api.request("/documents/" + id, { signal: abort.signal }),
-        api.request("/documents/" + id + "/metadata", { signal: abort.signal }),
         api.request("/documents/" + id + "/revisions", {
           signal: abort.signal,
         }),
       ])
-        .then(([doc, metadata, revisions]) => {
-          if (!abort.signal.aborted) setData({ doc, metadata, revisions });
+        .then(([doc, revisions]) => {
+          if (!abort.signal.aborted) setData({ doc, revisions });
         })
         .catch((e) => {
           if (e.name !== "AbortError") setError(message(e));
@@ -95,16 +93,10 @@ export function Detail({
         </p>
       </section>
     );
-  const { doc, metadata, revisions } = data;
+  const { doc, revisions } = data;
   const current = revisions[0];
   const type = types.find((t) => t.id === doc.document_type_id);
   const folder = folders.find((f) => f.id === doc.folder_id);
-  const definitionsById=new Map(definitions.map(field=>[field.id,field]));
-  const valuesById=new Map(metadata.map(field=>[field.field_definition_id,field]));
-  const template=type?.fields||[];
-  const templateIds=new Set(template.map(field=>field.field_definition_id));
-  const displayed=[...template.map(field=>({...valuesById.get(field.field_definition_id),field_definition_id:field.field_definition_id,
-    missing:!valuesById.has(field.field_definition_id),required_for_filing:field.required_for_filing})),...metadata.filter(field=>!templateIds.has(field.field_definition_id))];
   return (
     <section className="detail-shell" aria-label="档案详情">
       <div className="reader-toolbar">
@@ -135,7 +127,7 @@ export function Detail({
           </button>
           <button className="original-button" onClick={() => setOriginal(true)}>
             <Paperclip size={17} />
-            关联原文件
+            查看源文件
           </button>
         </div>
       </div>
@@ -154,44 +146,7 @@ export function Detail({
             {doc.content_stale ? (
               <Notice>当前处理未替代最近成功正文：可能是原件已更新或最近一次解析失败。</Notice>
             ) : null}
-            <ContentReader api={api} doc={doc} definitions={definitions} onChanged={() => setAttempt((n) => n + 1)} />
-            <details className="reader-maintenance"><summary>重新解析与 OCR</summary><Reprocess key={doc.id} api={api} doc={doc} /></details>
-            <section className="business-fields">
-              <h3>业务字段</h3>
-              {displayed.length ? (
-                <dl>
-                  {displayed.map((field) => (
-                    <div key={field.field_definition_id}>
-                      <dt>
-                        {definitionsById.get(field.field_definition_id)?.label || field.key || '字段已不可用'}
-                        <small>
-                          {field.missing ? '尚未填写' : <>
-                          {field.is_confirmed ? "已确认" : "未确认"} ·{" "}
-                          {field.origin === "extracted"
-                            ? "采纳候选"
-                            : field.origin === "manual"
-                              ? "人工填写"
-                              : "导入值"}</>}
-                          {field.required_for_filing ? ' · 归档必填' : ''}
-                        </small>
-                      </dt>
-                      <dd>
-                        {field.missing ? '未填写' : typeof field.value==='number' && !Number.isSafeInteger(field.value) ? '超出浏览器安全整数范围，请通过API查看精确值' : field.value==='' ? '（空文本）' : typeof field.value === "boolean"
-                          ? field.value
-                            ? "是"
-                            : "否"
-                          : definitionsById.get(field.field_definition_id)
-                              ?.constraints?.options?.find(
-                                (option) => option.id === field.value,
-                              )?.label || String(field.value)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="muted">尚未填写业务字段。</p>
-              )}
-            </section>
+            <DocumentOverview key={`${doc.id}:${attempt}:${refreshKey}`} api={api} doc={doc} />
             {doc.description ? (
               <section>
                 <h3>描述</h3>
@@ -211,6 +166,7 @@ export function Detail({
               </small>
             </div>
           </section>
+          <button className="primary" onClick={() => setOriginal(true)}>查看源文件</button>
           <section>
             <h3>分类与位置</h3>
             <dl>
