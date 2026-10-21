@@ -13,3 +13,4 @@ __pycache__/
 wheelhouse/
 ocr-models/
 native-packages/
+office-packages/

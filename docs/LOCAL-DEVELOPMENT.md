@@ -171,7 +171,11 @@ XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新
 
 后续源文件管理批次（T43～T47）进行中：本轮初版UI/快照仍复用既有Python/React/Docker/Playwright，没有本机新增依赖。服务器日志`.local/source-ui-build.log`、`.local/source-ui-browser.log`、`.local/source-snapshot-target.log`及`.local/source-snapshot-core-final.log`，两端`/tmp/juanzhan-overview-only-*.png`、`.local/juanzhan-source-*-wip.tar.gz`可复查后按名清理。业务实例仍rc.14/13迁移，0014尚未应用。
 
-Office预览计划独立服务器转换服务，不安装本机办公套件、不向第三方发送文件。当前只在临时容器juanzhan-office-package-resolve中解析/下载Debian trixie的LibreOffice Writer/Calc/Impress、CJK字体与libseccomp2，缓存`.local/office-preview-debs`、日志`.local/office-preview-dependencies.log`；尚未安装到宿主系统或运行服务，也未完成包锁/许可/资源实测。下载在运行时不得当作失败缓存删除；最终依赖/哈希/版本/体积与清理记录在完成后补齐。
+Office预览已进入隔离服务验证阶段，尚未部署到业务实例。新增独立镜像`juanzhan-office:preview-dev`（356059267字节），只在容器内安装LibreOffice Writer/Calc/Impress、字体及系统依赖，未安装Mac或服务器全局办公软件/Java。187个Debian包共207581860字节，精确来源、版本、大小与SHA256锁在`office-preview-tools.lock.json`；`scripts/setup_office_preview.py`验证/按需恢复。缓存`app/office-packages/`约199MiB，需保留至最终构建完成，之后可按锁恢复；部分旧缓存`.local/office-preview-debs`约2MiB可复核后删除。初始APT下载容器已停止。构建全程network=none，依赖校验保留；初轮安装顺序及APT离线路径问题已修正，详见`.local/office-preview-build.log`。
+
+专用测试容器`juanzhan-office-preview-test`及网络`juanzhan-source-office-test`由本批创建；容器只读根目录、用户10001、cap-drop ALL、no-new-privileges、768MiB内存/1CPU/128进程、192MiB临时区，代码只读挂载，不挂业务数据。使用完成且无后续联调后，可按这两个确切名称停止删除，禁止全局prune。镜像未被其他容器引用后可单独删除。锁文件、Dockerfile、服务代码及许可文件属于可重建产品来源，不能当作缓存清理。新服务最终再分发许可/对应源码检查尚未完成。
+
+本轮真实SQLite/文件/HTTP回归日志`.local/source-files-protection-tests.log`为7项通过（含真实原生DOCX预览、来源副本分页和历史概要/活跃任务保护）；前端构建`.local/source-files-web-build.log`成功但仍有既有PDF chunk体积警告。首轮宿主机测试因sysfs并非只读挂载失败，已在只读sysfs容器重验；原生DOCX初始测试样本缺少OPC内容类型声明，补齐合法声明后通过。日志、合成阅读PDF、测试归档均可在无需复查后按名称清理，不包含用户原件；业务仍rc.14/13迁移。
 
 业务运行复用既有Python/FastAPI/Pydantic/SQLite/React与Playwright，无新运行包、模型或数据库服务。迁移0013与OAuth/REST客户端源码属于产品文件，须保留。服务器`.local/oauth-build.log`、`.local/oauth-full.log`、`.local/agent-full-reports/oauth-full.xml`、`.local/juanzhan-oauth-*.tar.gz`及两端`/tmp/juanzhan-oauth-*.png`为可复查后按名称清理的开发产物；临时OAuth浏览器库由TemporaryDirectory退出清理，未挂生产卷。测试实例原件、卷、备份和私有认证文件继续保留。
 
@@ -188,3 +192,5 @@ IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0
 准备工具的临时Docker容器已退出（APT索引随容器删除）；`.local/legacy-debs`仅保留一份约84KiB的验证下载副本，可在无需复核后删除。构建缓存`app/native-packages/`含工具和源码，可按legacy-tools.lock.json重建；新wheel保存在既有wheelhouse，按锁文件恢复。运行镜像含许可证与对应源码，不能作为不必要产物从发行镜像剔除。
 
 本轮`.local/legacy-*.log`、`.local/agent-full-reports/legacy-full.xml`、中间legacy-work归档和私有TMPDIR的juanzhan-legacy-*.png可在无需复查后按明确名称清理。固定blob测试数据`.local/juanzhan-extra-format-fixtures`现为13份/463988字节（约453KiB），来源/哈希见reference/extra-format-fixture-sources.json；不进入运行镜像。测试镜像juanzhan:legacy-dev无容器引用后可清理，禁止全局prune。业务卷、私有认证文件、备份和原件不在缓存清理范围。
+
+本批真实来源版本演练脚本scripts/source_snapshot_drill.py只创建随机juanzhan-source-drill-*容器/卷/网络及合成临时目录，退出按名称回收；不访问业务卷或凭据。源目录对容器只读，宿主只改合成测试文件，验证相同大小/mtime变化、幂等扫描、历史版本离线读取与人工说明保护。source-snapshot-real-drill.log为成功证据，可复核后清理。source-full-backend-final.log最终615通过/无跳过，source-contract.log额外2项通过，source-reading-backup.log额外2项通过。新代码已分后端/前端提交，尚未推送/部署；发布脚本将另建rc.15业务与原生阅读两个镜像，均带源码追溯标签。
