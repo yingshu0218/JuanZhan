@@ -171,7 +171,11 @@ XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新
 
 业务运行复用既有Python/FastAPI/Pydantic/SQLite/React与Playwright，无新运行包、模型或数据库服务。迁移0013与OAuth/REST客户端源码属于产品文件，须保留。服务器`.local/oauth-build.log`、`.local/oauth-full.log`、`.local/agent-full-reports/oauth-full.xml`、`.local/juanzhan-oauth-*.tar.gz`及两端`/tmp/juanzhan-oauth-*.png`为可复查后按名称清理的开发产物；临时OAuth浏览器库由TemporaryDirectory退出清理，未挂生产卷。测试实例原件、卷、备份和私有认证文件继续保留。
 
-IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0及18个锁定依赖约23MiB；精确版本/所有分发哈希见`deploy/certbot.in`与`deploy/certbot.lock`，不进入Archive镜像、不安装本机/全局Python。TLS校验使用独占空闲80端口的standalone服务；开发80端口连通探测仅收到本次404请求后已关闭。测试证书私有目录`test-instance/tls-staging`可在无续期用途后清理；正式证书/ACME账户/私钥目录`test-instance/tls`须保留到HTTPS停用，不提交Git。运维工具Apache-2.0，间接包许可以各固定分发元数据为准；不捆绑分发这些工具。工具及证书配置的卸载需先停用续期与HTTPS入口，不能按普通缓存删除。
+IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0及依赖共18包，约23MiB；精确版本/所有分发哈希见`deploy/certbot.in`与`deploy/certbot.lock`，不进入Archive镜像、不安装本机/全局Python。TLS校验使用独占空闲80端口的standalone服务；开发80端口连通探测仅收到本次404请求后已关闭。测试证书私有目录`test-instance/tls-staging`可在无续期用途后清理；正式证书/ACME账户/私钥目录`test-instance/tls`须保留到HTTPS停用，不提交Git。运维工具Apache-2.0，间接包许可以各固定分发元数据为准；不捆绑分发这些工具。工具及证书配置的卸载需先停用续期与HTTPS入口，不能按普通缓存删除。
+
+最终HTTPS gateway为独立Nginx1.30.6固定digest镜像，约27.2MiB，运行观察约2.2MiB、限额64MiB/0.5CPU；来源/证书与续期记录见IP-TEST。专用juanzhan-ip-tls.service/timer已安装；停止HTTPS后可先用 `systemctl disable --now juanzhan-ip-tls.timer` 停用，再移除对应unit并daemon-reload。按IP-TEST停止gateway引用后才能删除证书和venv。Mac未安装依赖/根证书或新增系统服务。
+
+模型联调私有证据在服务器test-instance的model-answer.json、overview.json、content-page1～4.json、analysis-context.json及mcp/revocation-report；Mac `/tmp/juanzhan-model-interop` 为相应副本、目录0700。包含用户正文，复查后可按目录清理，不上传Git；两端临时令牌配置已删除，临时客户端/授权全部撤销。OAuth发布/续期日志、tar/bundle和Mac `/tmp/juanzhan-oauth-*.png` 可复查后按名清理；业务卷/原件/备份/当前证书及工具不能作为缓存删除。
 
 ## 2026-10-21 旧Office/RTF依赖与清理
 

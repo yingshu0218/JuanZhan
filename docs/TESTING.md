@@ -779,4 +779,10 @@ T38最终完整回归：586 passed、3既有框架警告、无跳过，500.83s�
 
 真实SQLite/HTTP的OAuth、认证及原Agent专项35项通过（22.09秒）；通用标准库REST客户端另6项通过（3.39秒，首轮误认为catalog含space_id，按既有契约改为四类目录字段断言后重验）。隔离OAuth浏览器1项通过（最终6.6秒），覆盖同意空间、回调state/iss、PKCE换码、REST/MCP、刷新令牌和管理员删除客户端撤销。1440/390截图已检查，复选框改为横向排布；前端构建通过，既有PDF阅读chunk大小提醒保留。
 
-完整后端容器回归595项通过、7项框架警告、无跳过（436.03秒），日志`.local/oauth-full.log`与`.local/agent-full-reports/oauth-full.xml`。新增REST六项在完整组启动后单独验收，不能把595写成已包含REST的完整601项。当前未进行新镜像/部署验收，外部模型联调及IP TLS入口仍待完成。
+完整后端容器回归595项通过、7项框架警告、无跳过（436.03秒），日志`.local/oauth-full.log`与`.local/agent-full-reports/oauth-full.xml`。新增REST六项在完整组启动后单独验收，不能把595写成已包含REST的完整601项。
+
+最终补充：REST/全部Agent契约（含七路径导入profile）10项通过（4.07秒）；OAuth组加入备份恢复清除授权/代码、跨会话同意隔离后10项通过（5.25秒）。这些专项存在重叠，不相加冒充新的一轮完整测试。业务运行代码未因补充契约/测试改动。
+
+rc.14真实镜像/部署验收已完成：独立新安装→8到13迁移升级→备份/新卷恢复→登录/下载/正文/检索/完整性/CSP，45.57秒通过，私有rc14-release-drill.json；业务实例12→13，4档案/19文件哈希与版本不变。在线Agent9项、实际Word1440/390只读概览通过；公网HTTPS证书校验、401挑战、OAuth签发、Mac REST/MCP HTTP/stdio与撤销后双401通过。真实外部模型读取固定ParseRun全部75块并生成5点带引用概括，私有留证见AGENT-INTEROP；用户Word未重解析，正文不提交Git。
+
+运维验证：18443外部超时而本机TLS正常，切换空闲443后外部健康200及登录/阅读通过；未改云安全组。Nginx首轮只读根下默认fastcgi目录不可写，修正所有temp目录到16MiB tmpfs后健康；Certbot dry-run含deploy-hook/nginx -t/reload成功，timer active。日志见IP-TEST/LOCAL-DEVELOPMENT，未跳过TLS验证。

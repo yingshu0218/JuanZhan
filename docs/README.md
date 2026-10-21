@@ -1,5 +1,7 @@
 # 项目开发知识库
 
+2026-10-21当前交付：T37～T42完成，devtest rc.14、20种输入MIME、REST/OpenAPI/MCP/stdio及OAuth、IP HTTPS已验证。入口与数据保护见DEVTEST，逐项验收见BATCH-2026-10-21，外部模型联调见AGENT-INTEROP，授权见OAUTH，IP证书续期/停用见IP-TEST，依赖与清理见LOCAL-DEVELOPMENT。正式域名和正式上线按用户决定延期。
+
 当前开发摘要更新于2026-10-20；最初整理日期2026-10-16（Asia/Shanghai）。用于把当前可访问 Chat/Work 决策、原始设计文件和已有原型交给 Codex；不是所有历史聊天全文的导出。
 
 | 文档 | 用途 |

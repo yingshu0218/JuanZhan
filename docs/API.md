@@ -1,6 +1,6 @@
 # API 契约与接入
 
-T41开发中：Archive契约0.4.31/85路径，新增[OAuth扩展](reference/oauth-openapi.json)，公开发行者发现、动态注册、授权码PKCE/刷新/撤销与Cookie同意授权。扩展路径以根服务器 `/` 覆盖主契约 `/api/v1`，避免公开OAuth路径错误嵌套。源码与迁移0013尚未部署，运行基线仍为rc.13；协议及预算见[OAUTH](OAUTH.md)。
+当前rc.14：Archive契约0.4.31/85路径、13迁移，新增[OAuth扩展](reference/oauth-openapi.json)，公开发行者发现、动态注册、授权码PKCE/刷新/撤销与Cookie同意授权。扩展路径以根服务器 `/` 覆盖主契约 `/api/v1`，避免公开OAuth路径错误嵌套。协议及预算见[OAUTH](OAUTH.md)。通用客户端可导入[七路径只读REST契约](reference/agent-rest-openapi.json)，不包含凭据管理/业务写接口。以下T37/T38为历史协议变更记录。
 
 T38开发：Converter0.4.5/六路径，能力新增DOC/XLS/PPT/RTF，共20种MIME；Archive仍0.4.30/74路径、12迁移，来源扩展名同步增加四类。ParseResult1.0结构不变；旧格式布局/定位、XLS源浮点/公式缓存及Unicode处理警告见CONVERTER。实际部署版本以DEVTEST为准，不因能力源码增加而假称旧镜像已支持。
 
@@ -10,8 +10,8 @@ T38开发：Converter0.4.5/六路径，能力新增DOC/XLS/PPT/RTF，共20种MIM
 
 ## 权威文件
 
-- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1（当前版本0.4.29），base `/api/v1`，63个path模板（含内部 healthz 与 T03 认证接口）。
-- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1（T21版本0.4.3），6 个 path 模板，独立服务根路径。
+- 档案 API：[archive-openapi-v0.4.yaml](reference/archive-openapi-v0.4.yaml)，OpenAPI 3.1，版本0.4.31，85个path模板；业务base `/api/v1`，公开OAuth路径使用根服务器覆盖。
+- 转换器：[converter-openapi-v0.4.yaml](reference/converter-openapi-v0.4.yaml)，OpenAPI 3.1，版本0.4.5，6个path模板，独立服务根路径。
 
 不要从旧附录或原型字符串反推 HTTP 接口；参数、响应和错误引用需按 YAML 实现。
 

@@ -124,3 +124,29 @@ def test_consent_denial_and_one_use(oauth_client):
     callback=parse_qs(urlsplit(denied.json()['redirect_uri']).query)
     assert callback['error']==['access_denied'] and callback['state']==['preserved']
     assert client.post('/api/v1/oauth/authorize',headers=csrf,json=payload).status_code==400
+
+def test_backup_restore_clears_active_grants_and_pending_codes(oauth_client,tmp_path):
+    from juanzhan.backup import create,restore
+    settings,client,csrf,space=oauth_client
+    info,values,headers=grant(oauth_client)
+    issued=client.post('/oauth/token',data=values).json()
+    grant(oauth_client)  # A second approved request leaves an unexchanged code.
+    backup=tmp_path/'backup';target=tmp_path/'restored'
+    create(settings,backup);restore(backup,target)
+    restored=replace(settings,data_dir=target)
+    with connect(restored.database) as db:
+        assert db.execute('SELECT count(*) FROM oauth_grants').fetchone()[0]==0
+        assert db.execute('SELECT count(*) FROM oauth_codes').fetchone()[0]==0
+        assert db.execute('SELECT count(*) FROM oauth_requests').fetchone()[0]==0
+    with TestClient(create_app('archive',restored),base_url=restored.public_url) as after:
+        assert after.get('/api/v1/agent/spaces',headers={'Authorization':'Bearer '+issued['access_token']}).status_code==401
+
+def test_consent_is_bound_to_login_session(oauth_client):
+    settings,client,csrf,space=oauth_client
+    info=client.post('/oauth/register',json={'redirect_uris':['https://client.test/callback'],'token_endpoint_auth_method':'none'}).json()
+    params={'client_id':info['client_id'],'redirect_uri':info['redirect_uris'][0],'response_type':'code','code_challenge':'x'*43,'code_challenge_method':'S256','resource':settings.public_url+'/api/v1/agent/mcp'}
+    prepared=client.post('/api/v1/oauth/requests',headers=csrf,json=params).json()
+    with TestClient(create_app('archive',settings),base_url=settings.public_url) as other:
+        other_csrf={'X-CSRF-Token':login(other)}
+        assert other.post('/api/v1/oauth/authorize',headers=other_csrf,json={'request_id':prepared['request_id'],'decision':'allow','space_ids':[space]}).status_code==400
+    assert client.post('/api/v1/oauth/authorize',headers=csrf,json={'request_id':prepared['request_id'],'decision':'deny'}).status_code==200

@@ -1,5 +1,17 @@
 # devtest 测试实例
 
+## 当前 rc.14 · 2026-10-21
+
+公网测试入口 [https://8.153.19.221:443/](https://8.153.19.221:443/)，同时保留127.0.0.1:18080；测试账号test/111仍仅私有auth覆盖，已从新auth.py重新生成覆盖，生产密码规则不变。20种输入MIME/OCR可用；Archive0.4.31/85路径/13迁移。正式域名和正式上线由用户延期。
+
+业务镜像`juanzhan:0.1.0-rc.14`，ID `sha256:2d704cbf11bb60b3b0302bd7755c8833f436f72694ee81a99cf819b040f6c59c`，干净源码90a08407815d6b0af39f8ab57f4120b47b3a4c2e，source_dirty=false，私有rc14-manifest.json。Nginx外置配置修正为9694604，实际1.30.6/digest与证书工具见IP-TEST。四个本项目容器健康，其他既有服务保留。无公开镜像/Git标签/Release发布。
+
+升级前rc.13私有备份 `/backups/before-oauth-rc14`，18份引用对象；实际12→13迁移。oauth-before/final.json中的4份档案版本/Revision/ParseRun及19份managed/derived文件哈希一致，integrity=ok、无FK错误，Word未重解析。新13迁移库不能让rc.13直接接管；回退须用rc.13及升级前12迁移备份恢复到新卷。
+
+验收：595项完整后端，新增REST/导入契约/恢复与会话隔离专项；真实OAuth浏览器1项；在线Agent9项；公网Word1440/390只读概览、依据跳转、无数字卡片/溢出/控制台错误通过。外部模型与REST/MCP/stdio、撤销后401见AGENT-INTEROP。TLS证书验证未跳过，未授权401带固定resource_metadata。IP证书续期timer已启用，模拟续期/配置检验/reload成功。
+
+rc.14独立发布演练45.57秒通过：旧8迁移实例实际导入/检索→候选13迁移升级，保持登录/数据→一致备份→新目录/新卷恢复→登录/下载/正文/检索/完整性；uid10001、只读根、cap_drop ALL、CSP通过，随机测试项目/卷退出清理。私有rc14-release-drill.json留证。后续历史记录不能覆盖本段现状。
+
 2026-10-21 rc.10：十份六格式概要实测后修复首章名称误省略。镜像sha256:8fc85cbf73f4ddc356c15d9fccbfabe297a6fe72002fe6a284bcb5e6654705a7，干净源码281b929，私有rc10-manifest.json；新测试在隔离数据库/文件存储执行并清理，原测试卷及test认证覆盖保留。无新依赖/迁移，rc.9保留同卷回退。目标和当前概要前端计算边界见ARCHITECTURE，实测结果见TESTING。
 
 rc.10部署后三服务健康，实际用户Word1440/390只读核对通过，无重解析或版本变化。本轮GitHub HTTPS push多次连接超时，远端main当时仍2e35c82；修复提交281b929及后续文档保存在本地和devtest，不能声称已同步GitHub。后续网络恢复后正常fast-forward推送，勿强推。

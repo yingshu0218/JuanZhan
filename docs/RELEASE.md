@@ -1,6 +1,6 @@
 # 本地候选版本与升级恢复手册
 
-当前候选版本由根目录`VERSION`定义：`0.1.0-rc.2`。这是实施用候选编号，不代表已推送Git标签、GitHub Release或容器仓库，也未替换当前开发实例。发布用Compose为[deploy/compose.yaml](../deploy/compose.yaml)，开发/发布Compose均配置独立私有备份卷。支持范围和已知缺口见STATUS/ACCEPTANCE；性能观察见PERFORMANCE。
+当前候选版本由根目录`VERSION`定义：`0.1.0-rc.14`，已部署devtest/IP HTTPS测试实例；未发布Git标签、GitHub Release或公开容器镜像，正式域名上线按用户决定延期。发布用Compose为[deploy/compose.yaml](../deploy/compose.yaml)，IP测试额外叠加ip-test.yaml及私有认证覆盖。开发/发布Compose均配置独立私有备份卷。当前镜像、12→13业务升级、独立8→13升级/恢复演练和回退约束见DEVTEST，IP证书/续期与卸载见IP-TEST。下文为通用流程与历史演练记录。
 
 ## 构建与追溯
 

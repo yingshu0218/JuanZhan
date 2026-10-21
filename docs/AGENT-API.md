@@ -10,7 +10,7 @@
 
 通用标准库客户端已提供 `juanzhan.agent_rest.Client`，也可从仓库执行 `PYTHONPATH=services python -m juanzhan.agent_rest list_spaces`，参数从stdin读取JSON对象。私有环境变量为 `JUANZHAN_AGENT_URL`（完整 `/api/v1/agent` 地址）与 `JUANZHAN_AGENT_TOKEN`；可选 `JUANZHAN_CA_FILE`，默认系统信任库，不支持关闭TLS验证。不跟随重定向、不读取环境代理，只支持既有七个只读操作；外部Agent自行将自然语言拆为工具参数，客户端不生成答案。`search_documents`/`prepare_analysis`使用JSON POST，其余使用GET。源码导入不依赖FastAPI或模型SDK。
 
-T41 OAuth授权初版与浏览器验收见[OAUTH](OAUTH.md)，尚未部署；下文手动凭据仍可继续使用，不代表自动授权已在线。
+OAuth已随rc.14部署，授权说明见[OAUTH](OAUTH.md)，通用客户端实测见[AGENT-INTEROP](AGENT-INTEROP.md)。手动凭据仍可继续使用；可导入[只读REST OpenAPI](reference/agent-rest-openapi.json)，将服务器设置为实际 origin＋`/api/v1`。
 
 - GET /api/v1/agent/capabilities：工具定义、格式、限制与处理指引。
 - GET /api/v1/agent/spaces：授权空间。
@@ -25,7 +25,7 @@ REST所有POST预算64KiB，工具结果预算512KiB；所有响应no-store/nosn
 
 ## MCP
 
-POST /api/v1/agent/mcp：JSON-RPC 2.0、Streamable HTTP JSON响应、独立请求无协议会话。支持2025-06-18/2025-11-25 initialize兼容，以及2026-07-28 server/discover和每请求元数据；不提供旧HTTP+SSE、服务器采样、任意URL/SQL/文件路径工具。GET/DELETE返回405。仅接受手工配置的agent Bearer凭据，不宣称OAuth自动授权支持。
+POST /api/v1/agent/mcp：JSON-RPC 2.0、Streamable HTTP JSON响应、独立请求无协议会话。支持2025-06-18/2025-11-25 initialize兼容，以及2026-07-28 server/discover和每请求元数据；不提供旧HTTP+SSE、服务器采样、任意URL/SQL/文件路径工具。GET/DELETE返回405。接受手动或OAuth签发的空间授权Agent Bearer凭据，发现/PKCE与限制见OAUTH。
 
 Origin存在时须匹配当前HTTP源。Accept须含application/json与text/event-stream，Content-Type须application/json。现代请求验证MCP-Protocol-Version/Mcp-Method/Mcp-Name与params._meta镜像，未知版本和镜像不一致按协议拒绝；旧initialize允许无版本头，后续必须声明支持版本。所有协议方法和工具每次重新鉴权，凭据撤销不依赖会话结束。
 

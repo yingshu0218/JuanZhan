@@ -41,3 +41,16 @@ def test_oauth_extension_paths_and_root_server_overrides():
         assert 'oauth-openapi.json#/paths/'+path.replace('~','~0').replace('/','~1') in main
         for method in item:
             if method!='servers':assert method in runtime[path]
+
+def test_rest_import_profile_is_scoped_and_contains_no_management_writes():
+    import runpy
+    generator=runpy.run_path(str(ROOT/'scripts/export_agent_rest_openapi.py'))
+    schema=json.loads((ROOT/'docs/reference/agent-rest-openapi.json').read_text())
+    assert schema==generator['profile']();check_refs(schema,schema)
+    assert len(schema['paths'])==7
+    for path,item in schema['paths'].items():
+        assert path.startswith('/agent/') and path!='/agent/mcp'
+        for method,operation in item.items():
+            assert method in ('get','post')
+            if method=='post':assert path in ('/agent/search','/agent/analysis-context')
+            assert operation['security']==[{'agentBearer':[]}]
