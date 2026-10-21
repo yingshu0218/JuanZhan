@@ -788,3 +788,11 @@ T38最终完整回归：586 passed、3既有框架警告、无跳过，500.83s�
 rc.14真实镜像/部署验收已完成：独立新安装→8到13迁移升级→备份/新卷恢复→登录/下载/正文/检索/完整性/CSP，45.57秒通过，私有rc14-release-drill.json；业务实例12→13，4档案/19文件哈希与版本不变。在线Agent9项、实际Word1440/390只读概览通过；公网HTTPS证书校验、401挑战、OAuth签发、Mac REST/MCP HTTP/stdio与撤销后双401通过。真实外部模型读取固定ParseRun全部75块并生成5点带引用概括，私有留证见AGENT-INTEROP；用户Word未重解析，正文不提交Git。
 
 运维验证：18443外部超时而本机TLS正常，切换空闲443后外部健康200及登录/阅读通过；未改云安全组。Nginx首轮只读根下默认fastcgi目录不可写，修正所有temp目录到16MiB tmpfs后健康；Certbot dry-run含deploy-hook/nginx -t/reload成功，timer active。日志见IP-TEST/LOCAL-DEVELOPMENT，未跳过TLS验证。
+
+## T43～T47 源文件管理候选（未部署）
+
+完整后端source-full-backend-final.log：615项/463.36秒通过，无跳过，包含真实Office/ODF/RTF样本。额外契约2项、读取PDF备份恢复2项、确认业务来源保护1项通过。首轮588通过/6失败/20跳过中，1项旧离线预期已更新，5项实际人工匹配错误已修复为新条目读取live原件；修复专项9项通过。不能将首轮当全通过，也不能把各专项重复计数加成新的完整套件总数。
+
+浏览器：更新后的reading整组8项通过；概览/原生XLSX/存储清理2项通过；PDF与原件阅读9项通过；附件流最终调整后当前/历史中文名及精确下载字节2项通过。主界面首轮12通过/1项旧“业务字段”标题断言失败，改为概览不显示该标题后单项复验1项通过；字段管理和整理仍通过真实HTTP及业务值断言验证。中文下载名异常由非UTF8测试浏览器环境独立复现，固定测试launch locale后保持原文件名断言，不放宽为任意名称。日志以source-*.log留在devtest私有.local。
+
+成品候选fbf1aaa：业务与独立renderer均clean source；11项关键接口回归通过，真实只读source_snapshot_drill的相同大小/mtime变化、新旧两版失联可读、人工说明与未变不增版通过。独立发布演练53.71秒实际8→15迁移及一致备份/新卷恢复通过，记录test-instance/rc15-release-drill.json。前端附件流调整尚需重建，不以旧候选代替最终部署镜像。完整交付门槛见BATCH-SOURCE-FILES，当前业务仍rc.14。

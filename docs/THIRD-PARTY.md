@@ -57,3 +57,9 @@ T20新增的解析依赖均为纯Python，不引入浏览器、LibreOffice、Jav
 ## T24 · OpenCC归一字典
 
 [opencc-python-reimplemented](https://github.com/yichen0831/opencc-python) 0.1.7：Apache-2.0，以实际wheel内LICENSE.txt为准，完整副本保存在licenses/opencc/LICENSE.txt，镜像保留dist-info许可。其词典只用于繁简转换；中文检索使用本仓库Han单/双字算法，不依赖语义分词词库。wheel SHA-256锁定于uv.lock/requirements.lock，25份.txt/.json字典/配置按相对路径排序、路径+NUL+字节+NUL计算SHA-256：4ffd2aa3019bda697f811e0d7e27604e30c9f30b31204af1b89622f7cd818179，运行首次使用验证。regex沿用既有锁定依赖；无外部下载服务。
+
+## 独立原生阅读镜像（rc.15候选）
+
+本批新增Office原生阅读依赖只进入独立juanzhan-office镜像，不安装本机/服务器系统，不替换Archive/Converter解析器。Debian trixie及security来源187包、207581860字节下载，精确文件名/上游URL/大小/SHA256见office-preview-tools.lock.json；LibreOffice固定25.2.3-2+deb13u8，包含Writer/Calc/Impress及字体，不含Java。版本与来源按锁校验，构建network=none；镜像保留完整dpkg清单/app/office-system-packages.tsv和Debian /usr/share/doc各包copyright。对成品rc.15实测187个新增包的copyright全部存在。
+
+这些依赖包括LibreOffice及其原生库、字体等，各自许可证以固定Debian包的copyright为准，不能统一宣称为项目许可证。当前镜像仅在授权devtest自建运行，未向外发布；若将镜像再分发，必须连同对应版本的许可证和适用的对应源码义务检查发行内容，不能只提供本项目源码替代第三方源码。本项目Python/前端包仍按既有锁和许可记录，不新增模型、向量库或外部文件上传服务。构建缓存与卸载边界见LOCAL-DEVELOPMENT。

@@ -48,7 +48,7 @@ test("real login, first space, upload, duplicate decision, details, responsive a
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "业务字段", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   const list = await api(page, "/documents");
   const id = list.data.items[0].id;
   const spaceId = list.data.items[0].space_id;
@@ -75,22 +75,17 @@ test("real login, first space, upload, duplicate decision, details, responsive a
     .getByRole("button")
     .filter({ hasText: "系统设计方案.txt" })
     .click();
-  await expect(
-    page.getByRole("term").filter({ hasText: "合同金额" }),
-  ).toBeVisible();
-  await expect(page.getByText("2.0000", { exact: true })).toBeVisible();
+  expect((await api(page, '/documents/'+id+'/metadata')).data.find(value=>value.key==='amount').value).toBe('2.0000');
+  await expect(page.locator('.business-fields')).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "档案属性" })).toBeVisible();
   await expect(page.getByRole("button", { name: "网格视图" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await page.screenshot({ path: "/tmp/juanzhan-desktop.png", fullPage: true });
-  await page.getByRole("button", { name: "关联原文件", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "关联原文件" })).toBeVisible();
-  await expect(
-    page.getByText("暂无可用缩略图", { exact: false }),
-  ).toBeVisible();
-  await expect(page.getByRole("dialog")).toContainText("text/plain");
+  await page.locator(".inspector").getByRole("button", { name: "查看源文件", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "源文件" })).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'源文件'}).locator('pre')).toContainText('真实的系统设计原件');
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByRole("button", { name: "列表视图" }).click();

@@ -40,10 +40,10 @@ test('field and type templates use real APIs, preserve decimal precision and enf
   current=(await api(page,root)).data;expect((await api(page,root+'/triage','POST',{expected_document_version:current.document_version,triage_status:'filed'})).status).toBe(200);
   await page.reload();await page.getByLabel('当前空间').selectOption(space);
   await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:'模板验证.txt'}).click();
-  const values=page.locator('.business-fields dl > div');await expect(values).toHaveCount(3);
-  await expect(values.nth(0).locator('dt')).toContainText('简述');await expect(values.nth(0).locator('dd')).toHaveText('未填写');
-  await expect(values.nth(1).locator('dt')).toContainText('金额');await expect(values.nth(1).locator('dt')).toContainText('归档必填');await expect(values.nth(1).locator('dd')).toHaveText('10.0001');
-  await expect(values.nth(2).locator('dd')).toHaveText('否');
+  await expect(page.locator('.business-fields')).toHaveCount(0);
+  const metadata=(await api(page,root+'/metadata')).data;
+  expect(metadata.find(value=>value.key==='amount').value).toBe('10.0001');
+  expect(metadata.find(value=>value.key==='checked').value).toBe(false);
   const settings=await manager(page);await settings.getByRole('button',{name:'文档类型与模板',exact:true}).click();
   await settings.getByRole('button',{name:'编辑合同资料',exact:true}).click();
   await page.screenshot({path:'/tmp/juanzhan-catalog-template-desktop.png'});
@@ -92,6 +92,6 @@ test('editing a label never rounds existing int64 constraints',async({page})=>{
   const metadata=await page.request.patch('/api/v1'+root+'/metadata',{headers:{'Content-Type':'application/json','X-CSRF-Token':(await api(page,'/auth/session')).data.csrf_token},data:`{"expected_document_version":${current.document_version},"values":{"large":9223372036854775807},"confirm":true}`});expect(metadata.status()).toBe(200);
   await page.reload();await page.getByLabel('当前空间').selectOption(space);
   await page.getByRole('region',{name:'档案列表',exact:true}).getByRole('button').filter({hasText:'精确整数.txt'}).click();
-  await expect(page.locator('.business-fields')).toContainText('超出浏览器安全整数范围，请通过API查看精确值');
+  await expect(page.locator('.business-fields')).toHaveCount(0);
   expect(await (await page.request.get('/api/v1'+root+'/metadata')).text()).toContain('"value":9223372036854775807');
 });

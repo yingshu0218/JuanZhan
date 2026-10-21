@@ -29,3 +29,11 @@
 人工匹配修复后专项9项/7.12秒通过（source-match-regression.log），覆盖重新关联、相同哈希不合并、源字节变化、审计回滚和lease失效。已启动携带两套锁定真实样本环境的完整回归（source-full-backend-final.log；专用容器juanzhan-source-backend-tests），等待结果后再判定完整后端验收。
 
 完整后端复验已终态全部通过：source-full-backend-final.log为615项/463.36秒，无跳过（含两套固定实物样本、源匹配修复与原生预览）。后加契约2项/1.16秒通过，阅读PDF备份恢复2项/8.13秒通过。真实独立只读bind/HTTP/worker/Converter演练source-snapshot-real-drill.log确认同大小同mtime变化新版本、未变不增版、原路径删除后两版本仍可读、人工说明保留；临时容器/卷/网络均按确切随机名称退出清理。候选版本设为rc.15，构建脚本将输出业务和独立renderer两个镜像的源码/dirty/ID，仍未构建或部署本候选。
+
+候选fbf1aaa的两个成品镜像构建成功且source_dirty=false（rc15-manifest.json）；独立发布演练rc15-release-drill.json在53.71秒通过实际8→15迁移、登录/原件/检索保持、一致备份、新目录/卷恢复及完整性/FK检查。成品业务+renderer、无开发服务代码挂载的11项关键接口测试通过（source-rc15-image-tests.log，20.27秒）；成品业务镜像的真实来源版本演练同样通过（source-rc15-snapshot-drill.log）。尚未部署。
+
+PDF/原件浏览器按新直接阅读/版本选择交互更新。前两轮7通过2失败均为中文下载文件名；独立探针证明英文blob文件名正常、中文blob也变为download，API响应200/正确RFC5987/实际PDF字节无误，根因为测试浏览器继承非UTF8环境。launchOptions显式UTF8后9项/42.3秒全部通过（source-files-pdf-utf8.log），保留中文文件名/精确字节断言。下载入口同时改为版本固定的鉴权附件流，避免浏览器整文件Blob副本；这项前端变更需新提交并重建候选后才能部署，不把旧镜像当成已含变更。已补确认业务字段来源保护专项1项/5.96秒通过；首轮测试因重新生成DOCX的ZIP时间戳不同而失败，改为比较最初上传字节。主界面/字段管理/整理回归继续进行。
+
+原生阅读成品镜像已实查187个新增Debian包copyright全部保留；版本/许可/自建运行与未来再分发边界写入THIRD-PARTY。确认业务来源保护专项实际通过1项（source-business-provenance.log），新成功概要已来自新Revision时，旧Revision仍因人工确认字段来源而拒绝删除；原上传字节可下载。第一轮主界面测试发现一处旧“业务字段”标题可见预期，按概览专用界面改为不可见，字段值仍由API及实际整理操作验证，不恢复用户要求移除的主视图内容。
+
+主界面回归首轮12通过/1旧标题断言失败，修正后单项1通过/6.1秒（source-main-entry-final.log），字段管理/精度/七类型设置清空撤销/并发保护/拖放/回收流程均保留验证，不将12+1伪写为同一轮13通过。下载最终由服务端鉴权成功的Content-Disposition决定，客户端不强制download属性，不把错误JSON强制保存成原件；当前与历史中文名/精确字节2项/15.3秒通过（source-direct-download-final.log）。这些前端/测试补充将单独提交，再重建rc.15候选。

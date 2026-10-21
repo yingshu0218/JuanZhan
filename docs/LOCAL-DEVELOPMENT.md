@@ -194,3 +194,5 @@ IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0
 本轮`.local/legacy-*.log`、`.local/agent-full-reports/legacy-full.xml`、中间legacy-work归档和私有TMPDIR的juanzhan-legacy-*.png可在无需复查后按明确名称清理。固定blob测试数据`.local/juanzhan-extra-format-fixtures`现为13份/463988字节（约453KiB），来源/哈希见reference/extra-format-fixture-sources.json；不进入运行镜像。测试镜像juanzhan:legacy-dev无容器引用后可清理，禁止全局prune。业务卷、私有认证文件、备份和原件不在缓存清理范围。
 
 本批真实来源版本演练脚本scripts/source_snapshot_drill.py只创建随机juanzhan-source-drill-*容器/卷/网络及合成临时目录，退出按名称回收；不访问业务卷或凭据。源目录对容器只读，宿主只改合成测试文件，验证相同大小/mtime变化、幂等扫描、历史版本离线读取与人工说明保护。source-snapshot-real-drill.log为成功证据，可复核后清理。source-full-backend-final.log最终615通过/无跳过，source-contract.log额外2项通过，source-reading-backup.log额外2项通过。新代码已分后端/前端提交，尚未推送/部署；发布脚本将另建rc.15业务与原生阅读两个镜像，均带源码追溯标签。
+
+PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下载名统一退为download，独立英文/中文Blob探针复现；仅测试浏览器launchOptions设置LANG/LC_ALL=C.UTF-8，未安装/修改主机locale。source-files-pdf-utf8.log最终9项通过，保留中文名和原件字节断言。source-download-{diagnostic,probe}.log仅含合成测试正文/文件名，可复核后清理。rc15初次双镜像ID及干净来源见test-instance/rc15-manifest.json，恢复演练见rc15-release-drill.json，后续前端附件流调整需重建，不在此时切换业务实例。

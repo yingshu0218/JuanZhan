@@ -139,3 +139,31 @@ def test_historical_cleanup_protects_successful_overview_and_active_tasks(pipeli
     body={'expected_document_version':other_doc['document_version'],'revision_id':busy_revision,'confirm_revision_id':busy_revision,'request_id':'protected-active-job'}
     rejected=client.request('DELETE',other_path+'/revisions/'+busy_revision,headers=headers,json=body)
     assert rejected.status_code==409 and rejected.json()['error']['code']=='REVISION_BUSY'
+
+
+def test_historical_cleanup_preserves_confirmed_field_provenance_after_new_parse(pipeline):
+    from format_samples import docx
+    from test_metadata import field
+    settings,client,headers,space=pipeline
+    original=docx();saved=upload(pipeline,original,'provenance.docx');document=saved['document_id'];path='/api/v1/documents/'+document
+    field_id=field(client,headers,space,'retained_title','text')
+    assert Worker(settings).run_once()['status']=='completed'
+    old=client.get(path).json()['current_revision_id']
+    candidate=next(item for item in client.get(path+'/candidates').json()['items'] if item['key']=='title')
+    adopted=client.post(path+'/metadata/adopt-candidate',headers=headers,json={'expected_document_version':1,'extracted_metadata_id':candidate['id'],'field_definition_id':field_id})
+    assert adopted.status_code==200,adopted.text
+    new=append(settings,document,b'new overview without replacing confirmed provenance')
+    current=client.get(path).json()
+    receipt=client.post(path+'/reprocess',headers=headers,json={'expected_document_version':current['document_version'],'expected_revision_id':new,'request_id':'new-provenance-version','force':True})
+    assert receipt.status_code==202,receipt.text
+    for _ in range(4):
+        Worker(settings).run_once()
+        if client.get('/api/v1/jobs/'+receipt.json()['job_id']).json()['status']=='completed':break
+    current=client.get(path).json()
+    assert current['current_parse_run_id']!=candidate['parse_run_id']
+    payload={'expected_document_version':current['document_version'],'revision_id':old,'confirm_revision_id':old,'request_id':'protect-business-provenance'}
+    rejected=client.request('DELETE',path+'/revisions/'+old,headers=headers,json=payload)
+    assert rejected.status_code==409 and rejected.json()['error']['code']=='BUSINESS_PROVENANCE_PROTECTED'
+    confirmed=client.get(path+'/metadata').json()[0]
+    assert confirmed['source_parse_run_id']==candidate['parse_run_id'] and confirmed['is_confirmed']
+    assert client.get(path+'/download',params={'revision_id':old}).content==original

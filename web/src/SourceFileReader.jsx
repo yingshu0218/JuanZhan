@@ -101,11 +101,12 @@ export function SourceFileReader({api,doc,revisions=[],onClose,onRefresh}){
       setJob({id:result.job_id,kind,revision:selected.id});setConfirmed(false);
     }catch(e){setError(message(e));}finally{setBusy(false);}
   }
-  async function download(){
-    if(selected.size_bytes>MAX){window.open(fileUrl(doc.id,selected.id),'_blank','noopener,noreferrer');return;}
-    setBusy(true);setError('');
-    try{const bytes=await readBytes(fileUrl(doc.id,selected.id),undefined);const url=URL.createObjectURL(new Blob([bytes]));const link=document.createElement('a');link.href=url;link.download=selected.original_filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-    catch(e){setError(e instanceof ApiError?message(e):'原件超出浏览器下载范围，请使用已鉴权下载API。');}finally{setBusy(false);}
+  function download(){
+    const link=document.createElement('a');
+    // Only a successful server attachment response starts a file download.
+    link.href=fileUrl(doc.id,selected.id);
+    link.target='_blank';link.rel='noopener noreferrer';link.hidden=true;
+    document.body.append(link);link.click();link.remove();
   }
   const direct=selected && (nativeText(selected.mime_type)||['image/png','image/jpeg'].includes(selected.mime_type));
   const nativePDF=selected?.mime_type==='application/pdf';

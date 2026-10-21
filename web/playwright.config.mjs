@@ -13,6 +13,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:8767",
     viewport: { width: 1440, height: 1000 },
     launchOptions: {
+      env: { ...process.env, LANG: "C.UTF-8", LC_ALL: "C.UTF-8" },
       ...(process.env.JUANZHAN_CHROMIUM_PATH
         ? { executablePath: process.env.JUANZHAN_CHROMIUM_PATH }
         : {}),
