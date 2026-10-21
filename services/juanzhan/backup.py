@@ -162,6 +162,7 @@ def restore(bundle, destination):
         with queue.write() as db:
             # Restored sessions/tokens and worker leases must never resume as live identities.
             db.execute('DELETE FROM auth_sessions');db.execute('DELETE FROM auth_api_tokens');db.execute('DELETE FROM agent_tokens')
+            db.execute('DELETE FROM oauth_requests');db.execute('DELETE FROM oauth_codes')
             db.execute('DELETE FROM worker_heartbeats')
             # A recovery is a separate instance: never resume copied backup plans
             # or operations against an unrelated backup storage volume.

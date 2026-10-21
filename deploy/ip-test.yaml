@@ -1,0 +1,26 @@
+# Optional devtest-only HTTPS gateway. Keep the base loopback HTTP listener.
+services:
+  archive:
+    command: [python, -m, uvicorn, juanzhan.archive:app, --host, 0.0.0.0, --port, "8000", --proxy-headers, --forwarded-allow-ips, "${JUANZHAN_PROXY_CIDR:?Set the actual isolated Compose subnet}"]
+  ip-gateway:
+    image: ${JUANZHAN_GATEWAY_IMAGE:?Set a verified nginx immutable digest}
+    entrypoint: [nginx, -g, "daemon off;"]
+    user: "101:101"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.5
+    ports: ["0.0.0.0:${JUANZHAN_TLS_PORT:-18443}:8443"]
+    volumes:
+      - ./ip-test-nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${JUANZHAN_TLS_DIRECTORY:?Set private serving certificate directory}:/tls:ro
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    depends_on:
+      archive: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, nginx, -t]
+      interval: 30s
+      timeout: 3s
+      retries: 3

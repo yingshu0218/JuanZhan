@@ -1,5 +1,7 @@
 # 数据库设计
 
+T41开发中：新增[0013_oauth.sql](../services/migrations/0013_oauth.sql)，授权族关联既有只读Agent凭据，新增客户端、会话请求、哈希授权码、刷新轮换重用记录及公共端点速率表。令牌与客户端删除级联撤销；不改档案、人工业务字段与解析结果。此前12条迁移不变，当前devtest尚未应用0013。
+
 2026-10-21新增[0012_agent_access.sql](../services/migrations/0012_agent_access.sql)，共12条不可变迁移：agent_tokens保存随机凭据的SHA-256、名称、有效期及分钟请求计数；agent_token_spaces通过外键关联Token与授权空间，删除时级联清除授权。不存明文凭据，不改Document/Revision/ParseRun/人工字段。密码重置及备份恢复撤销全部Agent凭据。概要按需从已有成功正文生成，不新增概要副本表。原11条迁移不变。
 
 2026-10-19：新增不可变迁移0009_source_schedules.sql，当前9条迁移。source_scan_schedules以source_id为外键主键，保存配置version、next_due_at Unix秒/null和last_job_id外键/null；到期索引支持有界调度。来源插入及间隔更新触发器维护期限/版本，旧正间隔保留并初始化；原有8条迁移未改。API暴露UTC时间，更新计划与调度均在SQLite事务中完成。详见ADR-052。

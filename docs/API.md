@@ -1,5 +1,7 @@
 # API 契约与接入
 
+T41开发中：Archive契约0.4.31/85路径，新增[OAuth扩展](reference/oauth-openapi.json)，公开发行者发现、动态注册、授权码PKCE/刷新/撤销与Cookie同意授权。扩展路径以根服务器 `/` 覆盖主契约 `/api/v1`，避免公开OAuth路径错误嵌套。源码与迁移0013尚未部署，运行基线仍为rc.13；协议及预算见[OAUTH](OAUTH.md)。
+
 T38开发：Converter0.4.5/六路径，能力新增DOC/XLS/PPT/RTF，共20种MIME；Archive仍0.4.30/74路径、12迁移，来源扩展名同步增加四类。ParseResult1.0结构不变；旧格式布局/定位、XLS源浮点/公式缓存及Unicode处理警告见CONVERTER。实际部署版本以DEVTEST为准，不因能力源码增加而假称旧镜像已支持。
 
 2026-10-21本批：Converter能力契约0.4.4，新增XLSX/PPTX/ODT/ODS/ODP/CSV/TSV；ParseResult1.0、现有块和section定位结构不变，Archive仍0.4.30/74路径、12迁移。上传根据有界ZIP内容识别Office包，CSV/TSV仅对可解码文本接受扩展名语义提示；来源候选扩展名同步增加七类，真实解析结果仍由Converter决定。Agent get_formats与Converter声明同步。上批部署基线仍见DEVTEST。

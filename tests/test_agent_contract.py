@@ -30,3 +30,14 @@ def test_every_agent_tool_schema_is_closed_and_read_only():
         check_refs(tool['inputSchema'],tool['inputSchema'])
         assert tool['inputSchema']['additionalProperties'] is False
         assert tool['annotations']=={'readOnlyHint':True,'destructiveHint':False,'idempotentHint':True,'openWorldHint':False}
+
+def test_oauth_extension_paths_and_root_server_overrides():
+    schema=json.loads((ROOT/'docs/reference/oauth-openapi.json').read_text());check_refs(schema,schema)
+    runtime=create_app('archive').openapi()['paths']
+    main=(ROOT/'docs/reference/archive-openapi-v0.4.yaml').read_text()
+    for path,item in schema['paths'].items():
+        assert path in runtime
+        assert item['servers']==[{'url':'/'}]
+        assert 'oauth-openapi.json#/paths/'+path.replace('~','~0').replace('/','~1') in main
+        for method in item:
+            if method!='servers':assert method in runtime[path]

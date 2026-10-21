@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from starlette.exceptions import HTTPException
 
-from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata, web, source_api, maintenance, content
+from . import auth, catalog, jobs, uploads, document_api, batches, fields, metadata, web, source_api, maintenance, content, oauth
 
 from .config import Settings
 from .database import connect, migrate
@@ -64,6 +64,10 @@ def create_app(kind, settings=None, *, converter_config=None):
     app = FastAPI(title="JuanZhan " + kind, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
 
+    @app.exception_handler(oauth.OAuthError)
+    async def oauth_error(request, exc):
+        return oauth.response_error(exc)
+
     @app.exception_handler(HTTPException)
     async def http_error(request, exc):
         if isinstance(exc.detail, dict):
@@ -96,11 +100,19 @@ def create_app(kind, settings=None, *, converter_config=None):
             public_web = request.method in ('GET','HEAD') and (request.url.path in ('/','/favicon.svg') or request.url.path.startswith('/assets/'))
             public = public_web or (request.method, request.url.path) in {
                 ('GET', '/api/v1/auth/session'), ('POST', '/api/v1/auth/login')}
+            public = public or (request.method in ('GET','HEAD') and request.url.path == '/oauth/authorize') or (request.method,request.url.path) in {
+                ('GET','/.well-known/oauth-authorization-server'),
+                ('GET','/.well-known/oauth-protected-resource'),
+                ('GET','/.well-known/oauth-protected-resource/api/v1/agent/mcp'),
+                ('POST','/oauth/register'),('POST','/oauth/token'),('POST','/oauth/revoke')}
             if not public:
                 try:
                     request.state.auth_mode = await run_in_threadpool(auth.authorize, settings, request)
                 except HTTPException as exc:
-                    return error(exc.status_code, exc.detail['code'], exc.detail['message'])
+                    response = error(exc.status_code, exc.detail['code'], exc.detail['message'])
+                    if exc.status_code == 401 and request.url.path.startswith('/api/v1/agent/'):
+                        response.headers['WWW-Authenticate']=oauth.challenge(settings)
+                    return response
         response = await call_next(request)
         if kind=='archive' and request.url.path.startswith('/assets/') and request.url.path.endswith(('.js','.mjs')):
             response.headers['Content-Security-Policy']=web.WORKER_CSP
@@ -135,6 +147,7 @@ def create_app(kind, settings=None, *, converter_config=None):
 
     if kind == "archive":
         web.install(app)
+        app.include_router(oauth.router(settings))
         from . import agent_access, agent_api, agent_mcp
         app.include_router(agent_access.router(settings))
         app.include_router(agent_api.router(settings))

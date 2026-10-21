@@ -8,6 +8,10 @@
 
 ## REST
 
+通用标准库客户端已提供 `juanzhan.agent_rest.Client`，也可从仓库执行 `PYTHONPATH=services python -m juanzhan.agent_rest list_spaces`，参数从stdin读取JSON对象。私有环境变量为 `JUANZHAN_AGENT_URL`（完整 `/api/v1/agent` 地址）与 `JUANZHAN_AGENT_TOKEN`；可选 `JUANZHAN_CA_FILE`，默认系统信任库，不支持关闭TLS验证。不跟随重定向、不读取环境代理，只支持既有七个只读操作；外部Agent自行将自然语言拆为工具参数，客户端不生成答案。`search_documents`/`prepare_analysis`使用JSON POST，其余使用GET。源码导入不依赖FastAPI或模型SDK。
+
+T41 OAuth授权初版与浏览器验收见[OAUTH](OAUTH.md)，尚未部署；下文手动凭据仍可继续使用，不代表自动授权已在线。
+
 - GET /api/v1/agent/capabilities：工具定义、格式、限制与处理指引。
 - GET /api/v1/agent/spaces：授权空间。
 - GET /api/v1/agent/catalog?space_id=：可用目录/标签/文档类型/字段定义，供agent把自然语言映射到结构化条件。

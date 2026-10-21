@@ -167,6 +167,12 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 
 XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新增依赖/系统办公套件。测试仅在devtest隔离容器与临时HTTP服务执行。专用产物包括`.local/office-*.log`、`.local/agent-full-reports/office-full.xml`、`.local/juanzhan-office-*-work.tar.gz`、私有TMPDIR下的`juanzhan-office-*.png`；无需复查后可按明确名称清理，不删除业务卷/备份或共享浏览器缓存。固定版本Office夹具沿用上批约112KB测试数据。
 
+## 2026-10-21 OAuth与通用REST客户端开发
+
+业务运行复用既有Python/FastAPI/Pydantic/SQLite/React与Playwright，无新运行包、模型或数据库服务。迁移0013与OAuth/REST客户端源码属于产品文件，须保留。服务器`.local/oauth-build.log`、`.local/oauth-full.log`、`.local/agent-full-reports/oauth-full.xml`、`.local/juanzhan-oauth-*.tar.gz`及两端`/tmp/juanzhan-oauth-*.png`为可复查后按名称清理的开发产物；临时OAuth浏览器库由TemporaryDirectory退出清理，未挂生产卷。测试实例原件、卷、备份和私有认证文件继续保留。
+
+IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0及18个锁定依赖约23MiB；精确版本/所有分发哈希见`deploy/certbot.in`与`deploy/certbot.lock`，不进入Archive镜像、不安装本机/全局Python。TLS校验使用独占空闲80端口的standalone服务；开发80端口连通探测仅收到本次404请求后已关闭。测试证书私有目录`test-instance/tls-staging`可在无续期用途后清理；正式证书/ACME账户/私钥目录`test-instance/tls`须保留到HTTPS停用，不提交Git。运维工具Apache-2.0，间接包许可以各固定分发元数据为准；不捆绑分发这些工具。工具及证书配置的卸载需先停用续期与HTTPS入口，不能按普通缓存删除。
+
 ## 2026-10-21 旧Office/RTF依赖与清理
 
 仅devtest项目venv新增olefile0.47/xlrd2.0.2/striprtf0.0.33，wheel总219566字节；容器新增catdoc1:0.95-6（.deb86248字节，安装字符表约608KiB）及约183KiB对应源码/通知。无本机新依赖、无服务器全局pip/系统包安装，无LibreOffice/Java。uv固定现有依赖，只新增三个包；工具沿用项目.local/tools/bin/uv0.12.3。

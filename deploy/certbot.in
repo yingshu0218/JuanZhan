@@ -1,0 +1,2 @@
+# Optional IP TLS operations tool; isolated from Archive runtime dependencies.
+certbot==5.4.0

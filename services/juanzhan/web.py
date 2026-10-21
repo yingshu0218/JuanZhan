@@ -14,10 +14,11 @@ def install(app):
     routes=APIRouter()
 
     @routes.api_route('/',methods=['GET','HEAD'])
+    @routes.api_route('/oauth/authorize',methods=['GET','HEAD'])
     def index():
         if not (WEB_ROOT/'index.html').is_file():
             return JSONResponse({'error':{'code':'WEB_NOT_BUILT','message':'Web client is not built'}},status_code=503)
-        return FileResponse(WEB_ROOT/'index.html',headers={'Cache-Control':'no-store','Content-Security-Policy':CSP,'X-Content-Type-Options':'nosniff'})
+        return FileResponse(WEB_ROOT/'index.html',headers={'Cache-Control':'no-store','Content-Security-Policy':CSP,'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'})
 
     @routes.api_route('/favicon.svg',methods=['GET','HEAD'])
     def favicon():

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.30
+  version: 0.4.31
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,28 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /.well-known/oauth-authorization-server:
+    $ref: "./oauth-openapi.json#/paths/~1.well-known~1oauth-authorization-server"
+  /.well-known/oauth-protected-resource:
+    $ref: "./oauth-openapi.json#/paths/~1.well-known~1oauth-protected-resource"
+  /.well-known/oauth-protected-resource/api/v1/agent/mcp:
+    $ref: "./oauth-openapi.json#/paths/~1.well-known~1oauth-protected-resource~1api~1v1~1agent~1mcp"
+  /oauth/register:
+    $ref: "./oauth-openapi.json#/paths/~1oauth~1register"
+  /oauth/token:
+    $ref: "./oauth-openapi.json#/paths/~1oauth~1token"
+  /oauth/revoke:
+    $ref: "./oauth-openapi.json#/paths/~1oauth~1revoke"
+  /oauth/requests:
+    $ref: "./oauth-openapi.json#/paths/~1api~1v1~1oauth~1requests"
+  /oauth/authorize:
+    $ref: "./oauth-openapi.json#/paths/~1api~1v1~1oauth~1authorize"
+  /oauth/clients:
+    $ref: "./oauth-openapi.json#/paths/~1api~1v1~1oauth~1clients"
+  /oauth/clients/{id}:
+    $ref: "./oauth-openapi.json#/paths/~1api~1v1~1oauth~1clients~1{id}"
+  /oauth/authorize:
+    $ref: "./oauth-openapi.json#/paths/~1oauth~1authorize"
   /agent-tokens:
     $ref: "./agent-openapi.json#/paths/~1agent-tokens"
   /agent-tokens/{id}:

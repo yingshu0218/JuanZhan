@@ -47,6 +47,8 @@ def set_password(settings, password):
         db.execute('DELETE FROM auth_sessions')
         db.execute('DELETE FROM auth_api_tokens')
         db.execute('DELETE FROM agent_tokens')
+        db.execute('DELETE FROM oauth_requests')
+        db.execute('DELETE FROM oauth_codes')
         db.execute('DELETE FROM auth_login_throttle')
         db.commit()
 

@@ -20,8 +20,10 @@ def authorize_agent(settings,request,token):
     now=int(time.time())
     with connect(settings.database) as db:
         db.execute('BEGIN IMMEDIATE')
-        row=db.execute('SELECT id,rate_window,rate_count FROM agent_tokens WHERE token_hash=? AND expires_at>?',
-                       (digest(token),now)).fetchone()
+        from .oauth import resource
+        row=db.execute('SELECT t.id,t.rate_window,t.rate_count FROM agent_tokens t LEFT JOIN oauth_grants g ON g.token_id=t.id '
+                       'WHERE t.token_hash=? AND t.expires_at>? AND (g.id IS NULL OR (g.access_expires_at>? AND g.resource=?))',
+                       (digest(token),now,now,resource(settings))).fetchone()
         if row is None:fail(401,'UNAUTHORIZED','Valid authentication required')
         if not request.url.path.startswith(PREFIX):fail(403,'AGENT_READ_ONLY','Agent credentials only access the read-only agent API')
         window=now//60;count=row[2] if row[1]==window else 0

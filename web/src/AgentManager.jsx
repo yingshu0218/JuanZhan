@@ -4,10 +4,17 @@ import { message } from './api.js';
 
 export function AgentManager({ api, spaces, onClose }) {
   const [items,setItems]=useState([]),[selected,setSelected]=useState([]),[name,setName]=useState(''),[days,setDays]=useState(7);
+  const [clients,setClients]=useState([]);
   const [secret,setSecret]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const endpoint=location.origin+'/api/v1/agent/mcp';
   async function reload() { const data=await api.request('/agent-tokens');setItems(data); }
   useEffect(()=>{let active=true;api.request('/agent-tokens').then(data=>{if(active)setItems(data);}).catch(e=>{if(active)setError(message(e));}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[api]);
+  useEffect(()=>{let active=true;api.request('/oauth/clients').then(data=>{if(active)setClients(data);}).catch(e=>{if(active)setError(message(e));});return()=>{active=false;};},[api]);
+  async function removeClient(id) {
+    setBusy(true);setError('');
+    try { await api.request('/oauth/clients/'+id,{method:'DELETE'});setClients(values=>values.filter(item=>item.id!==id));await reload(); }
+    catch(e){setError(message(e));}finally{setBusy(false);}
+  }
   async function create(event) {
     event.preventDefault();setBusy(true);setError('');setSecret(null);
     try { const data=await api.request('/agent-tokens',{method:'POST',body:{name,space_ids:selected,expires_in_days:Number(days)}});setSecret(data);setName('');await reload(); }
@@ -22,6 +29,7 @@ export function AgentManager({ api, spaces, onClose }) {
     <InfoTip>Agent只能读取勾选空间中的档案、概要和正文，不能修改或删除。模型由外部agent提供。凭据仅显示一次，请保存在agent的私有配置中；关闭窗口后不会保留明文。</InfoTip>
     <label>MCP 地址<input readOnly value={endpoint} onFocus={event=>event.target.select()} /></label>
     <label>REST 地址<input readOnly value={location.origin+'/api/v1/agent'} onFocus={event=>event.target.select()} /></label>
+    {clients.length>0 && <section><h3>OAuth 客户端</h3><InfoTip>删除客户端会撤销该客户端的全部授权。访问令牌1小时，刷新授权最长30天。</InfoTip><ul className="agent-credentials">{clients.map(client=><li key={client.id}><strong>{client.name}</strong><span style={{overflowWrap:'anywhere'}}>{client.redirect_uris.join('、')}</span><button disabled={busy} onClick={()=>removeClient(client.id)}>删除客户端 {client.name}</button></li>)}</ul></section>}
     {error && <Notice error>{error}</Notice>}
     {secret && <section className="agent-secret" aria-label="新建Agent凭据"><h3>新凭据</h3><InfoTip>仅当前窗口可见。使用Authorization: Bearer配置；不要填写到文档正文或公开链接。可以随时撤销。</InfoTip><label>Agent Token<input readOnly value={secret.token} autoComplete="off" spellCheck="false" onFocus={event=>event.target.select()} /></label><button onClick={()=>setSecret(null)}>隐藏凭据</button></section>}
     <form onSubmit={create} aria-busy={busy}>

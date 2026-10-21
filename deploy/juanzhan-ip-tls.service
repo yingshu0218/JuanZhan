@@ -1,0 +1,18 @@
+[Unit]
+Description=JuanZhan devtest IP TLS certificate renewal
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/juanzhan-dev/.local/certbot-venv/bin/certbot renew --non-interactive --config-dir /opt/juanzhan-dev/test-instance/tls/config --work-dir /opt/juanzhan-dev/test-instance/tls/work --logs-dir /opt/juanzhan-dev/test-instance/tls/logs --deploy-hook /opt/juanzhan-dev/app/deploy/renew-ip-tls.sh
+UMask=0077
+Nice=10
+MemoryMax=256M
+CPUQuota=50%
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/juanzhan-dev/test-instance/tls /opt/juanzhan-dev/test-instance/tls-serving
+

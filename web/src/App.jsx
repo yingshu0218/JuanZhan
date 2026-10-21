@@ -4,6 +4,7 @@ import { Archive } from "@phosphor-icons/react";
 import { ApiClient, message } from "./api.js";
 import { Notice } from "./ui.jsx";
 import { Workspace } from "./Workspace.jsx";
+import { OAuthConsent } from "./OAuthConsent.jsx";
 
 export function App() {
   const [api] = useState(() => new ApiClient());
@@ -104,5 +105,6 @@ export function App() {
         </form>
       </div>
     );
+  if (window.location.pathname === "/oauth/authorize") return <OAuthConsent api={api} />;
   return <Workspace api={api} logout={logout} authError={error} />;
 }

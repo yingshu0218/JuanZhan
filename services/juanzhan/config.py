@@ -13,6 +13,19 @@ class Settings:
 
     source_mounts: tuple[tuple[str, str], ...] = ()
     backup_dir: Path | None = None
+    public_url: str | None = None
+
+    def __post_init__(self):
+        if self.public_url:
+            from urllib.parse import urlsplit
+            value=urlsplit(self.public_url)
+            if (len(self.public_url)>2048 or any(ord(c)<33 or ord(c)>126 for c in self.public_url)
+                or value.username or value.password or value.query or value.fragment or value.path not in ('','/')
+                or not value.hostname or '\\' in self.public_url
+                or (value.scheme!='https' and not (value.scheme=='http' and value.hostname in ('127.0.0.1','localhost','::1')))):
+                raise ValueError('JUANZHAN_PUBLIC_URL requires an HTTPS origin or loopback HTTP')
+            value.port
+            object.__setattr__(self,'public_url',self.public_url.rstrip('/'))
 
     @classmethod
     def from_env(cls):
@@ -28,7 +41,8 @@ class Settings:
         return cls(Path(os.getenv("JUANZHAN_DATA_DIR", ".local/archive")).resolve(),
                    os.getenv("CONVERTER_SERVICE_TOKEN", ""),
                    cookie_secure == "true",upload_max_bytes,upload_timeout,source_mounts,
-                   Path(os.environ["JUANZHAN_BACKUP_DIR"]).resolve() if os.getenv("JUANZHAN_BACKUP_DIR") else None)
+                   Path(os.environ["JUANZHAN_BACKUP_DIR"]).resolve() if os.getenv("JUANZHAN_BACKUP_DIR") else None,
+                   os.getenv('JUANZHAN_PUBLIC_URL') or None)
 
     @property
     def database(self):

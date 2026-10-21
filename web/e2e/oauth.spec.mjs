@@ -1,0 +1,46 @@
+import { test, expect } from '@playwright/test';
+import { createHash } from 'node:crypto';
+import { login, createSpace } from './helpers.mjs';
+
+test('generic OAuth consent, REST/MCP, refresh and administrator revocation', async ({page}) => {
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await login(page);await createSpace(page,'OAuth授权空间');
+  const space=await page.getByLabel('当前空间').inputValue();
+  const registered=await page.request.post('/oauth/register',{data:{client_name:'通用 Agent',redirect_uris:['http://127.0.0.1:41234/callback'],token_endpoint_auth_method:'none'}});
+  expect(registered.status()).toBe(201);const client=await registered.json();
+  const verifier='oauth-browser-test-'.repeat(4);
+  const params=new URLSearchParams({client_id:client.client_id,redirect_uri:client.redirect_uris[0],response_type:'code',code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256',resource:'http://127.0.0.1:8767/api/v1/agent/mcp',state:'browser-state'});
+  await page.goto('/oauth/authorize?'+params);
+  await expect(page.getByRole('heading',{name:'授权访问文档'})).toBeVisible();
+  await expect(page.getByText('通用 Agent',{exact:true})).toBeVisible();
+  await expect(page.getByText(client.redirect_uris[0],{exact:true})).toBeVisible();
+  await page.getByRole('checkbox',{name:'OAuth授权空间'}).check();
+  await page.screenshot({path:'/tmp/juanzhan-oauth-desktop.png'});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'/tmp/juanzhan-oauth-mobile.png'});
+  let callback;
+  await page.route('http://127.0.0.1:41234/callback?**',async route=>{
+    callback=new URL(route.request().url());await route.fulfill({contentType:'text/html',body:'Authorization received'});
+  });
+  await page.getByRole('button',{name:'允许只读访问'}).click();
+  await expect.poll(()=>callback?.searchParams.get('state')).toBe('browser-state');
+  expect(callback.searchParams.get('iss')).toBe('http://127.0.0.1:8767');
+  const exchanged=await page.request.post('/oauth/token',{form:{grant_type:'authorization_code',client_id:client.client_id,code:callback.searchParams.get('code'),redirect_uri:client.redirect_uris[0],code_verifier:verifier,resource:params.get('resource')}});
+  expect(exchanged.status()).toBe(200);const issued=await exchanged.json();
+  const auth={Authorization:'Bearer '+issued.access_token};
+  const result=await page.request.get('/api/v1/agent/spaces',{headers:auth});
+  expect((await result.json()).items.map(item=>item.id)).toEqual([space]);
+  const mcp=await page.request.post('/api/v1/agent/mcp',{headers:{...auth,Accept:'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25'},data:{jsonrpc:'2.0',id:1,method:'tools/list'}});
+  expect(mcp.status()).toBe(200);expect((await mcp.json()).result.tools).toHaveLength(7);
+  const rotated=await page.request.post('/oauth/token',{form:{grant_type:'refresh_token',client_id:client.client_id,refresh_token:issued.refresh_token,resource:params.get('resource')}});
+  expect(rotated.status()).toBe(200);const current=await rotated.json();
+  expect((await page.request.get('/api/v1/agent/spaces',{headers:auth})).status()).toBe(401);
+  await page.goto('/');
+  await page.getByRole('button',{name:'系统设置',exact:true}).click();
+  await page.getByRole('button',{name:'Agent 接入',exact:true}).click();
+  await page.getByRole('button',{name:'删除客户端 通用 Agent',exact:true}).click();
+  await expect(page.getByRole('button',{name:'删除客户端 通用 Agent',exact:true})).toHaveCount(0);
+  expect((await page.request.get('/api/v1/agent/spaces',{headers:{Authorization:'Bearer '+current.access_token}})).status()).toBe(401);
+  expect(errors).toEqual([]);
+});
