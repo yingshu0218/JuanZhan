@@ -1789,3 +1789,5 @@ button.info-trigger:hover, button.info-trigger:focus-visible { background: #e4ee
   .overview-recent, .overview-side > section { padding: 16px; }
   .no-selection .file-collection.grid { grid-template-columns: minmax(0, 1fr); }
 }
+.upload-info > strong { overflow-wrap: anywhere; }
+.upload-panel > button { flex-shrink: 0; }

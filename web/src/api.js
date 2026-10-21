@@ -186,7 +186,8 @@ export class ApiClient {
       body.set("space_id", item.spaceId);
       if (item.folderId) body.set("folder_id", item.folderId);
       body.set("duplicate_policy", item.policy);
-      body.set("file", item.file);
+      // Directory-picked Files may otherwise submit webkitRelativePath as the multipart filename.
+      body.set("file", item.file, item.file.name);
       if (signal.aborted) {
         clean();
         reject(new DOMException("Aborted", "AbortError"));

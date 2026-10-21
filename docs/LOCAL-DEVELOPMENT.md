@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+2026-10-22 T50文件夹上传：无新增包/系统依赖，使用浏览器原生目录选择、FileSystemEntry分批读取、XHR、IntersectionObserver和现有逻辑目录/托管上传API。devtest已有Node/Playwright完成真实目录选择及CDP操作系统文件/文件夹混合拖放；样本位于/tmp/juanzhan-upload-folder-*、juanzhan-upload-drag-*，测试finally按批清理，不导入业务空间。源码传输包/tmp/juanzhan-folder-changes.tgz、folder-fixes.tgz和后续folder bundle/tar及验收截图可清理；业务卷/私有认证/证书/升级前备份不清理。本机未安装运行时。
+
 2026-10-21 T48/T49资料列表与系统概览：无新增依赖，在devtest使用已有Node/Python/Playwright构建验证，本机未安装包。系统概览仅复用鉴权统计/档案/任务API，不新增服务或迁移。传输包/tmp/juanzhan-home-changes.tgz以及后续home源码tar/bundle、/tmp/juanzhan-home-*.png和expanded-list截图均为可清理开发文件；私有在线QA报告/截图在test-instance保管。保留业务数据卷、原件、证书、认证配置和升级前备份。
 
 2026-10-21多类型测验：无新增依赖。devtest浏览器因系统/tmp写入/共享内存权限失败导致Compositor崩溃，使用私有/opt/juanzhan-dev/.local/types-browser-tmp作为TMPDIR解决，未改系统/tmp权限。合成样本与隔离SQLite/文件存储由测试退出清理；该私有临时目录下juanzhan-types-*.png、juanzhan-overview-types-results.json及.local/overview-types*.log、types-browser-debug.log在无需复查且无测试运行时可按名删除。新测试源码为web/e2e/overview-formats.spec.mjs和overview_samples.py；无用户文档导入测试或修改。

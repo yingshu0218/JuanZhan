@@ -88,6 +88,7 @@ export function Workspace({ api, logout, authError }) {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
+  const folderInputRef = useRef(null);
   const queue = useUploads(api, () => setRefresh((n) => n + 1));
   const [checked, setChecked] = useState(new Map());
   const [selectionMode, setSelectionMode] = useState("explicit");
@@ -265,7 +266,7 @@ export function Workspace({ api, logout, authError }) {
       "application/x-juanzhan-documents",
     );
     resetDrag();
-    if (files.length) {
+    if (files.length || [...event.dataTransfer.types].includes('Files')) {
       if (section === "sources" && kind === "files") {
         setNotice("来源为只读。请返回档案列表上传，或将文件拖到逻辑目录。");
         return;
@@ -278,15 +279,7 @@ export function Workspace({ api, logout, authError }) {
         setNotice("原文件请拖入列表或逻辑目录。");
         return;
       }
-      if (
-        [...event.dataTransfer.items].some(
-          (item) => item.webkitGetAsEntry?.()?.isDirectory,
-        )
-      ) {
-        setNotice("暂不支持拖入整个文件夹，请选择具体文件。");
-        return;
-      }
-      queue.enqueue(files, space, kind === "folder" ? target : folder);
+      queue.enqueueDrop(event.dataTransfer, space, kind === "folder" ? target : folder);
       return;
     }
     if (
@@ -441,7 +434,6 @@ export function Workspace({ api, logout, authError }) {
   const importFiles = () => {
     if (space) {
       queue.setOpen(true);
-      inputRef.current?.click();
     }
   };
   const folderRows = useMemo(() => {
@@ -531,6 +523,12 @@ export function Workspace({ api, logout, authError }) {
           </button>
         </div>
       </header>
+      <input
+        ref={folderInputRef}
+        aria-label="上传整个文件夹"
+        type="file" webkitdirectory="" directory="" multiple hidden
+        onChange={e => { queue.enqueue(e.target.files, space, folder); e.target.value = ''; }}
+      />
       <input
         ref={inputRef}
         aria-label="选择上传文件"
@@ -801,7 +799,7 @@ export function Workspace({ api, logout, authError }) {
         )}
       </main>
       <Operations state={operations} catalog={catalog} />
-      <Uploads queue={queue} api={api} inputRef={inputRef} onOpenTask={openTasks} />
+      <Uploads queue={queue} api={api} inputRef={inputRef} folderInputRef={folderInputRef} onOpenTask={openTasks} />
       {dialog ? (
         <Dialog
           title={
