@@ -35,7 +35,7 @@ def send(client,headers,space,content=b'hello',filename='file.txt',**metadata):
                        files={'file':(filename,content,'application/pdf')},headers=headers)
 
 
-@pytest.mark.parametrize('filename',['.DS_Store','.ds_store','.localized','Thumbs.db','ehthumbs_vista.db','desktop.ini','._report.docx','~$report.docx','.~lock.report.odt#','.report.swp'])
+@pytest.mark.parametrize('filename',['.DS_Store','.ds_store','.localized','Thumbs.db','ehthumbs_vista.db','desktop.ini','._report.docx','~$report.docx','.~lock.report.odt#','.report.swp','.git','.gitignore','.gitattributes','.gitmodules','.gitkeep','.git-credentials','.hgignore','.bzrignore'])
 def test_auxiliary_uploads_are_excluded_without_persistence(uploads,filename):
     app,settings,client,headers,space,bearer=uploads
     stored=lambda: {str(path.relative_to(settings.data_dir/'managed')):path.read_bytes() for path in (settings.data_dir/'managed').rglob('*') if path.is_file()}
@@ -51,7 +51,7 @@ def test_auxiliary_uploads_are_excluded_without_persistence(uploads,filename):
     assert stored()==files_before
 
 
-@pytest.mark.parametrize('filename',['.env','.gitignore','notes.tmp','notes.bak','report.docx~','Thumbs.db.txt','~$budget.txt','desktop.ini.pdf'])
+@pytest.mark.parametrize('filename',['.env','README.md','package.json','main.py','notes.tmp','notes.bak','report.docx~','Thumbs.db.txt','~$budget.txt','desktop.ini.pdf'])
 def test_hidden_documents_and_backups_are_preserved(uploads,filename):
     app,settings,client,headers,space,bearer=uploads
     response=send(client,headers,space,filename=filename)

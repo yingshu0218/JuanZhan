@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.33
+  version: 0.4.34
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -1191,7 +1191,7 @@ paths:
       - Documents
       summary: 上传单个原件并创建档案
       operationId: post_documents_upload
-      description: multipart 单文件；已知系统元数据/缓存/临时锁文件按共享upload_exclusions.json文件名规则返回422 UPLOAD_EXCLUDED，不落原件、不建档案或任务；普通隐藏文件、tmp和备份文件不按扩展名排除。前端目录上传还会跳过已知系统辅助目录及其内容。duplicate_policy 默认 reject：命中已有哈希返回 409 DUPLICATE_DETECTED，error.details.duplicates
+      description: multipart 单文件；已知版本控制配置/指针文件和系统元数据/缓存/临时锁文件按共享upload_exclusions.json文件名规则返回422 UPLOAD_EXCLUDED，不落原件、不建档案或任务；README/源码/普通隐藏文档、tmp和备份文件不按扩展名排除。前端目录上传还会跳过已知版本控制元数据和系统辅助目录及其内容，不解释上传项目的.gitignore规则。duplicate_policy 默认 reject：命中已有哈希返回 409 DUPLICATE_DETECTED，error.details.duplicates
         给出已存在 document ID，未建立新档案；用户确认后以 keep_separate 重传则 201 创建独立档案，绝不自动合并。 使用 Cookie 会话调用时须携带 X-CSRF-Token；API
         Bearer 不需要 CSRF。
       x-roadmap-phase: MVP

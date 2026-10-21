@@ -195,7 +195,7 @@ def router(settings):
                 except (ValidationError,TypeError):
                     fail(422,'INVALID_REQUEST','Invalid upload metadata')
                 if excluded_file(info.original_filename):
-                    fail(422,'UPLOAD_EXCLUDED','System metadata or temporary lock file is excluded from upload')
+                    fail(422,'UPLOAD_EXCLUDED','Auxiliary configuration, metadata or temporary lock file is excluded from upload')
                 def save():
                     with transaction(settings) as db:
                         required(db,'spaces',info.space_id)

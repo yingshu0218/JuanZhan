@@ -9,10 +9,12 @@ for (const mode of ['picker', 'drop']) test(`auxiliary files are skipped before 
   const temp = await mkdtemp('/tmp/juanzhan-upload-exclusions-');
   try {
     const root = path.join(temp, '资料'); await mkdir(path.join(root, '__MACOSX'), { recursive: true });
-    const excluded = ['.DS_Store', 'Thumbs.db', '._report.txt', '~$draft.docx', '.~lock.notes.odt#', '.report.swp'];
-    const kept = ['.env', '.gitignore', 'notes.tmp', 'notes.bak', 'report.txt'];
+    const excluded = ['.DS_Store', 'Thumbs.db', '._report.txt', '~$draft.docx', '.~lock.notes.odt#', '.report.swp', '.gitignore', '.gitattributes', '.gitmodules'];
+    const kept = ['.env', 'README.md', 'main.py', 'notes.tmp', 'notes.bak', 'report.txt'];
     for (const name of [...excluded, ...kept]) await writeFile(path.join(root, name), mode + '-' + name);
     await writeFile(path.join(root, '__MACOSX', 'hidden.txt'), 'Not a document');
+    for (const directory of ['.git', '.svn', '.hg', '.bzr']) { await mkdir(path.join(root, directory)); await writeFile(path.join(root, directory, 'metadata'), 'Ignored repository data'); }
+    const skipCount = excluded.length + 5;
     const errors = [], uploads = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', entry => { if (entry.type() === 'error') errors.push(entry.text()); });
@@ -26,13 +28,13 @@ for (const mode of ['picker', 'drop']) test(`auxiliary files are skipped before 
     }
     const panel = page.getByRole('region', { name: '上传队列', exact: true });
     await expect(panel.getByText('原件已保存', { exact: false })).toHaveCount(kept.length);
-    await expect(panel.locator('.upload-skipped summary')).toContainText('7 项');
+    await expect(panel.locator('.upload-skipped summary')).toContainText(`${skipCount} 项`);
     const documents = (await api(page, '/documents?space_id=' + space)).data.items;
     expect(documents.map(doc => doc.title).sort()).toEqual(kept.sort());
     expect((await api(page, '/folders?space_id=' + space)).data.map(folder => folder.name)).toEqual(['资料']);
     expect(uploads).toHaveLength(kept.length);
     await page.getByLabel('选择上传文件', { exact: true }).setInputFiles({ name: '.DS_Store', mimeType: 'application/octet-stream', buffer: Buffer.from('ignored') });
-    await expect(panel.locator('.upload-skipped summary')).toContainText('8 项');
+    await expect(panel.locator('.upload-skipped summary')).toContainText(`${skipCount + 1} 项`);
     expect(uploads).toHaveLength(kept.length);
     await panel.locator('.upload-skipped summary').click();
     await expect(panel.locator('.upload-skipped')).toContainText('.DS_Store');
@@ -44,11 +46,16 @@ for (const mode of ['picker', 'drop']) test(`auxiliary files are skipped before 
 });
 
 test('exclusion boundaries are conservative and ignored directories are never read', async () => {
-  for (const name of ['.DS_Store', '.ds_store', 'desktop.ini', '._test.pdf', '~$test.xlsx', '.~lock.test.odt#', '.test.swo']) expect(uploadExclusion(name)).toBeTruthy();
-  for (const name of ['.env', '.gitignore', '.hidden.docx', 'notes.tmp', 'notes.bak', 'notes.docx~', 'Thumbs.db.txt', '~$budget.txt']) expect(uploadExclusion(name)).toBeNull();
+  for (const name of ['.DS_Store', '.ds_store', 'desktop.ini', '._test.pdf', '~$test.xlsx', '.~lock.test.odt#', '.test.swo', '.gitignore', '.git', '.gitmodules', '.gitattributes']) expect(uploadExclusion(name)).toBeTruthy();
+  for (const name of ['.env', 'README.md', 'main.py', '.hidden.docx', 'notes.tmp', 'notes.bak', 'notes.docx~', 'Thumbs.db.txt', '~$budget.txt']) expect(uploadExclusion(name)).toBeNull();
   const selected = selectedFiles([{ name: 'notes.txt', webkitRelativePath: 'root/__MACOSX/notes.txt' }]);
   expect(selected).toHaveLength(0); expect(selected.skipped.total).toBe(1);
   const transfer = { files: [], items: [{ kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => ({ name: '__MACOSX', isDirectory: true, createReader() { throw Error('Excluded directory must not be read'); } }) }] };
   const dropped = await droppedFiles(transfer, new AbortController().signal);
   expect(dropped).toHaveLength(0); expect(dropped.skipped.total).toBe(1);
+  for (const directory of ['.git', '.svn', '.hg', '.bzr']) {
+    const transfer = { files: [], items: [{ kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => ({ name: directory, isDirectory: true, createReader() { throw Error('Repository metadata must not be read'); } }) }] };
+    const dropped = await droppedFiles(transfer, new AbortController().signal);
+    expect(dropped).toHaveLength(0); expect(dropped.skipped.total).toBe(1);
+  }
 });

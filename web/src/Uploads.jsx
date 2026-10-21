@@ -179,7 +179,7 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask }) {
       {queue.scanning !== null && <div role="status">正在读取文件夹 · 已发现 {queue.scanning} 项 <button onClick={queue.stopReading}>取消读取</button></div>}
       {queue.items.some(item => item.ensureFolder) && <small role="status">已保存 {queue.items.filter(item => item.kind === 'file' && item.status === 'saved').length} 个文件 · 待处理 {queue.items.filter(item => ['waiting', 'uploading'].includes(item.status)).length} 项</small>}
       <div className="upload-items">
-        {queue.skipped.total > 0 && <details className="upload-skipped"><summary>已跳过 {queue.skipped.total} 项系统或临时文件/目录</summary><InfoTip>不上传系统元数据、缓存和临时锁文件；被排除目录不会继续读取。以下显示最近20项，普通隐藏文件及备份文件仍保留。</InfoTip><ul>{queue.skipped.samples.map((item, index) => <li key={index}><strong>{item.path}</strong><small>{item.reason}</small></li>)}</ul></details>}
+        {queue.skipped.total > 0 && <details className="upload-skipped"><summary>已跳过 {queue.skipped.total} 项辅助文件/目录</summary><InfoTip>不上传版本控制元数据/配置、系统元数据、缓存和临时锁文件；被排除目录不会继续读取。以下显示最近20项，普通隐藏文档及备份文件仍保留。</InfoTip><ul>{queue.skipped.samples.map((item, index) => <li key={index}><strong>{item.path}</strong><small>{item.reason}</small></li>)}</ul></details>}
         {queue.items.length ? (
           queue.items.map((item) => (
             <div className="upload-row" key={item.id}>

@@ -4,6 +4,9 @@
 
 | 类别 | 默认排除 |
 |---|---|
+| 版本控制元数据目录及其内容 | `.git`、`.svn`、`.hg`、`.bzr` |
+| Git辅助配置/指针文件 | `.git`（worktree/submodule指针）、`.gitignore`、`.gitattributes`、`.gitmodules`、`.gitkeep`、`.gitconfig`、`.git-credentials`、`.git-blame-ignore-revs`、`.mailmap` |
+| 其他版本控制辅助配置 | `.hgignore`、`.hgtags`、`.hgsub`、`.hgsubstate`、`.bzrignore` |
 | 系统元数据/缓存文件 | `.DS_Store`、`.localized`、`Thumbs.db`、`ehthumbs.db`、`ehthumbs_vista.db`、`desktop.ini` |
 | AppleDouble资源分叉辅助文件 | `._`开头且后面有名称的文件 |
 | Office临时锁文件 | `~$`开头且扩展名属于清单中的Word/Excel/PowerPoint格式 |
@@ -11,7 +14,7 @@
 | Vim交换文件 | 点号开头且以`.swp`或`.swo`结束 |
 | 系统辅助目录及其内容 | `__MACOSX`、`.AppleDouble`、`.Spotlight-V100`、`.Trashes`、`.fseventsd`、`.TemporaryItems`、`$RECYCLE.BIN`、`System Volume Information` |
 
-名称匹配不区分ASCII大小写。不是“一律忽略隐藏文件”：`.env`、`.gitignore`、普通隐藏文档、`.tmp`、`.bak`、`文件名~`继续保留；不按通用临时/备份扩展名推断无用内容，不默认排除代码、依赖目录、图片、零字节文件或压缩包。
+名称匹配不区分ASCII大小写。2026-10-22用户补充Git常用忽略文件需求后，`.gitignore`等版本控制配置改为排除。不是“一律忽略隐藏文件”：`.env`、普通隐藏文档、`.tmp`、`.bak`、`文件名~`继续保留；README、源码、项目清单正常保存，不按通用临时/备份扩展名推断无用内容。不读取或执行上传项目的.gitignore内容作为平台规则。依赖目录/缓存/构建产物是否默认排除仍待用户范围选择；不默认排除图片、零字节文件或压缩包。
 
 选择单文件、文件夹以及混合拖入共用过滤；拖入已知系统目录时不再枚举其内容。目录选择器由浏览器枚举文件，应用只过滤用户已选文件，不读取其内容。上传队列累计显示已跳过项目数和最近20项相对名称/原因；被跳过目录按1项计，其内部文件数量未知。不为排除目录创建逻辑目录；未排除的原生空目录拖入规则保持不变。扫描最多10000个项目，实际入队仍最多1000项，任何扫描/读取超限不部分入队。
 

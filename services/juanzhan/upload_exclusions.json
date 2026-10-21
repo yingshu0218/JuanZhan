@@ -1,4 +1,6 @@
 {
+  "version_control_files": [".git", ".gitignore", ".gitattributes", ".gitmodules", ".gitkeep", ".gitconfig", ".git-credentials", ".git-blame-ignore-revs", ".mailmap", ".hgignore", ".hgtags", ".hgsub", ".hgsubstate", ".bzrignore"],
+  "version_control_directories": [".git", ".svn", ".hg", ".bzr"],
   "files": [".DS_Store", ".localized", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini"],
   "directories": ["__MACOSX", ".AppleDouble", ".Spotlight-V100", ".Trashes", ".fseventsd", ".TemporaryItems", "$RECYCLE.BIN", "System Volume Information"],
   "patterns": ["^\\._.+$", "^~\\$.+\\.(doc|docx|docm|dot|dotx|dotm|xls|xlsx|xlsm|xlsb|ppt|pptx|pptm)$", "^\\.~lock\\..+#$", "^\\..+\\.(swp|swo)$"]
