@@ -129,7 +129,8 @@ def pptx_format(data,out):
         if slides is None:raise FormatError('INVALID_PACKAGE')
         for index,slide in enumerate(slides):
             if index>=out.limits['max_pages']:raise FormatError('PAGE_LIMIT')
-            xml=package.xml(target(rels.get(slide.get(R+'id')),path,'slide'))
+            slide_path=target(rels.get(slide.get(R+'id')),path,'slide')
+            xml=package.xml(slide_path)
             location={'kind':'section','heading_path':['幻灯片 '+str(index+1)]}
             out.add('heading',location['heading_path'][0],location,level=1)
             tree=xml.find(P+'cSld/'+P+'spTree')
@@ -147,8 +148,21 @@ def pptx_format(data,out):
                 elif shape.tag==A+'tbl':
                     rows=[[ '\n'.join(drawing_text(p) for p in cell.findall(A+'txBody/'+A+'p')) for cell in row.findall(A+'tc')] for row in shape.findall(A+'tr')]
                     table(out,rows,location['heading_path'])
+            relpath=posixpath.join(posixpath.dirname(slide_path),'_rels',posixpath.basename(slide_path)+'.rels')
+            if relpath in package.entries:
+                for relation in relationships(package,slide_path).values():
+                    if not relation.get('Type','').endswith('/notesSlide'):continue
+                    notes=package.xml(target(relation,slide_path,'notesSlide'))
+                    if notes.tag!=P+'notes':raise FormatError('INVALID_PACKAGE')
+                    paragraphs=[drawing_text(p) for p in notes.findall('.//'+P+'sp/'+P+'txBody/'+A+'p')]
+                    paragraphs=[text for text in paragraphs if text.strip()]
+                    if paragraphs:
+                        note_location={'kind':'section','heading_path':location['heading_path']+['备注']}
+                        out.add('heading','备注',note_location,level=2)
+                        for text in paragraphs:out.prose(text,note_location)
+                        out.warn('SLIDE_SPEAKER_NOTES_INCLUDED')
         out.warn('SLIDE_SHAPE_ORDER_NOT_VISUAL_READING_ORDER')
-        out.warn('SLIDE_NOTES_CHARTS_IMAGES_AND_MEDIA_OMITTED')
+        out.warn('SLIDE_CHARTS_IMAGES_AND_MEDIA_OMITTED')
 
 def odf_text(element):
     parts=[]

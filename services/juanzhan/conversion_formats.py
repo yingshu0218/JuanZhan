@@ -18,7 +18,7 @@ ODT='application/vnd.oasis.opendocument.text'
 ODS='application/vnd.oasis.opendocument.spreadsheet'
 ODP='application/vnd.oasis.opendocument.presentation'
 OFFICE_TYPES=[XLSX,PPTX,ODT,ODS,ODP]
-SUPPORTED = ['text/plain', 'text/markdown', 'text/html', DOCX, 'application/pdf', EPUB]+OFFICE_TYPES+['text/csv','text/tab-separated-values']
+SUPPORTED = ['text/plain', 'text/markdown', 'text/html', DOCX, 'application/pdf', EPUB]+OFFICE_TYPES+['text/csv','text/tab-separated-values','application/msword','application/vnd.ms-excel','application/vnd.ms-powerpoint','application/rtf']
 
 
 class FormatError(Exception):

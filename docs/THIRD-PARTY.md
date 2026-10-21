@@ -1,5 +1,18 @@
 # 转换解析依赖与许可证
 
+## 2026-10-21 旧Office/RTF补充
+
+| 组件 | 锁定版本 | 许可/用途 |
+|---|---|---|
+| olefile | 0.47 | BSD类及包内PIL来源通知；CFB识别，完整许可证/历史说明按原相对路径保存在licenses/legacy/olefile |
+| xlrd | 2.0.2 | 包内两份BSD类通知均保留；旧XLS存储值/日期读取，不计算公式 |
+| striprtf | 0.0.33 | BSD-3-Clause；只读RTF提取，UTF-16代理对正确合并 |
+| Debian catdoc | 1:0.95-6，Linux amd64 | GPL-2（非一概MIT）；字符表另有Unicode/Apple通知，完整copyright及GPL-2在licenses/legacy/catdoc；DOC通过独立CLI提取文本；PPT最终使用本库受限persist解析器，不调用包内catppt |
+
+Python版本及wheel哈希锁定于uv.lock/requirements.lock；只新增上述三个纯Python包，其余既有依赖版本未升级。实际wheel下载合计219566字节。catdoc .deb为86248字节，哈希与签名APT元数据及Debian HTTPS下载页一致；native工具及三份对应源码文件逐个URL/大小/SHA256锁定于legacy-tools.lock.json。源码总187014字节，orig/debian源码哈希与.dsc的Checksums-Sha256匹配。镜像离线校验并dpkg安装，完整对应源码/.dsc/锁清单放在/usr/share/doc/catdoc/corresponding-source，Debian许可证/字符表通知和系统GPL-2文本保持，不修改工具源码。
+
+准备命令`python scripts/setup_legacy_tools.py --download`（只下载/验证），构建内`--install`仅允许Linux x86_64。native-packages为可重建缓存，不提交二进制；公开发行镜像时须连同对应源码及许可入口提供，不可只分发闭包工具。无LibreOffice、Java、新模型或主机系统安装，新增工具只进入项目镜像；测试平台仍为devtest Linux amd64。
+
 ## 前端PDF阅读补充 · 2026-10-19
 
 | 组件 | 锁定版本 | 许可记录 | 用途 |

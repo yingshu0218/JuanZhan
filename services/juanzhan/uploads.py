@@ -68,6 +68,25 @@ def sniff(file,filename):
     head = file.read(65536)
     file.seek(0)
     if head.startswith(b'%PDF-'):return 'application/pdf'
+    if head.startswith(bytes.fromhex('d0cf11e0a1b11ae1')):
+        try:
+            # Archive ingestion also sniffs bytes: bound CFB directory/FAT work here,
+            # before entering the library. Larger containers remain safely unclassified.
+            file.seek(0,2)
+            size=file.tell()
+            if (size>4*1024*1024 or len(head)<512 or struct.unpack_from('<H',head,30)[0] not in (9,12)
+                or any(struct.unpack_from('<I',head,offset)[0]>64 for offset in (44,64,72))):
+                return 'application/x-ole-storage'
+            import olefile
+            file.seek(0)
+            with olefile.OleFileIO(file,raise_defects=olefile.DEFECT_INCORRECT) as package:
+                if package.exists('EncryptedPackage') or package.exists('EncryptedSummary'):return 'application/x-encrypted-office'
+                for stream,mime in (('WordDocument','application/msword'),('Workbook','application/vnd.ms-excel'),
+                                    ('Book','application/vnd.ms-excel'),('PowerPoint Document','application/vnd.ms-powerpoint')):
+                    if package.exists(stream):return mime
+        except (OSError,ValueError,TypeError,IndexError,OverflowError):pass
+        finally:file.seek(0)
+        return 'application/x-ole-storage'
     for signature,mime in ((b'\x89PNG\r\n\x1a\n','image/png'),(b'\xff\xd8\xff','image/jpeg'),
                            (b'GIF87a','image/gif'),(b'GIF89a','image/gif'),
                            (b'II*\x00','image/tiff'),(b'MM\x00*','image/tiff')):
@@ -109,6 +128,8 @@ def sniff(file,filename):
         encoding='utf-32' if head.startswith((b'\xff\xfe\x00\x00',b'\x00\x00\xfe\xff')) else 'utf-16' if head.startswith((b'\xff\xfe',b'\xfe\xff')) else 'utf-8-sig'
         text=codecs.getincrementaldecoder(encoding)().decode(head,final=False)
         if any(ord(c)<32 and c not in '\t\n\r\f' for c in text):return 'application/octet-stream'
+        extension=Path(filename).suffix.lower()
+        if extension in ('.csv','.tsv'):return 'text/csv' if extension=='.csv' else 'text/tab-separated-values'
         if re.search(r'<(?:!doctype\s+html|html|head|body)(?:\s|>)',text[:4096],re.I):return 'text/html'
         return {'.md':'text/markdown','.markdown':'text/markdown','.csv':'text/csv','.tsv':'text/tab-separated-values'}.get(Path(filename).suffix.lower(),'text/plain')
     except UnicodeDecodeError:

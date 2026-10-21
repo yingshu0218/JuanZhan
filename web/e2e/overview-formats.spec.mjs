@@ -32,6 +32,7 @@ test('seven new office and delimited formats show source-backed overviews on des
     await source.getByRole('button',{name:'查看对应正文',exact:true}).first().click();
     await expect(reader.locator('.content-blocks')).toBeVisible();
     await reader.getByLabel('阅读格式').selectOption('summary');
+    await expect(reader.locator('.summary-points > li').first()).toBeVisible();
     await page.screenshot({path:join(tmpdir(),'juanzhan-office-'+item.name+'-desktop.png')});
     await page.setViewportSize({width:390,height:844});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),item.name).toBe(true);

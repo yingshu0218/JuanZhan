@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Archive Document Converter (independent service)
-  version: 0.4.4
+  version: 0.4.5
   description: 不接LLM的独立文档转换服务。T20实现六格式基础解析；T21按需OCR扫描PDF及PNG/JPEG/TIFF，并生成受限PNG缩略图。Archive持久化和用户原件预览尚未接入。只在内部网络使用服务Bearer Token，不访问Archive业务数据库或来源卷。
 servers:
 - url: /
@@ -537,7 +537,7 @@ components:
           type: array
           items:
             type: string
-          description: 基础解析：text/plain,text/markdown,text/html,DOCX,PDF,EPUB,XLSX,PPTX,ODT,ODS,ODP及PNG/JPEG/TIFF对应MIME；以实际capabilities为准。Office新增类型只读存储文本和公式缓存，不执行公式/宏/外部关系，工作表和幻灯片使用section定位，不伪造物理页码。表格最多256列/100000个显式单元格，既有块数及输出预算仍生效。
+          description: 基础解析：text/plain,text/markdown,text/html,DOCX,PDF,EPUB,XLSX,PPTX,ODT,ODS,ODP,CSV,TSV,DOC,XLS,PPT,RTF及PNG/JPEG/TIFF对应MIME；以实际capabilities为准。Office只读存储文本和公式缓存，不执行公式/宏/外部关系；DOC和RTF定位未知，工作表及PPT/PPTX幻灯片/备注使用真实section定位，不伪造物理页码。XLS数字有源BIFF浮点精度并有警告，公式不重新计算。表格最多256列/100000个显式单元格，PPT最多256次编辑/100000记录/64层递归，既有块数及输出预算仍生效。
         ocr_available:
           type: boolean
         max_file_bytes:

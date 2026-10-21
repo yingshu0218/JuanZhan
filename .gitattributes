@@ -1,0 +1,2 @@
+# Preserve upstream license bytes (CRLF and intentional trailing spaces), not source formatting.
+licenses/legacy/olefile/** whitespace=-blank-at-eol,cr-at-eol

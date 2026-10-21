@@ -1,5 +1,11 @@
 # 独立文档转换器
 
+T38开发补充：Converter0.4.5增加DOC/XLS/PPT/RTF，共20种输入MIME。DOC使用受限catdoc；PPT使用当前UserEdit/PersistDirectory/Document引用读取实际形状与备注，避免主题名称/废弃编辑冒充正文。XLS使用xlrd仅读存储值与公式缓存，RTF支持中文与补充平面Unicode。DOC/RTF定位unknown，PPT/备注和XLS使用真实section/行号，不伪造物理页码。PPT/PPTX均区分备注来源，备注参与正文/概要。加密文件明确失败，不尝试密码；宏/外链/嵌入物不执行。catdoc输出的有效UTF-16代理对无损合并，孤立代理字符失败，不静默替换。Archive CFB嗅探限制4MiB和FAT/DIFAT/miniFAT头预算，大文件只保留未知OLE类型；实际解析和原件保存独立。依赖/许可见THIRD-PARTY，最终验证及部署以TESTING/DEVTEST为准。
+
+PPT二进制依据[UserEditAtom](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/3ffb3fab-95de-4873-98aa-d508fbbac981)、[SlideListWithTextContainer](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/307e6d12-7304-47a8-acbd-3e7b8041ad3c)；记录范围/编辑链/持久引用/递归层级/总记录数均有界校验。只读取当前实际引用对象，跳过主题/母版/宏/嵌入物，复杂图表/媒体仍明确警告，不声称视觉排版或完整图表数据重建。
+
+旧PPT加密判断核对[Microsoft CurrentUserAtom规范](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/940d5700-e4d7-4fc0-ab48-fed5dbc48bc1)，不把加密流中的随机字节当正文。CSV/TSV内的HTML字符串仍按字面单元格读取，不能因内容含HTML标签而改用HTML解析器。
+
 2026-10-21本批新增适配见BATCH-2026-10-21.md：XLSX/PPTX/ODT/ODS/ODP/CSV/TSV，Converter0.4.4，16种输入MIME。无新增运行依赖，无物理页码推断；只提取存储值/公式缓存，不执行计算/宏/外链，缺失缓存明确提示。表格256列/100000个显式单元格，已有进程/ZIP/块数/输出限额保持。实际部署以DEVTEST为准。
 
 规范依据：[Microsoft单元格/共享字符串](https://learn.microsoft.com/en-us/office/open-xml/spreadsheet/working-with-the-shared-string-table)、[公式缓存](https://github.com/OfficeDev/open-xml-docs/blob/main/docs/spreadsheet/working-with-formulas.md)、[幻灯片顺序](https://learn.microsoft.com/en-us/office/open-xml/presentation/working-with-presentation-slides)、[OASIS ODF1.3结构与重复行列](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part3-schema/OpenDocument-v1.3-os-part3-schema.html)。采用存储结构顺序，不推断视觉布局或公式新鲜度。

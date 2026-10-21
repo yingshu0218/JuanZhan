@@ -8,6 +8,10 @@ LABEL org.opencontainers.image.title="JuanZhan" \
       org.opencontainers.image.source="https://github.com/yingshu0218/JuanZhan" \
       io.juanzhan.source-dirty=$SOURCE_DIRTY
 WORKDIR /app
+COPY legacy-tools.lock.json /app/legacy-tools.lock.json
+COPY native-packages /app/native-packages
+COPY scripts/setup_legacy_tools.py /app/scripts/setup_legacy_tools.py
+RUN python /app/scripts/setup_legacy_tools.py --install && rm -rf /app/native-packages
 COPY requirements.lock /app/requirements.lock
 COPY wheelhouse /wheelhouse
 RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse --require-hashes -r requirements.lock && rm -rf /wheelhouse

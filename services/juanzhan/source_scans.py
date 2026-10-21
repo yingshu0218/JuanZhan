@@ -7,7 +7,7 @@ from .database import connect
 from .source_paths import DIR_FLAGS, SourceMounts, SourcePathError, components, readonly
 
 EXTENSIONS = {'.pdf', '.docx', '.md', '.markdown', '.html', '.htm', '.txt', '.epub',
-              '.xlsx', '.pptx', '.odt', '.ods', '.odp', '.csv', '.tsv'}
+              '.xlsx', '.pptx', '.odt', '.ods', '.odp', '.csv', '.tsv', '.doc', '.xls', '.ppt', '.rtf'}
 MAX_ENTRIES = 100000
 MAX_DEPTH = 64
 

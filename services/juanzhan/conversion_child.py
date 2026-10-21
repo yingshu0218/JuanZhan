@@ -13,6 +13,8 @@ def parse(directory, options, limits):
                                      markdown_format, docx_format, epub_format, pdf_format, markdown_artifact)
     from .conversion_html import html_format
     from .conversion_office import OFFICE_TYPES, XLSX, PPTX, xlsx_format, pptx_format, odf_format, delimited_format
+    from .conversion_legacy import DOC, XLS, PPT, RTF, legacy_text, xls_format, rtf_format
+    from .conversion_ppt import ppt_format
     from .conversion_raster import Raster, IMAGES
     from contextlib import nullcontext
     with (directory / 'input').open('rb') as file:
@@ -22,13 +24,17 @@ def parse(directory, options, limits):
     # Text subtypes cannot be identified reliably from bytes alone. Accept a validated
     # MIME hint only for textual bytes/BOM; binary signatures always take precedence.
     text_types=('text/plain','text/markdown','text/html','text/csv','text/tab-separated-values')
-    if mime == 'text/plain' and declared in text_types:
+    if mime in ('text/plain','text/html') and declared in ('text/csv','text/tab-separated-values'):
+        mime=declared
+    elif mime == 'text/plain' and declared in text_types:
         mime = declared
     elif data.startswith((b'\xff\xfe', b'\xfe\xff', b'\x00\x00\xfe\xff')):
         mime = declared if declared in text_types else 'text/plain'
     elif not data and declared in text_types:
         mime = declared
     out = Output(limits)
+    if mime=='application/x-encrypted-office':
+        return {'error':{'code':'OFFICE_PASSWORD_REQUIRED','message':'Password-protected Office input cannot be read'}}
     raster_mime=mime in IMAGES or mime=='application/pdf'
     if options['generate_preview'] and not raster_mime:out.warn('PREVIEW_NOT_AVAILABLE')
     if declared and declared != mime:out.warn('DECLARED_MIME_MISMATCH')
@@ -46,6 +52,7 @@ def parse(directory, options, limits):
     adapters.update({mime:odf_format for mime in OFFICE_TYPES})
     adapters.update({XLSX:xlsx_format,PPTX:pptx_format})
     adapters.update({'text/csv':delimited_format,'text/tab-separated-values':lambda data,out:delimited_format(data,out,'\t')})
+    adapters.update({DOC:lambda data,out:legacy_text(data,out,DOC),PPT:ppt_format,XLS:xls_format,RTF:rtf_format})
     try:
         needs_raster=raster_mime and (options['ocr_enabled'] or options['generate_preview'] or mime in IMAGES)
         with Raster(data,mime,out,options) if needs_raster else nullcontext() as raster:
@@ -77,7 +84,8 @@ def parse(directory, options, limits):
             result['artifacts'].append({'kind':kind,'media_type':media_type,'artifact_ref':ref,
                                         'sha256':hashlib.sha256(content).hexdigest(),'size_bytes':len(content)})
         from importlib.metadata import version
-        parser_version=version(out.parser) if out.parser in ('pypdf','markdown-it-py') else '2.0.0'
+        parser_version=version(out.parser) if out.parser in ('pypdf','markdown-it-py','xlrd','striprtf') else '2.0.0'
+        if out.parser in ('catdoc','catppt'):parser_version='catdoc-0.95;adapter-1.0.0'
         if needs_raster:
             parser_version+=';pypdfium2='+version('pypdfium2')+';Pillow='+version('Pillow')
             if ocr_used:parser_version+=';tesserocr='+version('tesserocr')

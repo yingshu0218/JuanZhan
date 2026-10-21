@@ -758,3 +758,13 @@ T37最终完整后端：561 passed、3框架警告、无跳过（452.15s），�
 
 构建镜像rc.12后执行`JUANZHAN_SMOKE_IMAGE=juanzhan:0.1.0-rc.12 .venv/bin/python scripts/smoke_formats.py --persist --external --office`通过。原六格式＋新七格式共13类：内核只读挂载真实来源导入，解析/块/候选/派生文件/哈希/当前指针入库，鉴权HTTP读取、显式重解析幂等，来源字节变化拒绝且旧正文保留；第二实例无来源挂载仍可读陈旧缓存。随机容器/卷/网络退出清理，未挂业务卷。日志`.local/office-image-smoke.log`。
 
+## 2026-10-21 T38旧Office/RTF迭代
+
+Python层首轮RTF/CFB/CSV及真实RTF9项通过；固定真实XLS/XLSX2项通过。加入实际catdoc工具镜像后，格式矩阵/Office/RTF68项通过（107.62s），包括真实DOC/XLS/PPT与当前全部20种输入MIME、OCR开关及未支持/损坏边界，测试原件下载哈希不变。
+
+另增加固定blob的加密DOC/XLS/PPT、带宏DOC/XLS/PPT、国际字符DOC/PPT及Gothic RTF：首轮19过/1失败（28.67s），catdoc输出合法UTF-16代理对的CESU式字节被严格UTF-8拒绝；修正为仅合并合法代理对后20项通过（28.83s），无替换原始字符或放宽断言。实际DOC正文包含中文和补充平面字符；三种加密样本均失败且原件保留，宏只读正文。日志legacy-extra-first-failed.log与legacy-extra-verified.log保留。
+
+阅读浏览器新增旧Office/RTF用例后8项全过（1.7m，无跳过）。通过JUANZHAN_E2E_CONVERTER_IMAGE=juanzhan:legacy-dev运行真实隔离Converter镜像，主机不安装catdoc；原六格式十样本、新七格式和旧四格式均真实上传/队列/持久化/默认概览/来源跳转/1440与390布局验证。随机Converter容器退出清理。完整回归尚以最终legacy-full报告为准，临时legacy-dev不是发布镜像。
+T38语义复核：首轮完整583项虽通过，截图与上游样本预期比对发现catppt仅提取主题、漏备注，原先“非空即通过”的PPT断言不足，未以此作为最终发布验收。改为本库有界当前persist引用读取，增加Gothic/Bullet/表格内容及补充平面字符实际断言、备注标志、循环编辑链/越界拒绝；PPTX新增实际notesSlide关系读取及来源断言。对应43项专项通过（62.21s），首轮完整583报告保留，最终完整回归另行执行。
+
+浏览器截图切换阅读格式后增加等待概览内容稳定，再复核真实桌面截图；原先捕获过“正在读取”状态的图片不作为最终视觉通过证据。最终以legacy-browser-semantic-final.log及其对应截图为准。

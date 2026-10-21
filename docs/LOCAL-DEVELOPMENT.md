@@ -167,3 +167,10 @@ T16增量：无新依赖/系统软件/迁移。独立开发镜像juanzhan:adopti
 
 XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新增依赖/系统办公套件。测试仅在devtest隔离容器与临时HTTP服务执行。专用产物包括`.local/office-*.log`、`.local/agent-full-reports/office-full.xml`、`.local/juanzhan-office-*-work.tar.gz`、私有TMPDIR下的`juanzhan-office-*.png`；无需复查后可按明确名称清理，不删除业务卷/备份或共享浏览器缓存。固定版本Office夹具沿用上批约112KB测试数据。
 
+## 2026-10-21 旧Office/RTF依赖与清理
+
+仅devtest项目venv新增olefile0.47/xlrd2.0.2/striprtf0.0.33，wheel总219566字节；容器新增catdoc1:0.95-6（.deb86248字节，安装字符表约608KiB）及约183KiB对应源码/通知。无本机新依赖、无服务器全局pip/系统包安装，无LibreOffice/Java。uv固定现有依赖，只新增三个包；工具沿用项目.local/tools/bin/uv0.12.3。
+
+准备工具的临时Docker容器已退出（APT索引随容器删除）；`.local/legacy-debs`仅保留一份约84KiB的验证下载副本，可在无需复核后删除。构建缓存`app/native-packages/`含工具和源码，可按legacy-tools.lock.json重建；新wheel保存在既有wheelhouse，按锁文件恢复。运行镜像含许可证与对应源码，不能作为不必要产物从发行镜像剔除。
+
+本轮`.local/legacy-*.log`、`.local/agent-full-reports/legacy-full.xml`、中间legacy-work归档和私有TMPDIR的juanzhan-legacy-*.png可在无需复查后按明确名称清理。固定blob测试数据`.local/juanzhan-extra-format-fixtures`现为13份/463988字节（约453KiB），来源/哈希见reference/extra-format-fixture-sources.json；不进入运行镜像。测试镜像juanzhan:legacy-dev无容器引用后可清理，禁止全局prune。业务卷、私有认证文件、备份和原件不在缓存清理范围。

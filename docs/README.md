@@ -9,6 +9,7 @@
 | [数据库](DATABASE.md) | 实体关系与迁移约束 |
 | [Agent接入](AGENT-API.md) | MCP/REST只读凭据、协议、客户端和分析证据 |
 | [文件类型验证](FORMATS-VERIFIED.md) | 当前全部输入MIME、OCR及不支持边界 |
+| [当前后续批次](BATCH-2026-10-21.md) | 旧Office/RTF、通用Agent/API/OAuth及IP端口测试的完整执行范围 |
 | [API](API.md) | 两套 HTTP 契约、调用顺序与缺口 |
 | [转换器](CONVERTER.md) | 六格式、OCR 与标准输出 |
 | [解析依赖许可](THIRD-PARTY.md) | T20版本、许可及再分发入口 |

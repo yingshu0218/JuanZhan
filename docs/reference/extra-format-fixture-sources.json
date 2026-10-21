@@ -34,5 +34,86 @@
     "url": "https://api.github.com/repos/apache/tika/git/blobs/487e6f41e56650ea60b7778b1cdd51d31b8fd86d",
     "size_bytes": 3410,
     "sha256": "c0f8456daa73640c7c9aeda5c7c2c70284ece2bc1df3ff902f8dc07f0f6ab465"
+  },
+  {
+    "name": "testWORD_protected_passtika.doc",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testWORD_protected_passtika.doc",
+    "blob_sha": "b407783d214c148432ef9a2565c570bd72cbf72d",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/b407783d214c148432ef9a2565c570bd72cbf72d",
+    "size_bytes": 22016,
+    "sha256": "9231e724bb17a2e5f74815728d90b06e15684cf5fb2443a6fa24deebd33be952"
+  },
+  {
+    "name": "testPPT_protected_passtika.ppt",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testPPT_protected_passtika.ppt",
+    "blob_sha": "ae67450f248eb313773e4d9b8a468cff90fd1973",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/ae67450f248eb313773e4d9b8a468cff90fd1973",
+    "size_bytes": 43008,
+    "sha256": "152e2429873512d3e3719889a5db2aac3496d5c80e01acedf13e0a6c3cc7e59b"
+  },
+  {
+    "name": "testEXCEL_protected_passtika.xls",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testEXCEL_protected_passtika.xls",
+    "blob_sha": "8d7e1ec808bf5ebf2099786dcaf0f5ccbcc414d7",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/8d7e1ec808bf5ebf2099786dcaf0f5ccbcc414d7",
+    "size_bytes": 17408,
+    "sha256": "79e11c5245f4e5e5892a5864e8d10f581cf50b7aa4cbfb4924ff2b934684bcdc"
+  },
+  {
+    "name": "testWORD_macros.doc",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testWORD_macros.doc",
+    "blob_sha": "838d86ba6969ee75ce07fb4497fcc6b1b91a6767",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/838d86ba6969ee75ce07fb4497fcc6b1b91a6767",
+    "size_bytes": 38400,
+    "sha256": "5bf327a892944e5ed1dbcc0db2b332aba6ec17b0f8bcde9f86f691216b44d5c9"
+  },
+  {
+    "name": "testPPT_macros.ppt",
+    "repository": "apache/tika",
+    "upstream_path": "tika-app/src/test/resources/test-data/testPPT_macros.ppt",
+    "blob_sha": "7af9008dda05a8cd526bb01690f611560a2d69a2",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/7af9008dda05a8cd526bb01690f611560a2d69a2",
+    "size_bytes": 88064,
+    "sha256": "faa438447d932770bf49a16856cf23c7f98be47f94d96030f294859595d87a3b"
+  },
+  {
+    "name": "testEXCEL_macro.xls",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testEXCEL_macro.xls",
+    "blob_sha": "b97f9b2a4b0381f431421dcccb40412b0f51d37a",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/b97f9b2a4b0381f431421dcccb40412b0f51d37a",
+    "size_bytes": 30720,
+    "sha256": "c89ad115e042403052f01f8381dac2c5f2a5a324def46d1f2a9f98bd113a906a"
+  },
+  {
+    "name": "testWORD_various.doc",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testWORD_various.doc",
+    "blob_sha": "4341c2270a1567ef177ce09437125429e08246e1",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/4341c2270a1567ef177ce09437125429e08246e1",
+    "size_bytes": 17408,
+    "sha256": "87a69bd33b7d6134f802b54d95ae0cadb7a9f4bda0d8bab96daa9abde42be180"
+  },
+  {
+    "name": "testPPT_various.ppt",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testPPT_various.ppt",
+    "blob_sha": "6f727158bab8e8b8ccd4ae62ce35ae6bf42bc26c",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/6f727158bab8e8b8ccd4ae62ce35ae6bf42bc26c",
+    "size_bytes": 160768,
+    "sha256": "54790b849e108dca237b44ebffc53dcc3920e159e84f6d590bff2db906412687"
+  },
+  {
+    "name": "testRTFUnicodeGothic.rtf",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testRTFUnicodeGothic.rtf",
+    "blob_sha": "02b26cf9b7616a678885a1d7c79c167a161999b1",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/02b26cf9b7616a678885a1d7c79c167a161999b1",
+    "size_bytes": 256,
+    "sha256": "90e8e8bec9200c0cb55efac015a116e8007454a1942c244aa1165071e902bc6a"
   }
 ]

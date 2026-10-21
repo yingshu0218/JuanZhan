@@ -5,6 +5,11 @@ import secrets
 import sys
 from tempfile import TemporaryDirectory
 import threading
+from contextlib import contextmanager
+import subprocess
+import time
+import urllib.request
+import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'services'),str(ROOT/'tests')]
@@ -17,12 +22,37 @@ from juanzhan.worker import Worker
 from test_converter import real_server
 import uvicorn
 
+@contextmanager
+def converter_server(root,token):
+    image=os.environ.get('JUANZHAN_E2E_CONVERTER_IMAGE')
+    if not image:
+        converter=create_app('converter',Settings(root/'unused',token),converter_config=ConverterConfig(root=root/'converter'))
+        with real_server(converter) as base:yield base
+        return
+    name='juanzhan-reading-converter-'+uuid.uuid4().hex[:12]
+    def docker(*args):
+        result=subprocess.run(['docker',*args],env={**os.environ,'CONVERTER_SERVICE_TOKEN':token},capture_output=True,text=True,timeout=30,check=True)
+        return result.stdout.strip()
+    try:
+        docker('run','-d','--name',name,'--read-only','--cap-drop=ALL','--security-opt','no-new-privileges:true',
+               '--tmpfs','/tmp:size=128m,mode=1777','--memory','512m','--cpus','1','-p','127.0.0.1::8000',
+               '-e','CONVERTER_SERVICE_TOKEN',image,'python','-m','uvicorn','juanzhan.converter:app','--host','0.0.0.0','--port','8000')
+        base='http://'+docker('port',name,'8000/tcp').splitlines()[0]
+        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        for _ in range(100):
+            try:
+                with opener.open(base+'/healthz',timeout=1):break
+            except OSError:time.sleep(.1)
+        else:raise RuntimeError('Isolated image Converter did not become healthy')
+        yield base
+    finally:
+        subprocess.run(['docker','rm','-f',name],capture_output=True,timeout=20)
+
 
 def main():
     with TemporaryDirectory(prefix='juanzhan-reading-browser-') as temp:
         root=Path(temp);token=secrets.token_urlsafe(32)
-        converter=create_app('converter',Settings(root/'unused',token),converter_config=ConverterConfig(root=root/'converter'))
-        with real_server(converter) as base:
+        with converter_server(root,token) as base:
             os.environ['CONVERTER_URL']=base
             settings=Settings(root/'archive',token,cookie_secure=False)
             settings.prepare_archive();migrate(settings.database)

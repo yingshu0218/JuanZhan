@@ -64,7 +64,6 @@ def test_every_raster_family_ocr_off_then_explicit_real_ocr(pipeline,format,exte
     ('broken.pdf',b'%PDF-1.7\nnot a PDF','failed'),
     ('broken.docx',zipped({'[Content_Types].xml':'<Types/>','word/document.xml':'<broken'}),'failed'),
     ('archive.zip',zipped({'note.txt':'Preserved original'}),'unsupported'),
-    ('document.rtf',b'{\\rtf1\\ansi This is a real RTF paragraph.\\par}','unsupported'),
     ('empty.txt',b'','unsupported'),
     ('invalid-utf16.bin',b'\xff\xfe\x13\x00\x00\x01','failed'),
     ('raw.bin',b'\x00binary','unsupported'),
@@ -92,8 +91,8 @@ def test_real_office_formats_respect_current_adapter_support(pipeline,name):
         from zipfile import ZipFile
         with ZipFile(BytesIO(data)) as package:assert ('xl/workbook.xml' if name.endswith('.xlsx') else 'ppt/presentation.xml') in package.namelist()
     else:assert data.startswith(bytes.fromhex('d0cf11e0a1b11ae1'))
-    _,_,summary=process(pipeline,data,name,'completed' if name.endswith(('.xlsx','.pptx')) else 'unsupported')
-    if name.endswith(('.xlsx','.pptx')):assert summary['points'] and summary['text_available']
+    _,_,summary=process(pipeline,data,name,'completed')
+    assert summary['points'] and summary['text_available']
 
 
 @pytest.mark.parametrize('format,extension',[('GIF','gif'),('BMP','bmp'),('WEBP','webp')])

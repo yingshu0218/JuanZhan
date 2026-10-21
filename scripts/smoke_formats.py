@@ -109,6 +109,16 @@ try:
                          'odt':(ODT,odf(ODT)),'ods':(ODS,odf(ODS)),'odp':(ODP,odf(ODP)),
                          'csv':('text/csv','设备,状态\n主机,已验收\n'.encode()),
                          'tsv':('text/tab-separated-values','设备\t状态\n主机\t已验收\n'.encode())})
+    legacy_mode='--legacy' in sys.argv
+    if legacy_mode:
+        if ocr_mode:raise ValueError('--legacy and --ocr are separate acceptance modes')
+        extra=Path(os.environ['JUANZHAN_EXTRA_FORMAT_FIXTURES'])
+        manifest=json.loads((Path(__file__).resolve().parents[1]/'docs/reference/extra-format-fixture-sources.json').read_text())
+        for extension,mime,name in (('doc','application/msword','testWORD_various.doc'),('xls','application/vnd.ms-excel','testEXCEL_macro.xls'),
+                                    ('ppt','application/vnd.ms-powerpoint','testPPT_various.ppt'),('rtf','application/rtf','testRTFUnicodeGothic.rtf')):
+            content=(extra/name).read_bytes();expected=next(item for item in manifest if item['name']==name)
+            assert hashlib.sha256(content).hexdigest()==expected['sha256']
+            fixtures[extension]=(mime,content)
     for kind,(mime,content) in fixtures.items():
         if external_mode:
             path=Path(source_fixture.name)/('original.'+kind)
@@ -148,7 +158,7 @@ with queue.write() as db:
             outcome=json.loads(docker('exec',archive,'python','-m','juanzhan.worker','--once'))
             assert outcome['status']=='completed',outcome
     # Executes the real Archive-side client inside Archive; it has no Converter spool mount.
-    code='OCR_MODE='+repr(ocr_mode)+'\nPERSIST_MODE='+repr(persist_mode)+'\nFIXTURE_COUNT='+repr(len(fixtures))+'\n'+'''
+    code='OCR_MODE='+repr(ocr_mode)+'\nPERSIST_MODE='+repr(persist_mode)+'\nFIXTURE_COUNT='+repr(len(fixtures))+'\nLEGACY_MODE='+repr(legacy_mode)+'\n'+'''
 import hashlib,uuid,time
 from juanzhan.config import Settings
 from juanzhan.converter_client import ConverterClient,ConverterClientError
@@ -170,6 +180,9 @@ if PERSIST_MODE:
    assert db.execute('SELECT revision_id FROM parse_runs WHERE id=?',(run,)).fetchone()[0]==revision
   assets=db.execute('SELECT storage_key,sha256,asset_kind FROM derived_assets').fetchall()
   assert len(assets)>=3*len(documents)
+  if LEGACY_MODE:
+   text=''.join(row[0] for row in db.execute("SELECT c.text_content FROM content_blocks c JOIN parse_runs p ON p.id=c.parse_run_id JOIN file_revisions r ON r.id=p.revision_id WHERE r.mime_type='application/vnd.ms-powerpoint' ORDER BY c.block_index"))
+   assert 'Gothic' in text and 'Row 1' in text and any(ord(char)>0xffff for char in text)
  store=ManagedStore(settings.data_dir/'derived')
  for key,sha,kind in assets:
   with store.open(key) as file:

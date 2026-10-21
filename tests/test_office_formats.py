@@ -4,6 +4,8 @@ import os
 import json
 import hashlib
 from pathlib import Path
+from io import BytesIO
+from zipfile import ZipFile
 from format_samples import zipped
 from test_format_acceptance import process
 from test_parsing import pipeline
@@ -99,3 +101,13 @@ def test_pinned_real_libreoffice_documents(pipeline,name):
     assert len(data)==expected['size_bytes']
     _,_,summary=process(pipeline,data,name)
     assert summary['points'] and summary['text_available']
+
+def test_pptx_speaker_notes_are_distinct_source_backed_text(pipeline):
+    with ZipFile(BytesIO(presentation())) as archive:items={name:archive.read(name) for name in archive.namelist()}
+    items['ppt/slides/_rels/slide2.xml.rels']=f'<Relationships><Relationship Id="notes" Type="{R}/notesSlide" Target="../notesSlides/notesSlide2.xml"/></Relationships>'
+    items['ppt/notesSlides/notesSlide2.xml']=f'<p:notes xmlns:p="{P}" xmlns:a="{A}"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>备注：延期风险需复核。</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>'
+    saved,_,summary=process(pipeline,zipped(items),'speaker-notes.pptx')
+    body=pipeline[1].get('/api/v1/documents/'+saved['document_id']+'/content').json()['body']
+    note=next(block for block in body if '延期风险' in block['text'])
+    assert note['locator']['heading_path']==['幻灯片 1','备注']
+    assert 'SLIDE_SPEAKER_NOTES_INCLUDED' in summary['warnings']

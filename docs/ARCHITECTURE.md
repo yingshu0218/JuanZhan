@@ -1,5 +1,7 @@
 # 技术架构
 
+T38新增conversion_legacy（DOC受限CLI、XLS/RTF只读库）与conversion_ppt（当前MS-PPT UserEdit/PersistDirectory/形状/备注引用）。不扫描废弃编辑记录、不开外部链接、不执行宏，PPT与PPTX备注以真实section来源进入同一持久正文/概要/检索链路。未知原件布局不编造定位；CFB识别在Archive也受4MiB/FAT头预算控制。新增依赖/离线锁及对应源码见THIRD-PARTY，仍无新业务服务/迁移/LLM/向量库。
+
 2026-10-21 Agent阶段实现：overviews.py成为后端共享概要引擎，Web与agent API读取同一按需结果；原前端算法及规则测试已由后端回归替代。agent_api.py提供只读工具，agent_mcp.py提供现代/旧协议Streamable HTTP适配，agent_stdio.py为仅依赖标准库的客户端桥接。agent_access.py及0012迁移管理独立空间授权凭据，禁止agent凭据调用通用写接口。模型在外部agent运行；服务只做字面/结构化检索、概要和单一读取快照的证据打包。正式业务字段以确认状态和当前文档版本独立返回，整数/Decimal不丢精度；历史正文不冒充历史业务字段。详见ADR-058/059、API和AGENT-API。
 
 2026-10-21产品目标明确为常见格式的通用解析与概要提取。当前链路：Converter六格式适配 → 持久化标准blocks/ParseRun → Web通用规则概要。概要算法位于web/src/documentSummary.js，尚未作为独立后端产物存储或通过统一概要API提供。建议/待定：后续将概要能力提升为可复用引擎输出；若增加持久化/HTTP契约，须先同步API/数据库规格并以迁移实施，不能将现有前端视图包装为已交付后端能力。
