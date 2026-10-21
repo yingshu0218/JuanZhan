@@ -27,10 +27,12 @@ import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
 import { Sources } from "./Sources.jsx";
 import { Library } from "./Library.jsx";
+import { SystemOverview } from "./SystemOverview.jsx";
 import { Detail } from "./Detail.jsx";
 import { Operations, useOperations } from "./Operations.jsx";
 import { Uploads, useUploads } from "./Uploads.jsx";
 const views = {
+  home: "系统概览",
   all: "全部档案",
   inbox: "收件箱",
   favorite: "已收藏",
@@ -38,6 +40,7 @@ const views = {
   sources: "来源",
 };
 const navIcons = {
+  home: Books,
   all: FileText,
   inbox: Tray,
   favorite: Star,
@@ -69,7 +72,7 @@ export function Workspace({ api, logout, authError }) {
   const [documents, setDocuments] = useState([]);
   const [total, setTotal] = useState(0);
   const [view, setView] = useState(initial.state.view || preferredView);
-  const [section, setSection] = useState(initial.state.section || "all");
+  const [section, setSection] = useState(initial.state.section || "home");
   const [folder, setFolder] = useState(initial.state.folder || "");
   const [selected, setSelected] = useState(null);
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -136,6 +139,7 @@ export function Workspace({ api, logout, authError }) {
     });
   }
   function fetchDocuments(number, size, signal) {
+    if (section === 'home') return Promise.resolve({ items: [], total: 0 });
     if (search && section !== "sources") {
       const body = { ...searchBody(search), space_id: space, page: number, page_size: size,
         sort: [{ field: sort.replace(/^-/, ""), order: sort.startsWith("-") ? "desc" : "asc" }] };
@@ -180,7 +184,7 @@ export function Workspace({ api, logout, authError }) {
       const available = spaces.some((item) => item.id === value.space);
       setNotice(saved.error || (!available && value.space ? "链接中的空间不可用，已回到默认列表并清空检索。" : ""));
       setSpace(available ? value.space : (spaces[0]?.id || ""));
-      setSection(available ? value.section : "all"); setFolder(available ? value.folder : ""); setType(available ? value.type : "");
+      setSection(available ? value.section : (value.space || saved.error ? "all" : "home")); setFolder(available ? value.folder : ""); setType(available ? value.type : "");
       setPage(available ? value.page : 1); setSort(available ? value.sort : "-imported_at"); setView(available ? value.view : preferredView());
       setSearch(available ? value.search : null); setSelected(null); setMobileDetail(false); setChecked(new Map());
     }
@@ -377,6 +381,7 @@ export function Workspace({ api, logout, authError }) {
     return () => controller.abort();
   }, [api, ready, space, page, sort, type, folder, section, refresh, search]);
   function chooseSection(next, nextFolder = "") {
+    if (next === 'home') { clearSearch(); setType(''); }
     setSection(next);
     setFolder(nextFolder);
     setPage(1);
@@ -504,7 +509,7 @@ export function Workspace({ api, logout, authError }) {
           <strong>档案库</strong>
         </div>
         <div className="breadcrumb">
-          <span>{spaces.find((s) => s.id === space)?.name || "个人资料"}</span>
+          <span>{section === 'home' ? '全部空间' : spaces.find((s) => s.id === space)?.name || "个人资料"}</span>
           <CaretRight size={15} />
           <span>{title}</span>
         </div>
@@ -546,7 +551,7 @@ export function Workspace({ api, logout, authError }) {
           </button>
         </div>
       ) : null}
-      <main className={mobileDetail && selected ? "show-detail" : ""}>
+      <main className={[mobileDetail && selected ? 'show-detail' : '', !selected ? 'no-selection' : ''].filter(Boolean).join(' ')}>
         <nav
           className={navOpen ? "sidebar open" : "sidebar"}
           aria-label="档案导航"
@@ -680,6 +685,12 @@ export function Workspace({ api, logout, authError }) {
             <Notice error>{error}</Notice>
             <button onClick={() => window.location.reload()}>重新连接</button>
           </div>
+        ) : !ready ? <div className="workspace-empty" role="status">正在读取档案库…</div>
+        : section === 'home' && space ? (
+          <SystemOverview api={api} spaces={spaces} refreshKey={refresh}
+            onBrowse={next => { clearSearch(); setType(''); chooseSection(next); }}
+            onTasks={() => openTasks(null)} onImport={importFiles}
+            onDocument={doc => { clearSearch(); setType(''); setSpace(doc.space_id); chooseSection('all'); setSelected(doc.id); setMobileDetail(true); }} />
         ) : !space && ready ? (
           <div className="workspace-empty">
             <Empty title="建立你的第一个空间">
@@ -769,7 +780,7 @@ export function Workspace({ api, logout, authError }) {
                   onDragStart={dragStart}
                   onDragEnd={resetDrag}
                 />
-                <Detail
+                {selected && <Detail
                   key={selected || "empty"}
                   api={api}
                   id={selected}
@@ -777,13 +788,13 @@ export function Workspace({ api, logout, authError }) {
                   folders={catalog.folders}
                   tags={catalog.tags}
                   definitions={catalog.definitions}
-                  onBack={() => setMobileDetail(false)}
+                  onBack={() => { setMobileDetail(false); setSelected(null); }}
                   refreshKey={refresh}
                   operationPending={operations.pending}
                   onOperate={(doc) =>
                     prepare([doc], doc.deleted_at ? "restore" : "set_triage")
                   }
-                />
+                />}
               </>
             )}
           </>

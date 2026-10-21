@@ -1,4 +1,4 @@
-const sections = ["all", "inbox", "favorite", "trash", "sources"];
+const sections = ["home", "all", "inbox", "favorite", "trash", "sources"];
 const sorts = ["-imported_at", "imported_at", "title", "-document_date", "-relevance"];
 export function preferredView() {
   try { return localStorage.getItem('juanzhan.library-view.v1') === 'grid' ? 'grid' : 'list'; }
