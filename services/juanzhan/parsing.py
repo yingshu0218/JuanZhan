@@ -82,8 +82,18 @@ def begin(settings,job):
 
 
 @contextmanager
-def original(settings,revision,max_bytes):
+def original(settings,revision,max_bytes,*,allow_snapshot=True):
     if revision['size_bytes']>max_bytes:raise ParseFailure('CONVERTER_INPUT_LIMIT')
+    if allow_snapshot and revision['storage_kind']=='external':
+        from .source_snapshots import stored
+        with connect(settings.database) as db:
+            obj=stored(db,revision['id'])
+        if obj:
+            if (obj[1],obj[2])!=(revision['sha256'],revision['size_bytes']):raise ParseFailure('ORIGINAL_INTEGRITY')
+            try:
+                with ManagedStore(settings.data_dir/'managed').open(obj[0]) as file:yield file
+            except IntegrityError:raise ParseFailure('ORIGINAL_INTEGRITY') from None
+            return
     if revision['storage_kind']=='managed':
         with connect(settings.database) as db:
             obj=db.execute('SELECT storage_key FROM managed_objects WHERE id=?',(revision['managed_object_id'],)).fetchone()
@@ -153,11 +163,13 @@ def publish(db,job,options,result,assets):
 def execute(settings,job,client=None):
     queue=JobQueue(settings)
     options,revision=begin(settings,job)
+    from .source_snapshots import ensure
     remote=None
     try:client=client or ConverterClient(os.getenv('CONVERTER_URL','http://converter:8000'),settings.converter_token)
     except ValueError:raise ParseFailure('CONVERTER_NOT_CONFIGURED') from None
     store=ManagedStore(settings.data_dir/'derived');store.initialize()
     try:
+        ensure(settings,revision,job)
         with original(settings,revision,client.max_file_bytes) as file:
             queue.step(job['id'],job['lease_token'],'submit')
             remote=client.submit(file,options)['job_id']

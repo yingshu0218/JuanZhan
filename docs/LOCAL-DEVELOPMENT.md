@@ -169,6 +169,10 @@ XLSX/PPTX/ODF/CSV/TSV复用既有SafeZip、defusedxml和Python标准库，无新
 
 ## 2026-10-21 OAuth与通用REST客户端开发
 
+后续源文件管理批次（T43～T47）进行中：本轮初版UI/快照仍复用既有Python/React/Docker/Playwright，没有本机新增依赖。服务器日志`.local/source-ui-build.log`、`.local/source-ui-browser.log`、`.local/source-snapshot-target.log`及`.local/source-snapshot-core-final.log`，两端`/tmp/juanzhan-overview-only-*.png`、`.local/juanzhan-source-*-wip.tar.gz`可复查后按名清理。业务实例仍rc.14/13迁移，0014尚未应用。
+
+Office预览计划独立服务器转换服务，不安装本机办公套件、不向第三方发送文件。当前只在临时容器juanzhan-office-package-resolve中解析/下载Debian trixie的LibreOffice Writer/Calc/Impress、CJK字体与libseccomp2，缓存`.local/office-preview-debs`、日志`.local/office-preview-dependencies.log`；尚未安装到宿主系统或运行服务，也未完成包锁/许可/资源实测。下载在运行时不得当作失败缓存删除；最终依赖/哈希/版本/体积与清理记录在完成后补齐。
+
 业务运行复用既有Python/FastAPI/Pydantic/SQLite/React与Playwright，无新运行包、模型或数据库服务。迁移0013与OAuth/REST客户端源码属于产品文件，须保留。服务器`.local/oauth-build.log`、`.local/oauth-full.log`、`.local/agent-full-reports/oauth-full.xml`、`.local/juanzhan-oauth-*.tar.gz`及两端`/tmp/juanzhan-oauth-*.png`为可复查后按名称清理的开发产物；临时OAuth浏览器库由TemporaryDirectory退出清理，未挂生产卷。测试实例原件、卷、备份和私有认证文件继续保留。
 
 IP HTTPS运维工具单独安装在服务器`.local/certbot-venv`，Certbot5.4.0及依赖共18包，约23MiB；精确版本/所有分发哈希见`deploy/certbot.in`与`deploy/certbot.lock`，不进入Archive镜像、不安装本机/全局Python。TLS校验使用独占空闲80端口的standalone服务；开发80端口连通探测仅收到本次404请求后已关闭。测试证书私有目录`test-instance/tls-staging`可在无续期用途后清理；正式证书/ACME账户/私钥目录`test-instance/tls`须保留到HTTPS停用，不提交Git。运维工具Apache-2.0，间接包许可以各固定分发元数据为准；不捆绑分发这些工具。工具及证书配置的卸载需先停用续期与HTTPS入口，不能按普通缓存删除。

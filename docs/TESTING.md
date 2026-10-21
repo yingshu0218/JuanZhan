@@ -777,6 +777,8 @@ T38最终完整回归：586 passed、3既有框架警告、无跳过，500.83s�
 最终发布镜像验收：`JUANZHAN_SMOKE_IMAGE=juanzhan:0.1.0-rc.13 JUANZHAN_EXTRA_FORMAT_FIXTURES=... .venv/bin/python scripts/smoke_formats.py --persist --external --office --legacy`通过，17类非图片文档（包含旧四格式）的内核只读来源→解析→持久化/文件哈希→鉴权HTTP读取/幂等重解析→源变更拒绝与离线缓存均通过，另强制PPT真实Gothic/表格与非BMP正文内容。全部随机容器/卷/网络退出清理，日志legacy-rc13-image-smoke.log；三类图片及扫描PDF OCR由最终完整回归覆盖。
 # T41 OAuth与通用REST定向验收 · 2026-10-21
 
+后续T43～T47（尚未整批验收/部署）：新overview-only浏览器专项1项通过（15.3秒，1440/390截图已检查），真实上传→Converter镜像→SQLite→概览，断言不显示格式选择/候选/历史且不请求后两类接口。0014快照核心最终3项通过（1.94秒）：真实sysfs只读源/SQL/文件/HTTP下载，来源关闭后副本仍可用，GC不删引用副本、备份恢复后离线可读，重复保存幂等、错误哈希与SQL不匹配拒绝。备份/maintenance及初版快照组17项通过（14.37秒）；首轮缺CJK字体挂载导致一个PDF夹具失败，补足既有只读字体挂载后通过。尚需Office阅读、显式来源快照任务/API、存储管理、旧浏览器断言更新和完整回归，不能把专项通过当作新批完成。
+
 真实SQLite/HTTP的OAuth、认证及原Agent专项35项通过（22.09秒）；通用标准库REST客户端另6项通过（3.39秒，首轮误认为catalog含space_id，按既有契约改为四类目录字段断言后重验）。隔离OAuth浏览器1项通过（最终6.6秒），覆盖同意空间、回调state/iss、PKCE换码、REST/MCP、刷新令牌和管理员删除客户端撤销。1440/390截图已检查，复选框改为横向排布；前端构建通过，既有PDF阅读chunk大小提醒保留。
 
 完整后端容器回归595项通过、7项框架警告、无跳过（436.03秒），日志`.local/oauth-full.log`与`.local/agent-full-reports/oauth-full.xml`。新增REST六项在完整组启动后单独验收，不能把595写成已包含REST的完整601项。

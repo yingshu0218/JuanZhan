@@ -71,7 +71,7 @@ def purge(db,job,settings):
     before=expected(db,job['target_id'],payload['version'])
     if before['deleted_at'] is None:fail(409,'DOCUMENT_NOT_TRASHED','Move the document to trash first')
     id=before['id'];timestamp=utc_now();now=time.time()
-    object_keys=[r[0] for r in db.execute('SELECT DISTINCT o.storage_key FROM managed_objects o JOIN file_revisions r '
+    object_keys=[r[0] for r in db.execute('SELECT DISTINCT o.storage_key FROM managed_objects o JOIN original_object_references r '
                                          'ON r.managed_object_id=o.id WHERE r.document_id=?',(id,))]
     for entry in db.execute('SELECT * FROM source_entries WHERE document_id=?',(id,)).fetchall():
         add(db,entry,'document_purged',timestamp)
@@ -90,7 +90,7 @@ def purge(db,job,settings):
     db.execute('DELETE FROM documents WHERE id=?',(id,))
     db.execute('INSERT INTO document_purge_receipts VALUES (?,?,?,?)',(id,payload['version'],job['id'],timestamp))
     for key in object_keys:
-        if not db.execute('SELECT 1 FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=? LIMIT 1',(key,)).fetchone():
+        if not db.execute('SELECT 1 FROM original_object_references r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=? LIMIT 1',(key,)).fetchone():
             db.execute('INSERT INTO managed_gc_candidates VALUES (?,?) ON CONFLICT(storage_key) DO UPDATE SET eligible_after=max(eligible_after,excluded.eligible_after)',
                        (key,now+RETENTION_SECONDS))
     from .derived import schedule_gc
@@ -119,7 +119,7 @@ def collect(db,job,root,settings,*,clock=time.time):
                         info=os.stat(name,dir_fd=bucket,follow_symlinks=False)
                         if not stat.S_ISREG(info.st_mode) or info.st_size!=size:
                             counts['ignored_files']+=1;continue
-                        referenced=db.execute('SELECT 1 FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=? LIMIT 1',(key,)).fetchone()
+                        referenced=db.execute('SELECT 1 FROM original_object_references r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=? LIMIT 1',(key,)).fetchone()
                         if referenced:
                             db.execute('DELETE FROM managed_gc_candidates WHERE storage_key=?',(key,))
                             counts['retained_objects']+=1;continue
@@ -141,7 +141,7 @@ def collect(db,job,root,settings,*,clock=time.time):
     for key, in db.execute('SELECT storage_key FROM managed_gc_candidates WHERE eligible_after<=?',(now,)).fetchall():
         try:parse_key(key)
         except ValueError:continue
-        if db.execute('SELECT 1 FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=?',(key,)).fetchone():continue
+        if db.execute('SELECT 1 FROM original_object_references r JOIN managed_objects o ON o.id=r.managed_object_id WHERE o.storage_key=?',(key,)).fetchone():continue
         if ManagedStore(settings.data_dir/'managed').probe(key)=='missing':
             db.execute('DELETE FROM managed_objects WHERE storage_key=?',(key,))
             db.execute('DELETE FROM managed_gc_candidates WHERE storage_key=?',(key,))

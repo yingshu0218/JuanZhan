@@ -57,6 +57,13 @@ class Triage(VersionChange):
 
 def availability(db,revision,store,mounts=None):
     if revision is None:return 'missing',None
+    if revision['storage_kind']=='external':
+        from .source_snapshots import stored
+        saved=stored(db,revision['id'])
+        if saved:
+            entry=db.execute('SELECT source_id FROM source_entries WHERE id=?',(revision['source_entry_id'],)).fetchone()
+            if (saved[1],saved[2])!=(revision['sha256'],revision['size_bytes']):return 'unknown',entry[0] if entry else None
+            return store.probe(saved[0]),entry[0] if entry else None
     if revision['storage_kind']=='managed':
         obj=db.execute('SELECT storage_key,sha256,size_bytes FROM managed_objects WHERE id=?',
                        (revision['managed_object_id'],)).fetchone()
