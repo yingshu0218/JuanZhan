@@ -63,3 +63,10 @@ devtest 从干净提交构建并部署 `juanzhan:0.1.0-rc.11`，镜像 `sha256:a
 在线 Agent 实测9项通过：授权空间、检索、共享概要、自然语言问题的分析证据、两代 MCP、写入/全局API拒绝、撤销。临时凭据在 finally 中撤销，数据库无遗留Agent凭据；未保存明文。报告 `test-instance/agent-live-smoke.json`。用户 Word 默认分点概要、内联数字、章节强调、来源跳转、1440/390无溢出/控制台错误、档案未变通过；未重解析。报告 `test-instance/generic-overview-smoke.json`，截图同目录 generic-overview-desktop/mobile.png。
 
 三个生产容器健康；回环/SSH隧道 healthz=200，旧隧道失效后仅重建本项目转发。观测空闲内存约 archive46.6MiB、converter40.8MiB、worker29.7MiB（瞬时值，非峰值保证）。原 nginx-proxy 和 simple-shell-terminal-1 保留运行。依赖与可清理产物见 LOCAL-DEVELOPMENT；完整回归见 TESTING。
+## 2026-10-21 rc.12 原生Office与CSV/TSV
+
+功能提交1d2a8e7dbfeb725a270f8e22237e4b394278bf7d已推送；干净候选`juanzhan:0.1.0-rc.12`，镜像`sha256:0b182686ddfd78de091ad7ff52adc49225092a7e25ad6f01903cc4c100614a3a`，source_dirty=false；manifest `/tmp/juanzhan-release-x95cdeiu/manifest.json`，私有副本test-instance/rc12-manifest.json。完整后端/浏览器/13类只读来源镜像实测通过后升级原Compose实例。SQL仍12迁移，Archive0.4.30/74路径、Converter0.4.4/6路径，无新增运行依赖。
+
+升级前备份`/backups/before-office-rc12`（18个文件）；test-instance/office-before.json与office-after.json完全一致：4份档案当前Revision/ParseRun/版本、19份文件哈希、完整性ok/无FK错误。认证私有覆盖逐字验证只含原测试用户名差异，不改密码。上线后Converter实际声明16种输入MIME；原Word1440/390默认概览与来源跳转只读验证通过，未重解析，Agent在线9项通过且临时凭据已撤销（office-agent-live-smoke.json）。三个容器healthy，两个无关服务保留。rc.11镜像和升级前备份保留可回退，镜像未对外发布。
+
+用户最新选择先devtest/IP端口测试，暂不正式域名/发布；公网IP入口配置在后续任务中，当前18080仍为回环/SSH隧道，不虚称已经外网可达。

@@ -754,3 +754,7 @@ devtest原juanzhan-test实际10→11迁移完成，全部10个旧迁移SHA及原
 
 浏览器首轮6项通过/1项失败，失败为新增样本生成子进程缺少services模块搜索路径；修正测试脚本后只重跑该新增用例通过（28.7s），实际七份XLSX/PPTX/ODT/ODS/ODP/CSV/TSV逐一真实上传/转换/持久正文与概要/来源跳转、桌面1440和手机390验证。既有六格式十份样本与其他阅读用例均在首轮通过（共6项）。无放宽断言。Browser plugin不可用，沿用Playwright；未修改系统/tmp或安装浏览器。日志`.local/office-browser-reading-first.log`和`.local/office-browser-new-formats.log`；截图位于私有TMPDIR下juanzhan-office-*.png，已实际查看XLSX桌面与PPTX手机截图，通用分点/内联数字/布局正常。
 
+T37最终完整后端：561 passed、3框架警告、无跳过（452.15s），日志`.local/office-full-tests.log`、JUnit `.local/agent-full-reports/office-full.xml`。随后仅增加测试数据与用例，运行3份固定blob真实LibreOffice ODT/ODS/ODP补充用例全部通过（5.58s），源码/运行依赖不变；日志`.local/office-real-odf.log`。新样本来源/大小/SHA-256/git blob见reference/extra-format-fixture-sources.json，4份共45940字节（其中RTF留给后续适配，未宣称已支持）。
+
+构建镜像rc.12后执行`JUANZHAN_SMOKE_IMAGE=juanzhan:0.1.0-rc.12 .venv/bin/python scripts/smoke_formats.py --persist --external --office`通过。原六格式＋新七格式共13类：内核只读挂载真实来源导入，解析/块/候选/派生文件/哈希/当前指针入库，鉴权HTTP读取、显式重解析幂等，来源字节变化拒绝且旧正文保留；第二实例无来源挂载仍可读陈旧缓存。随机容器/卷/网络退出清理，未挂业务卷。日志`.local/office-image-smoke.log`。
+

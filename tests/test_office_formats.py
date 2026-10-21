@@ -1,5 +1,9 @@
 """Real package bytes through HTTP, worker, SQLite, storage and shared overview."""
 import pytest
+import os
+import json
+import hashlib
+from pathlib import Path
 from format_samples import zipped
 from test_format_acceptance import process
 from test_parsing import pipeline
@@ -84,3 +88,14 @@ def test_delimited_tables_preserve_quoted_newlines_exact_numbers_and_literal_for
     body=pipeline[1].get('/api/v1/documents/'+saved['document_id']+'/content').json()['body']
     assert body[1]['structure']['table']['rows']==[expected]
     assert 'DELIMITED_VALUES_ARE_TEXT_NO_FORMULA_EXECUTION' in summary['warnings']
+
+@pytest.mark.parametrize('name',['LibreOfficeCalc_ods_1.3.ods','LibreOfficeImpress_odp_1.3.odp','LibreOfficeWriter_odt_1.3.odt'])
+def test_pinned_real_libreoffice_documents(pipeline,name):
+    directory=os.environ.get('JUANZHAN_EXTRA_FORMAT_FIXTURES')
+    if not directory:pytest.skip('Set JUANZHAN_EXTRA_FORMAT_FIXTURES to pinned Apache Tika fixtures')
+    root=Path(directory);data=(root/name).read_bytes()
+    expected=next(item for item in json.loads((root/'manifest.json').read_text()) if item['name']==name)
+    assert hashlib.sha256(data).hexdigest()==expected['sha256']
+    assert len(data)==expected['size_bytes']
+    _,_,summary=process(pipeline,data,name)
+    assert summary['points'] and summary['text_available']

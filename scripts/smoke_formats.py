@@ -94,7 +94,7 @@ try:
     cookie=headers['Set-Cookie'].split(';')[0]
     status,space,_=request(base,'/api/v1/spaces',body=json.dumps({'name':'Converter real fixture'}).encode(),cookie=cookie,csrf=session['csrf_token'])
     assert status==201
-    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
+    sys.path[:0]=[str(Path(__file__).resolve().parents[1]/folder) for folder in ('tests','services')]
     from format_samples import samples, raster_sample
     ocr_mode='--ocr' in sys.argv
     fixtures=samples() if not ocr_mode else {
@@ -102,6 +102,13 @@ try:
         'jpg':('image/jpeg',raster_sample('JPEG')),
         'tiff':('image/tiff',raster_sample('TIFF')),
         'pdf':('application/pdf',raster_sample('PDF'))}
+    if '--office' in sys.argv:
+        if ocr_mode:raise ValueError('--office and --ocr are separate acceptance modes')
+        from test_office_formats import workbook,presentation,odf,XLSX,PPTX,ODT,ODS,ODP
+        fixtures.update({'xlsx':(XLSX,workbook()),'pptx':(PPTX,presentation()),
+                         'odt':(ODT,odf(ODT)),'ods':(ODS,odf(ODS)),'odp':(ODP,odf(ODP)),
+                         'csv':('text/csv','设备,状态\n主机,已验收\n'.encode()),
+                         'tsv':('text/tab-separated-values','设备\t状态\n主机\t已验收\n'.encode())})
     for kind,(mime,content) in fixtures.items():
         if external_mode:
             path=Path(source_fixture.name)/('original.'+kind)
@@ -141,7 +148,7 @@ with queue.write() as db:
             outcome=json.loads(docker('exec',archive,'python','-m','juanzhan.worker','--once'))
             assert outcome['status']=='completed',outcome
     # Executes the real Archive-side client inside Archive; it has no Converter spool mount.
-    code='OCR_MODE='+repr(ocr_mode)+'\nPERSIST_MODE='+repr(persist_mode)+'\n'+'''
+    code='OCR_MODE='+repr(ocr_mode)+'\nPERSIST_MODE='+repr(persist_mode)+'\nFIXTURE_COUNT='+repr(len(fixtures))+'\n'+'''
 import hashlib,uuid,time
 from juanzhan.config import Settings
 from juanzhan.converter_client import ConverterClient,ConverterClientError
@@ -154,7 +161,7 @@ if PERSIST_MODE:
  import json
  with connect(settings.database) as db:
   documents=db.execute('SELECT d.id,d.current_revision_id,d.current_parse_run_id,p.status,p.text_available,p.ocr_used,d.document_version FROM documents d JOIN parse_runs p ON p.id=d.current_parse_run_id').fetchall()
-  assert len(documents)==(4 if OCR_MODE else 6)
+  assert len(documents)==FIXTURE_COUNT
   assert db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==len(documents)
   assert not db.execute('PRAGMA foreign_key_check').fetchall()
   for document,revision,run,status,text,ocr,version in documents:
@@ -180,7 +187,7 @@ else:raise AssertionError('Converter fixture not ready')
 assert capabilities['supported_input_types']==SUPPORTED+['image/png','image/jpeg','image/tiff']
 with connect(settings.database) as db:
  rows=db.execute('SELECT r.id,r.sha256,o.storage_key,r.mime_type,d.id,d.title,d.current_parse_run_id FROM file_revisions r JOIN managed_objects o ON o.id=r.managed_object_id JOIN documents d ON d.id=r.document_id').fetchall()
- assert len(rows)==(4 if OCR_MODE else 6) and db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
+ assert len(rows)==FIXTURE_COUNT and db.execute('SELECT count(*) FROM parse_runs').fetchone()[0]==0
 store=ManagedStore(settings.data_dir/'managed')
 for revision,sha,key,mime,document,title,current in rows:
  with store.open(key) as file:original=file.read()

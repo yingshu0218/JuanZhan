@@ -1,0 +1,38 @@
+[
+  {
+    "name": "LibreOfficeCalc_ods_1.3.ods",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-miscoffice-module/src/test/resources/test-documents/versions/LibreOfficeCalc_ods_1.3.ods",
+    "blob_sha": "2e67be5164befe8d9c0e06348c99957f637dcb1a",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/2e67be5164befe8d9c0e06348c99957f637dcb1a",
+    "size_bytes": 8812,
+    "sha256": "f75caa9ca8d088f4875b38dfc2f6f6e408e13ee8b3d0d8b7130a99c5a2cb7f84"
+  },
+  {
+    "name": "LibreOfficeImpress_odp_1.3.odp",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-miscoffice-module/src/test/resources/test-documents/versions/LibreOfficeImpress_odp_1.3.odp",
+    "blob_sha": "d7200d87681b99f5271bc47a2886849dd1dca7b2",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/d7200d87681b99f5271bc47a2886849dd1dca7b2",
+    "size_bytes": 24035,
+    "sha256": "ecc8129a5b22c77b378504d87774ef26245d9e4146e8b15ec30a2f58fd0ebb93"
+  },
+  {
+    "name": "LibreOfficeWriter_odt_1.3.odt",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-miscoffice-module/src/test/resources/test-documents/versions/LibreOfficeWriter_odt_1.3.odt",
+    "blob_sha": "acf29661a70559a0a00a4c6edb60a72bf088260a",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/acf29661a70559a0a00a4c6edb60a72bf088260a",
+    "size_bytes": 9683,
+    "sha256": "3f0241958a222058664cf981f7cc1565a22dce01a8b6b8102c6aa4ea3352c8c0"
+  },
+  {
+    "name": "testRTF.rtf",
+    "repository": "apache/tika",
+    "upstream_path": "tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/testRTF.rtf",
+    "blob_sha": "487e6f41e56650ea60b7778b1cdd51d31b8fd86d",
+    "url": "https://api.github.com/repos/apache/tika/git/blobs/487e6f41e56650ea60b7778b1cdd51d31b8fd86d",
+    "size_bytes": 3410,
+    "sha256": "c0f8456daa73640c7c9aeda5c7c2c70284ece2bc1df3ff902f8dc07f0f6ab465"
+  }
+]
