@@ -1,5 +1,7 @@
 # 测试与交付验收
 
+2026-10-22 T50：Playwright使用真实SQLite/文件存储/HTTP验证原生文件夹选择（22个文件，超过旧20上限；嵌套/已有目录复用/重复文件显式另存/下载字节不变）；CDP Input.dispatchDragEvent传入真实服务器临时目录和文件，验证混合拖入、空目录、子目录及503后重试，390无溢出。枚举专项验证121文件跨100/21/空批次读取、1000项限额、路径穿越拒绝、取消和权限失败。archive/organize/overview-home/folder-upload共14项最终通过：首轮发现文件输入标签子串冲突、目录选择器默认multipart filename携带relativePath被后端拒绝，分别改为独立标签与显式file.name；再验13通过1取消等待提示失败，恢复等待/活动取消的真实区别后archive＋folder-upload 6项复验全通过。原件路径校验未放宽。构建通过，保留既有PDF chunk提示。Browser插件未列出，沿用devtest Playwright/Chromium，无本机包安装。公网rc.18只读验证1440/390入口、原生multiple目录选择、零控制台错误，不向业务实例导入样本；部署前后及QA后原4档案/业务表/20文件哈希一致。后端未修改，本轮未重跑全后端套件；实际转换不属于本轮新增验收，保存成功不冒充解析成功。
+
 2026-10-21 T49：devtest生产构建通过（沿用既有PDF chunk提示），archive＋organize＋overview-home共11通过；首页验证覆盖全局计数与真实SQLite/文件上传、跨空间近期入口、关闭详情后的全宽列表、URL刷新/前进后退及390布局。新增稳定等待统计后手机截图和任务中心入口后home单项再通过。真实Converter search 4项最终通过：首轮3通过，OCR样本因漏传JUANZHAN_TEST_CJK_FONT失败；补齐既有字体路径后该项通过。公网rc.17只读验证首页真实4文档/计数、列表宽度>1100（1440视口）、Word概览打开及返回收起、任务入口、390无横向溢出和控制台零错误；部署前、部署后、QA后业务表和20文件哈希一致。Browser插件未列出，使用devtest已有Playwright/Chromium，未安装本机依赖；本轮未重跑全后端测试，后端无代码/契约/迁移变更。
 
 2026-10-21 T48：document_api＋overviews 18通过；search＋files 54通过（使用既有rc.15容器、只读sysfs和CJK字体路径）。首轮宿主机检查51通过3失败，原因为漏传CJK字体及宿主sysfs可写，按既有容器环境重跑全部54通过。Vite生产构建通过，保留既有PDF chunk体积提示。archive＋organize首轮9通过1失败；新增偏好检查刷新页面导致上传队列清空，修正测试顺序后该项独立复验通过。覆盖默认列表、网格切换、批量、拖放、分页、空间隔离、上传及390响应布局。公网只读复验真实4份文档、一行摘录、默认列表、网格/列表重开偏好、零逐行overview请求及零控制台错误，1440/390截图已检查。Browser插件不可用，使用devtest既有Playwright，无本机依赖安装。未承诺没有现成PNG的Office自动生成首页缩略图；浏览列表不触发转换。

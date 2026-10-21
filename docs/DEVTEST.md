@@ -1,5 +1,7 @@
 # devtest 测试实例
 
+2026-10-22 rc.18/T50部署：运行源码e19fc8c，业务image sha256:048c942e516b76ccd2caf493f3d166564fb5cefc9df025e2f602c37aa1f871cc，Office仍rc.15；五服务healthy。https://8.153.19.221:443/，test/111不变。“导入文件”面板提供文件和文件夹选择，亦可混合拖入。升级前备份before-folder-rc18；私有folder-before/after/after-qa.json、folder-deploy.json、folder-live.json和folder-entry-desktop/mobile.png在test-instance。所有实际样本仅在隔离浏览器测试库执行并清理，业务原4档案/20文件及15迁移不变。前端相对路径仅用于映射逻辑目录，multipart始终只传原文件名及folder_id，不接收客户端磁盘路径。无新增依赖；临时folder bundle/tar/tgz、/tmp/folder-deploy.py、folder-live.mjs及测试截图可清理，备份/镜像/认证/原件卷保留。
+
 2026-10-21 rc.17/T49已部署：业务源码be797b8，image sha256:06fa97cb221b607172424b2037273d05936dc940d7f9d3b8e635658f1146ccd3，Office保留rc.15，五服务healthy。入口https://8.153.19.221:443/，test/111不变。升级前备份before-home-rc17；私有证据home-before/after/after-qa.json、home-deploy.json、home-live.json和home-desktop/mobile及expanded-list截图在test-instance。原4档案、业务表、20文件不变，15迁移不变。全局概览复用/system/summary、全局最近6档案和排队/处理中任务计数，进入具体列表仍遵循当前空间；近期档案可跨空间打开。无新增依赖/服务。home传输tar/tgz/bundle及/tmp/home-live.mjs、home-deploy.py为可清理临时文件，备份/镜像/数据卷不自动清理。
 
 2026-10-21 rc.16紧凑资料列表部署：运行源码7f55ab0，业务image sha256:b99f259d9164615758fb85833dd66c005c56cce024e8a4b5ddf7e1c92aea7063；Office沿用rc.15，五服务healthy。https://8.153.19.221:443/，账号test/111。备份before-library-rc16；私有证据library-before/after.json、library-deploy.json、library-live.json和library-desktop/mobile.png位于test-instance。升级前后原4档案、业务表及20文件哈希完全一致，无迁移、无新增依赖、本机未安装开发运行时。已有显式URL view=grid会继续显示网格，点击列表即可保存新偏好。
