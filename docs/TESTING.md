@@ -1,5 +1,7 @@
 # 测试与交付验收
 
+当前T43～T47已在devtest rc.15交付。完整615项后端、额外契约/读取缓存恢复/确认来源专项、阅读8项/PDF9项/概览清理2项/PNG-JPEG1项/主界面12+1复验，以及最终成品49.09秒升级恢复、公网Word与Agent9项均通过。原4档案、业务表和19文件完整保留，仅按需新增1份阅读缓存。逐项证据和失败修复过程见BATCH-SOURCE-FILES及本文末尾；早期记录不能覆盖当前交付。
+
 ## 2026-10-21 六格式、十份文档的概要引擎实测
 
 用户目标是常见格式解析和概要提取。本轮使用完全合成的真实二进制/文本文件，运行隔离Archive + TCP Converter + worker，实际SQLite、文件存储、HTTP上传与Playwright；未导入或修改用户文档。Browser plugin not available，使用既有Playwright，无新依赖。
