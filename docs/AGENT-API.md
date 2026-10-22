@@ -67,3 +67,10 @@ read_document同时返回business_fields（当前档案的正式业务值）：�
 例：用户问“找出这批合同的金额和延期风险”。外部agent先选授权空间，根据catalog映射真实字段，对关键词“合同”和金额/日期条件检索，再从命中文档ID读取overview与固定ParseRun正文，最后用analysis-context的问题和引用组织回答。金额条件必须按字段类型传精确字符串；不能把未建索引、未OCR或部分读取当作没有相关内容。服务端不会自动把整句自然语言当成语义查询或自行生成结论。
 
 目前验证REST HTTP、现代MCP HTTP、旧协议初始化与stdio桥接；未声明对所有第三方账户的实机认证。只接受OAuth自动授权的云客户端需要额外网关/授权适配，此版本不提供。当前部署不公开服务，也不保存第三方模型API Key。
+
+## 持久 Markdown（T53）
+
+新增工具 `read_document_markdown` / REST `GET /api/v1/agent/documents/{id}/markdown?space_id=...`。
+副本按原件版本保存，返回纯 Markdown `body`；后续分段固定 `revision_id` 和 `sha256`，以 `next_offset` 继续。
+`content_status=unavailable/empty` 不代表文档无内容，可能尚未解析、格式不支持或需要 OCR；`refresh_pending` 表示副本正在更新。
+定位引用仍用原有 `read_document` 的 block/locator。完整保留、大小边界与备份语义见 [MARKDOWN-COPIES](MARKDOWN-COPIES.md)。

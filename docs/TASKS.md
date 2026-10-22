@@ -1,5 +1,7 @@
 # 开发任务与验收
 
+T53 全类型持久 Markdown 副本：版本独立、后台补齐、REST/MCP 读取、完整性/分段固定版本、备份与 GC 保护；实现及验收见 MARKDOWN-COPIES、TESTING、DEVTEST。
+
 T52 版本控制辅助文件排除：共享清单增加Git配置/指针及Git/SVN/Hg/Bazaar元数据目录，目录选择/拖放不递归这些目录，API拒绝相应辅助文件。保留README/源码/项目清单，范围及验收部署见UPLOAD-EXCLUSIONS、STATUS、TESTING。
 
 T51 上传系统辅助文件排除：Web单文件/目录选择及拖放统一过滤、跳过数量与名称/原因、系统目录不递归；API文件名校验兜底。共享JSON清单，保留普通隐藏/临时扩展名/备份文档，原件不追溯删除。规格见UPLOAD-EXCLUSIONS，验收部署见STATUS/TESTING。

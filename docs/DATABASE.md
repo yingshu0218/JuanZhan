@@ -1,5 +1,7 @@
 # 数据库设计
 
+T53 新增 0016_revision_markdown.sql（共16迁移）：版本 Markdown 对象与持久待办、Revision/ParseRun 触发更新、统一 derived_object_references 引用保护；原15迁移不修改。
+
 0015_reading_previews.sql（rc.15已部署）按Revision登记阅读PDF的storage_key/hash/size/renderer/创建时间；derived_object_references统一派生产物与阅读缓存引用，用于备份和GC。原14条迁移保持不变。业务实际13→15迁移通过，旧SQL校验不变。
 
 rc.15已部署：0014_source_snapshots.sql增加external Revision到managed_object的已校验快照关联及统一original_object_references视图。原file_revisions的managed/external互斥结构保持；外部绑定保留，副本不另建Document。备份与GC必须使用统一引用视图，防止误删外部快照。触发器校验快照哈希/大小与登记版本一致。当前devtest业务为15迁移。

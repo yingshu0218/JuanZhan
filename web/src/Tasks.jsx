@@ -19,7 +19,7 @@ function ResultView({ value }) {
     : <p key={key}>{resultLabels[key] || key}：{item === null ? "未知" : typeof item === "boolean" ? (item ? "是" : "否") : statuses[item] || ({succeeded:"成功",skipped:"跳过",discarded:"未发布"}[item]) || String(item)}</p>)}</div>;
 }
 const kinds = { upload: "上传", scan: "来源扫描", scan_preview: "预扫描", parse: "解析", ocr: "OCR", reindex: "检索索引", batch: "批量操作", purge: "永久清理", gc: "存储清理" };
-function kindLabel(job) { const sourceKinds={document_snapshot:'保存原件副本',source_snapshot_batch:'来源副本任务',document_reading_preview:'源文件阅读预览',document_revision_cleanup:'清理历史版本',storage_cleanup:'清理存储缓存'}; if(sourceKinds[job.target_type])return sourceKinds[job.target_type]; return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
+function kindLabel(job) { const sourceKinds={revision_markdown:'生成 Markdown 副本',document_snapshot:'保存原件副本',source_snapshot_batch:'来源副本任务',document_reading_preview:'源文件阅读预览',document_revision_cleanup:'清理历史版本',storage_cleanup:'清理存储缓存'}; if(sourceKinds[job.target_type])return sourceKinds[job.target_type]; return job.target_type === "system_backup" ? "系统备份" : job.target_type === "system_recovery" ? "新目录恢复" : kinds[job.kind] || job.kind; }
 // One visible-tab poller for the global entry; totals come from real paginated APIs.
 export function TaskEntry({ api, onOpen, refreshKey }) {
   const [counts, setCounts] = useState(null), [error, setError] = useState(false);

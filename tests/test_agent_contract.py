@@ -47,7 +47,7 @@ def test_rest_import_profile_is_scoped_and_contains_no_management_writes():
     generator=runpy.run_path(str(ROOT/'scripts/export_agent_rest_openapi.py'))
     schema=json.loads((ROOT/'docs/reference/agent-rest-openapi.json').read_text())
     assert schema==generator['profile']();check_refs(schema,schema)
-    assert len(schema['paths'])==7
+    assert len(schema['paths'])==8
     for path,item in schema['paths'].items():
         assert path.startswith('/agent/') and path!='/agent/mcp'
         for method,operation in item.items():

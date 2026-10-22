@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "JuanZhan read-only document REST API",
-    "version": "0.4.31",
+    "version": "0.4.35",
     "description": "External agents provide NLU and synthesis. Use a scoped agent Bearer token, issued manually or through the separate OAuth discovery/PKCE flow. No uploads, writes or arbitrary URLs. See AGENT-API.md."
   },
   "servers": [
@@ -829,6 +829,185 @@
         ]
       }
     },
+    "/agent/documents/{id}/markdown": {
+      "get": {
+        "summary": "Read persisted version-bound Markdown; pin revision_id and sha256 across character offsets",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMarkdown"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha256",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 16777216,
+              "default": 0
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32000,
+              "default": 16000
+            }
+          }
+        ]
+      }
+    },
     "/agent/analysis-context": {
       "post": {
         "summary": "Prepare question and cited evidence; does not generate an answer",
@@ -1374,6 +1553,70 @@
         "title": "AnalysisInput",
         "type": "object"
       },
+      "MarkdownInput": {
+        "additionalProperties": false,
+        "properties": {
+          "space_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "document_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Document Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Revision Id"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sha256"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 16777216,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "length": {
+            "default": 16000,
+            "maximum": 32000,
+            "minimum": 1,
+            "title": "Length",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "space_id",
+          "document_id"
+        ],
+        "title": "MarkdownInput",
+        "type": "object"
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -1827,6 +2070,88 @@
           "page_size",
           "total",
           "blocks"
+        ],
+        "additionalProperties": false
+      },
+      "AgentMarkdown": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "revision_id": {
+            "type": "string"
+          },
+          "parse_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "const": "markdown"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "content_status": {
+            "enum": [
+              "content",
+              "empty",
+              "unavailable"
+            ]
+          },
+          "refresh_pending": {
+            "type": "boolean"
+          },
+          "stale_for_current_revision": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_characters": {
+            "type": "integer"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "revision_id",
+          "parse_run_id",
+          "format",
+          "filename",
+          "sha256",
+          "size_bytes",
+          "content_status",
+          "refresh_pending",
+          "stale_for_current_revision",
+          "offset",
+          "next_offset",
+          "total_characters",
+          "body"
         ],
         "additionalProperties": false
       },

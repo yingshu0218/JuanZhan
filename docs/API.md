@@ -1,5 +1,7 @@
 # API 契约与接入
 
+T53 契约 0.4.35：新增 GET /agent/documents/{id}/markdown 与 read_document_markdown 工具；纯 Markdown body、版本/哈希固定字符分段、授权/状态/完整性错误见 MARKDOWN-COPIES。
+
 rc.20契约0.4.34（仍93路径）扩展UPLOAD_EXCLUDED规则：Git配置/指针文件和其他版本控制辅助文件由共享JSON声明；Web同步跳过Git/SVN/Hg/Bazaar元数据目录，不解析上传项目.gitignore内容。无新增HTTP路径、迁移或依赖，详见UPLOAD-EXCLUSIONS。
 
 rc.19契约0.4.33（仍93路径）：POST /documents/upload新增保守辅助文件名排除，422 UPLOAD_EXCLUDED，不建档案/任务/托管对象。Web与服务端共享upload_exclusions.json，完整规则与目录层边界见UPLOAD-EXCLUSIONS。原上传鉴权/CSRF/大小/重复策略不变，无数据库迁移。

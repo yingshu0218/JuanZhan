@@ -48,7 +48,7 @@ def router(settings):
         with connect(settings.database) as db:
             def scalar(sql):return db.execute(sql).fetchone()[0] or 0
             return {'accounting':'registered_objects','physical_original_bytes':scalar('SELECT sum(size_bytes) FROM managed_objects WHERE id IN (SELECT managed_object_id FROM original_object_references)'),
-                'physical_derived_bytes':scalar('SELECT sum(size_bytes) FROM (SELECT storage_key,max(size_bytes) AS size_bytes FROM (SELECT storage_key,size_bytes FROM derived_assets UNION ALL SELECT storage_key,size_bytes FROM reading_previews) GROUP BY storage_key)'),
+                'physical_derived_bytes':scalar('SELECT sum(size_bytes) FROM (SELECT storage_key,max(size_bytes) AS size_bytes FROM (SELECT storage_key,size_bytes FROM derived_assets UNION ALL SELECT storage_key,size_bytes FROM reading_previews UNION ALL SELECT storage_key,size_bytes FROM revision_markdown) GROUP BY storage_key)'),
                 'current_original_bytes':scalar('SELECT sum(r.size_bytes) FROM file_revisions r JOIN documents d ON d.current_revision_id=r.id WHERE r.storage_kind=\'managed\' OR EXISTS(SELECT 1 FROM revision_snapshots s WHERE s.revision_id=r.id)'),
                 'historical_original_bytes':scalar('SELECT sum(r.size_bytes) FROM file_revisions r JOIN documents d ON d.id=r.document_id WHERE r.id<>d.current_revision_id AND (r.storage_kind=\'managed\' OR EXISTS(SELECT 1 FROM revision_snapshots s WHERE s.revision_id=r.id))'),
                 'external_snapshot_bytes':scalar('SELECT sum(size_bytes) FROM managed_objects WHERE id IN (SELECT managed_object_id FROM revision_snapshots)'),

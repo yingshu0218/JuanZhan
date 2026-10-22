@@ -214,7 +214,7 @@ def execute(settings, job):
                     # Budget for both the directory snapshot and its stored ZIP.
                     with connect(settings.database) as db:
                         estimate = db.execute('SELECT COALESCE(SUM(size_bytes),0) FROM managed_objects').fetchone()[0]
-                        estimate += db.execute('SELECT COALESCE(SUM(size_bytes),0) FROM derived_assets').fetchone()[0]
+                        estimate += db.execute('SELECT COALESCE(SUM(size_bytes),0) FROM (SELECT storage_key,max(size_bytes) AS size_bytes FROM (SELECT storage_key,size_bytes FROM derived_assets UNION ALL SELECT storage_key,size_bytes FROM reading_previews UNION ALL SELECT storage_key,size_bytes FROM revision_markdown) GROUP BY storage_key)').fetchone()[0]
                     estimate += settings.database.stat().st_size
                     if estimate>backup_archive.MAX_BYTES or shutil.disk_usage(repository.root).free<estimate*2+backup_archive.RESERVE_BYTES:
                         raise ValueError('Backup exceeds size or available disk budget')

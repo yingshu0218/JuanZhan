@@ -5,7 +5,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'services'))
 from juanzhan.agent_access import TokenInput
-from juanzhan.agent_api import AgentSearch,AnalysisInput
+from juanzhan.agent_api import AgentSearch,AnalysisInput,MarkdownInput
 
 S={'type':'string'};B={'type':'boolean'};I={'type':'integer'}
 def array(item):return {'type':'array','items':item}
@@ -13,7 +13,7 @@ def obj(properties,required=None):return {'type':'object','properties':propertie
 def ref(name):return {'$ref':'#/components/schemas/'+name}
 nullable=lambda value:{'anyOf':[value,{'type':'null'}]}
 schemas={}
-for model in (TokenInput,AgentSearch,AnalysisInput):
+for model in (TokenInput,AgentSearch,AnalysisInput,MarkdownInput):
     schema=model.model_json_schema(ref_template='#/components/schemas/{model}')
     schemas.update(schema.pop('$defs',{}));schemas[model.__name__]=schema
 schemas['Error']=obj({'error':obj({'code':S,'message':S})})
@@ -28,6 +28,7 @@ schemas['AgentBlock']=obj({'id':S,'index':I,'type':S,'text':S,'text_truncated':B
 schemas['BusinessFields']=obj({'scope':{'const':'current_document'},'items':array(obj({'key':S,'label':S,'type':S,'value':{'type':['string','boolean','null']},'value_encoding':{'enum':['native','integer-string']},'value_truncated':B,'origin':S,'is_confirmed':B,'source_parse_run_id':nullable(S)})),'total':I,'partial':B})
 schemas['AgentContent']=obj({'document_id':S,'document_version':I,'business_fields':ref('BusinessFields'),'content_revision_id':S,'parse_run_id':S,'availability_status':S,'warnings':array(S),'ocr_used':B,
     'stale_for_current_revision':B,'page':I,'page_size':I,'total':I,'blocks':array(ref('AgentBlock'))})
+schemas['AgentMarkdown']=obj({'document_id':S,'revision_id':S,'parse_run_id':nullable(S),'format':{'const':'markdown'},'filename':S,'sha256':S,'size_bytes':I,'content_status':{'enum':['content','empty','unavailable']},'refresh_pending':B,'stale_for_current_revision':B,'offset':I,'next_offset':nullable(I),'total_characters':I,'body':S})
 schemas['AgentSpaces']=obj({'items':array(obj({'id':S,'name':S}))})
 schemas['AgentCatalog']=obj({'folders':array(obj({'id':S,'parent_id':nullable(S),'name':S})),
  'tags':array(obj({'id':S,'name':S})),
@@ -63,6 +64,7 @@ paths['/agent/catalog']={'get':operation('Read bounded catalog for natural-langu
 paths['/agent/search']={'post':operation('Literal and structured search; NLU performed by external agent',ref('AgentSearchResult'),method='post',body=ref('AgentSearch'))}
 paths['/agent/documents/{id}/overview']={'get':operation('Read source-backed generic overview',ref('Overview'),parameters=[parameter('id','path'),parameter('space_id')])}
 paths['/agent/documents/{id}/content']={'get':operation('Read bounded cached blocks with fixed ParseRun pagination',ref('AgentContent'),parameters=[parameter('id','path'),parameter('space_id'),parameter('parse_run_id',required=False),parameter('page',required=False,schema={'type':'integer','minimum':1,'maximum':1000000,'default':1}),parameter('page_size',required=False,schema={'type':'integer','minimum':1,'maximum':20,'default':20})])}
+paths['/agent/documents/{id}/markdown']={'get':operation('Read persisted version-bound Markdown; pin revision_id and sha256 across character offsets',ref('AgentMarkdown'),parameters=[parameter('id','path'),parameter('space_id'),parameter('revision_id',required=False),parameter('sha256',required=False,schema={'type':'string','pattern':'^[0-9a-f]{64}$'}),parameter('offset',required=False,schema={'type':'integer','minimum':0,'maximum':16777216,'default':0}),parameter('length',required=False,schema={'type':'integer','minimum':1,'maximum':32000,'default':16000})])}
 paths['/agent/analysis-context']={'post':operation('Prepare question and cited evidence; does not generate an answer',ref('AnalysisContext'),method='post',body=ref('AnalysisInput'))}
 paths['/documents/{id}/overview']={'get':operation('Shared Web/agent overview, including explicit historical ParseRun',ref('Overview'),parameters=[parameter('id','path'),parameter('parse_run_id',required=False)])}
 paths['/documents/{id}/overview']['get']['security']=[{'sessionAuth':[]},{'bearerAuth':[]}]
@@ -71,7 +73,7 @@ mcp['security']=[{'agentBearer':[]}];mcp['description']='Versions 2026-07-28, 20
 mcp['responses']['202']={'description':'Accepted supported legacy notification; no body'}
 for status in ('400','404','406'):mcp['responses'][status]={'description':'MCP protocol error','content':{'application/json':{'schema':ref('McpResponse')}}}
 paths['/agent/mcp']={'post':mcp}
-value={'openapi':'3.1.0','info':{'title':'JuanZhan Agent API extension','version':'0.4.30'},'servers':[{'url':'/api/v1'}],'paths':paths,
+value={'openapi':'3.1.0','info':{'title':'JuanZhan Agent API extension','version':'0.4.35'},'servers':[{'url':'/api/v1'}],'paths':paths,
        'components':{'schemas':schemas,'securitySchemes':{'agentBearer':{'type':'http','scheme':'bearer','description':'Scoped jza_ read-only credential'},'sessionAuth':{'type':'apiKey','in':'cookie','name':'archive_session'},'bearerAuth':{'type':'http','scheme':'bearer'}}}}
 output=ROOT/'docs/reference/agent-openapi.json';output.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 print('Agent OpenAPI paths:',len(paths))

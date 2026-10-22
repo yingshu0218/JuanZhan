@@ -810,3 +810,11 @@ rc.14真实镜像/部署验收已完成：独立新安装→8到13迁移升级�
 成品候选fbf1aaa：业务与独立renderer均clean source；11项关键接口回归通过，真实只读source_snapshot_drill的相同大小/mtime变化、新旧两版失联可读、人工说明与未变不增版通过。独立发布演练53.71秒实际8→15迁移及一致备份/新卷恢复通过，记录test-instance/rc15-release-drill.json。前端附件流调整尚需重建，不以旧候选代替最终部署镜像。完整交付门槛见BATCH-SOURCE-FILES，当前业务仍rc.14。
 
 最终交付补充：源码045901e双镜像clean构建，最终独立发布演练49.09秒实际8→15升级/备份/新卷恢复通过。devtest实际13→15迁移，source-upgrade-verified.json的原4档案/全部原业务表/19文件不变；公网Word源文件阅读新增1份缓存后，source-final-data-verified.json的旧19文件及业务表仍完全相同。source-public-browser.json真实TLS/1440/390/原生Word/存储入口通过，source-agent-live.json公网REST/MCP9项通过且凭据撤销。另加PNG/JPEG原图浏览器1项/11.3秒通过，未改业务数据。T43～T47逐项验收及边界见BATCH-SOURCE-FILES，当前业务已rc.15；本节之前的“未部署”为过程状态。
+
+## T53 持久 Markdown 专项（2026-10-22）
+
+首轮27项、补充损坏/过期代次后 Agent 联合42项通过：真实 Converter HTTP、20个文件案例（文本/MD/HTML/Word/EPUB/PDF、现代Office/ODF、CSV/TSV/RTF、图片、ZIP/二进制/加密PDF）、版本隔离、同版本失败保留、Unicode字符分段/哈希固定、空间授权、MCP、备份恢复、缺失/损坏显式失败及过期任务不得发布。测试不导入业务库。
+
+任务浏览器初轮3项通过，另1项仍引用旧“重新解析与OCR”展开入口；按现行“整理操作→重新解析”更新后独立复验通过（15.1秒），桌面/390宽截图与无控制台错误断言正常。生产Web构建通过，沿用原有PDF大chunk提示。
+
+初轮环境/实现修复：补齐已有CJK字体路径；macOS归档附带AppleDouble迁移伪文件导致读取失败，移除本轮伪文件并关闭扩展属性归档后恢复；修正副本登记INSERT占位符数量。三项旧MCP工具枚举断言增加新工具后专项通过。完整回归及在线部署结果见后续记录，不把首轮失败宣称为成功。

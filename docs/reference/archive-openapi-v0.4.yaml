@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.34
+  version: 0.4.35
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,8 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /agent/documents/{id}/markdown:
+    $ref: "./agent-openapi.json#/paths/~1agent~1documents~1{id}~1markdown"
   /documents/{id}/source-files:
     $ref: "./source-files-openapi.json#/paths/~1documents~1{id}~1source-files"
   /documents/{id}/source-snapshot:

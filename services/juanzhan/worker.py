@@ -112,6 +112,14 @@ def _handler(job,data_dir,connection,source_mounts=(),converter_token='',backup_
             except ParseFailure as exc:
                 _send(connection,('failure',exc.code,'Parse attempt could not complete safely',exc.retryable))
             return
+        if job['kind']=='batch' and job['target_type']=='revision_markdown':
+            import resource
+            resource.setrlimit(resource.RLIMIT_AS,(512*1024*1024,512*1024*1024))
+            resource.setrlimit(resource.RLIMIT_CPU,(60,60))
+            from .markdown_copies import execute
+            execute(Settings(data_dir=Path(data_dir),converter_token=''),job)
+            _send(connection,('committed',))
+            return
         if job['kind']=='gc' and job['target_type']=='derived_objects':
             from .derived import run_gc
             run_gc(Settings(data_dir=Path(data_dir),converter_token=''),job)
@@ -309,6 +317,8 @@ def main():
                 schedule_sources(settings)
                 from .backup_management import schedule as schedule_backups
                 schedule_backups(settings)
+                from .markdown_copies import schedule as schedule_markdown
+                schedule_markdown(settings,limit=10)
                 next_source_schedule=time.monotonic()+5
             from .indexing import schedule
             schedule(settings,limit=1)

@@ -1,5 +1,7 @@
 # 决策记录
 
+2026-10-22 用户确认：所有接收的文件类型保留持久纯 Markdown 供 Agent 读取，原件保留；实现边界与版本/未知正文表示见 MARKDOWN-COPIES。
+
 2026-10-22用户补充“还有git常用的忽略文件”。本轮先增加明确版本控制元数据/配置排除（.git目录及指针、gitignore/gitattributes/gitmodules等，以及.svn/.hg/.bzr），保留README、源码和项目清单；不将上传项目.gitignore内容自动作为平台规则。依赖目录/缓存/构建产物的更广排除范围已询问，尚未确认时不将其记作已确认需求。详见UPLOAD-EXCLUSIONS。
 
 2026-10-22用户明确要求上传排除.DS_Store，并检查类似可排除文件。实施选择见UPLOAD-EXCLUSIONS：保守系统元数据/缓存/锁文件和系统辅助目录清单；普通隐藏文档、tmp及备份保留。Web选择/拖放共享同一JSON规则，跳过结果可查看，服务端文件名兜底422 UPLOAD_EXCLUDED；不追溯删除既有档案，不改变外部只读扫描。

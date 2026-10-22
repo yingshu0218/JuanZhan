@@ -25,6 +25,10 @@ def finish(db, job, status):
 def enrich(db, job, result):
     """Use the captured revision name, never an external source's absolute path."""
     result['document_name']=None
+    if job['target_type']=='revision_markdown' and job['target_id']:
+        named=db.execute('SELECT original_filename FROM file_revisions WHERE id=?',(job['target_id'],)).fetchone()
+        if named:result['document_name']=named[0].replace('\\','/').rsplit('/',1)[-1]
+        return result
     if job['target_type'] in ('document','document_search','document_snapshot','document_reading_preview','document_revision_cleanup') and job['target_id']:
         revision=json.loads(job['payload_json']).get('revision_id')
         if not isinstance(revision,str):revision=None

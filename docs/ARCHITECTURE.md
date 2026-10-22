@@ -1,5 +1,7 @@
 # 技术架构
 
+T53 新增 revision_markdown/markdown_dirty：持久版本副本由独立 fenced worker 生成，所有已接收格式含元信息兜底；不读取原件或接模型。Agent 增加 Markdown 分段读取，见 MARKDOWN-COPIES。
+
 rc.15新增源文件生命周期：外部Revision通过revision_snapshots关联托管副本而不切换来源；reading_previews登记独立阅读PDF，原件/成功解析/人工字段不被替换。新增独立无业务卷Office/TIFF renderer，worker私有传输经鉴权的字节，固定资源和网络隔离；Web概览与原文件版本阅读分开。备份/GC统一引用视图覆盖副本与阅读缓存。当前共Archive/Converter/worker/renderer及可选HTTPS gateway五个项目服务，无新消息队列/模型/向量库。实现、界限与实测见NATIVE-READING和BATCH-SOURCE-FILES。
 
 T38新增conversion_legacy（DOC受限CLI、XLS/RTF只读库）与conversion_ppt（当前MS-PPT UserEdit/PersistDirectory/形状/备注引用）。不扫描废弃编辑记录、不开外部链接、不执行宏，PPT与PPTX备注以真实section来源进入同一持久正文/概要/检索链路。未知原件布局不编造定位；CFB识别在Archive也受4MiB/FAT头预算控制。新增依赖/离线锁及对应源码见THIRD-PARTY，仍无新业务服务/迁移/LLM/向量库。
