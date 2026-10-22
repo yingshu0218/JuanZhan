@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     mem_limit: 64m
     cpus: 0.5
-    ports: ["0.0.0.0:${JUANZHAN_TLS_PORT:-18443}:8443"]
+    ports: ["0.0.0.0:${JUANZHAN_TLS_PORT:-9443}:8443"]
     volumes:
       - ./ip-test-nginx.conf:/etc/nginx/nginx.conf:ro
       - ${JUANZHAN_TLS_DIRECTORY:?Set private serving certificate directory}:/tls:ro

@@ -1,5 +1,7 @@
 # devtest 测试实例
 
+2026-10-22 端口调整：按用户要求释放 443，当前 HTTPS 测试入口改为 `https://8.153.19.221:9443/`，PUBLIC_URL/OAuth 发行者同步含 `:9443`；下文 443 为历史记录。回环 HTTP 18080 保留，业务卷/原件/镜像/认证不变。外部 TLS 校验及首页 HTTP 200、OAuth 发行者/端点 9443、nginx -t 已验证；ss 确认 443 无监听。仅重建 archive 与 ip-gateway，不重建其他服务。服务器私有 `.env.before-port-9443` 保留回退配置，不提交。
+
 2026-10-22 rc.20/T52部署：源码e31060e，业务image sha256:a9c235d3c036272eb84e163576f078b3643fd3faf3b69ee3e90cdd6e960c9b31，Office仍rc.15，五服务healthy。https://8.153.19.221:443/，test/111不变。备份before-git-exclusions-rc20；私有git-exclusions-before/after/after-qa.json、git-exclusions-deploy/live.json、desktop/mobile截图在test-instance。8档案/37文件部署及QA后不变，无新增原件或任务，15迁移不变。镜像标签revision和source-dirty已核对，构建通道断流清理记录见TESTING。仅加入版本控制元数据/配置排除；依赖/缓存/构建产物范围待选择。git-exclusions传输包、bundle/tar和/tmp/git-exclusions-deploy.py、git-exclusions-live.mjs可清理，原件/业务卷/私有认证/备份/运行镜像保留。
 
 2026-10-22 rc.19/T51部署：源码aaa8fa2，业务image sha256:f1d6470dfd636e5a738e4ce0bce73eeb2a94a7e4051c99b60bc516841998b12b，Office仍rc.15，五服务healthy。入口https://8.153.19.221:443/，test/111不变。升级前备份before-exclusions-rc19；私有exclusions-before/after/after-qa.json、exclusions-deploy.json、exclusions-live.json、exclusions-desktop/mobile.png在test-instance。部署前已有8档案/37文件（不同于上一批历史4/20），部署和公网拒绝/跳过QA后全部业务表及文件哈希一致，15迁移不变。未清理已导入的辅助文件，后续上传按新规则排除。辅助文件测试均在隔离存储执行，公网仅验证跳过和422拒绝，无新档案。临时exclusions bundle/tar/tgz、/tmp/exclusions-deploy.py和exclusions-live.mjs可清理，原件卷/私有配置/备份/镜像不自动删除。

@@ -1,5 +1,7 @@
 # devtest IP HTTPS测试入口（T42 已验收）
 
+2026-10-22 端口调整：按用户要求释放 443，当前 HTTPS 测试入口改为 `https://8.153.19.221:9443/`，PUBLIC_URL/OAuth 发行者同步含 `:9443`；下文 443 为历史记录。回环 HTTP 18080 保留，业务卷/原件/镜像/认证不变。
+
 用户决定暂用IP＋端口，不进行正式域名上线。现有127.0.0.1:18080保留；当前公网入口为 `https://8.153.19.221:443/`，发行者为 `https://8.153.19.221`。18443监听正常但外部连接超时，改用空闲443后Mac外部TLS验证和HTTP200成功；未修改云安全组或其他Nginx/终端服务。配置为 `deploy/ip-test.yaml` 与 `ip-test-nginx.conf`，私有.env设置JUANZHAN_TLS_PORT=443，gateway使用不可变digest。
 
 已实际完成80端口外部可达校验、Certbot staging及可信IP证书签发。证书SAN为8.153.19.221，签发者YE1，notAfter为2026-10-27T21:49:29Z，私钥仅保存在服务器私有目录。已部署TLS入口，未使用忽略证书验证；公网未授权Agent接口返回401及resource_metadata挑战，真实登录/阅读/REST/MCP均通过。
