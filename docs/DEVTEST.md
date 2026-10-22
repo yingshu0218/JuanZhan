@@ -1,5 +1,7 @@
 # devtest 测试实例
 
+T53 deployed to devtest rc.21, source 7bde918, image sha256:efe0e89339c663eab0ccde0465cb84bc38dda4a2efa3de38d7731729622acb22. Entry: https://8.153.19.221:9443/ . Migration 0016 applied (16 total); contract 0.4.35/94 paths. All 8 revisions have persistent Markdown copies (28505 bytes): 7 content, 1 metadata-only unavailable. REST and MCP each verified all 8 copies and hashes. Existing business tables and 37 files unchanged; 8 new copies, 45 file hashes unchanged after QA. Final focused tests: 60 passed. See MARKDOWN-COPIES, TESTING and DEVTEST.
+
 2026-10-22 端口调整：按用户要求释放 443，当前 HTTPS 测试入口改为 `https://8.153.19.221:9443/`，PUBLIC_URL/OAuth 发行者同步含 `:9443`；下文 443 为历史记录。回环 HTTP 18080 保留，业务卷/原件/镜像/认证不变。外部 TLS 校验及首页 HTTP 200、OAuth 发行者/端点 9443、nginx -t 已验证；ss 确认 443 无监听。仅重建 archive 与 ip-gateway，不重建其他服务。服务器私有 `.env.before-port-9443` 保留回退配置，不提交。
 
 2026-10-22 rc.20/T52部署：源码e31060e，业务image sha256:a9c235d3c036272eb84e163576f078b3643fd3faf3b69ee3e90cdd6e960c9b31，Office仍rc.15，五服务healthy。https://8.153.19.221:443/，test/111不变。备份before-git-exclusions-rc20；私有git-exclusions-before/after/after-qa.json、git-exclusions-deploy/live.json、desktop/mobile截图在test-instance。8档案/37文件部署及QA后不变，无新增原件或任务，15迁移不变。镜像标签revision和source-dirty已核对，构建通道断流清理记录见TESTING。仅加入版本控制元数据/配置排除；依赖/缓存/构建产物范围待选择。git-exclusions传输包、bundle/tar和/tmp/git-exclusions-deploy.py、git-exclusions-live.mjs可清理，原件/业务卷/私有认证/备份/运行镜像保留。

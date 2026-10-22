@@ -1,5 +1,7 @@
 # 项目开发知识库
 
+T53 deployed to devtest rc.21, source 7bde918, image sha256:efe0e89339c663eab0ccde0465cb84bc38dda4a2efa3de38d7731729622acb22. Entry: https://8.153.19.221:9443/ . Migration 0016 applied (16 total); contract 0.4.35/94 paths. All 8 revisions have persistent Markdown copies (28505 bytes): 7 content, 1 metadata-only unavailable. REST and MCP each verified all 8 copies and hashes. Existing business tables and 37 files unchanged; 8 new copies, 45 file hashes unchanged after QA. Final focused tests: 60 passed. See MARKDOWN-COPIES, TESTING and DEVTEST.
+
 2026-10-22 T52已部署rc.20：上传跳过Git/SVN/Hg/Bazaar元数据目录及Git配置/指针文件，保留README/源码，不解释上传项目.gitignore内容。53后端/契约及6目录/枚举检查通过，公网跳过/拒绝和数据保护通过；8档案/37文件不变，无新依赖/迁移。更广依赖/缓存/构建目录范围待用户选择，完整规则见UPLOAD-EXCLUSIONS。下文为历史交付。
 
 2026-10-22最新T51已部署rc.19：上传排除已知系统元数据/缩略图缓存/锁文件和系统辅助目录，Web/API共享规则，界面可查看跳过记录；普通隐藏文档与备份保留。完整清单见UPLOAD-EXCLUSIONS，契约0.4.33/93路径，无新增依赖/迁移。43后端/契约及9上传/界面检查通过，公网拒绝/跳过与数据保护通过，部署前8档案/37文件不变。下文为历史交付。

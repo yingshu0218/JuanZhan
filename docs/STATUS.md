@@ -1,6 +1,6 @@
 # 当前状态 — 2026-10-22
 
-T53 持久 Markdown 副本已实现，正在做完整回归及 devtest rc.21 部署；包含版本副本、全类型元信息兜底、后台补齐、REST/MCP 分段读取和备份/GC保护。初轮27项、修订后Agent联合42项通过；最终结果以下续记录为准。
+T53 deployed to devtest rc.21, source 7bde918, image sha256:efe0e89339c663eab0ccde0465cb84bc38dda4a2efa3de38d7731729622acb22. Entry: https://8.153.19.221:9443/ . Migration 0016 applied (16 total); contract 0.4.35/94 paths. All 8 revisions have persistent Markdown copies (28505 bytes): 7 content, 1 metadata-only unavailable. REST and MCP each verified all 8 copies and hashes. Existing business tables and 37 files unchanged; 8 new copies, 45 file hashes unchanged after QA. Final focused tests: 60 passed. See MARKDOWN-COPIES, TESTING and DEVTEST.
 
 2026-10-22 端口调整：按用户要求释放 443，当前 HTTPS 测试入口改为 `https://8.153.19.221:9443/`，PUBLIC_URL/OAuth 发行者同步含 `:9443`；下文 443 为历史记录。回环 HTTP 18080 保留，业务卷/原件/镜像/认证不变。
 

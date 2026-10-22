@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+T53 cleanup: no new dependencies. Keep the active rc.21 image, 8 persistent Markdown objects, original data and pre-upgrade backup. Temporary /tmp/juanzhan-markdown-*.tgz, source tar/bundles, sync/deploy/live scripts, .local/markdown-*.log and markdown-before-source-sync.tar.gz may be removed by exact name after review. Private test-instance/markdown-*.json are deployment evidence; do not publish them. All 45 live managed/derived files are business data, not disposable build cache.
+
 2026-10-22 T53：无新增包/系统服务依赖；新增0016迁移及 Markdown 派生对象（受备份/GC保护，属于业务数据，勿当缓存直接删除）。服务器沿用 Python/Node/Docker；/tmp/juanzhan-markdown-*.tgz、私有 .local/markdown-*.log 和隔离 pytest 样本为可清理测试产物，保留原件/业务卷/认证/证书/备份。
 
 2026-10-22 T52版本控制元数据排除：沿用T51共享JSON规则和测试工具，无新增依赖/服务/迁移。原生目录选择/CDP拖放的临时样本仍在/tmp/juanzhan-upload-exclusions-*，测试finally清理；/tmp/juanzhan-git-exclusions.tgz、后续git-exclusions bundle/tar和临时验收脚本/截图可清理。业务卷/原件/私有配置/备份/运行镜像保留，本机未安装包。

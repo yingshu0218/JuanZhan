@@ -1,5 +1,7 @@
 # 给 Codex 的开发交接
 
+T53 deployed to devtest rc.21, source 7bde918, image sha256:efe0e89339c663eab0ccde0465cb84bc38dda4a2efa3de38d7731729622acb22. Entry: https://8.153.19.221:9443/ . Migration 0016 applied (16 total); contract 0.4.35/94 paths. All 8 revisions have persistent Markdown copies (28505 bytes): 7 content, 1 metadata-only unavailable. REST and MCP each verified all 8 copies and hashes. Existing business tables and 37 files unchanged; 8 new copies, 45 file hashes unchanged after QA. Final focused tests: 60 passed. See MARKDOWN-COPIES, TESTING and DEVTEST.
+
 ## 当前交接 · 2026-10-21 rc.15
 
 用户目标“把最新的规划全部完成”的T43～T47已交付：概览专用详情、平台源文件/历史版本阅读、保留外部关联的服务器副本及存储管理。最终业务构建源码045901e；后续交付文档和PNG/JPEG浏览器测试不改变运行代码。公网入口、双镜像ID、备份和原数据保护见DEVTEST，验收见BATCH-SOURCE-FILES。当前15迁移、Archive0.4.32/93路径，原4档案及业务表和19文件不变，仅新增1份可重建Word阅读PDF。
