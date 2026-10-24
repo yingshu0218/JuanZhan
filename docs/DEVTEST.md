@@ -127,3 +127,11 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 已先推送323ed2e到GitHub main，再构建/部署0.1.0-rc.23；镜像sha256:498f99e180ea28d76daa5a3848d29355558fc5c002097b712a58ead77d27080c，SOURCE_DIRTY=false。入口https://8.153.19.221:9443/，443未改动。五服务healthy。
 
 升级前一致备份/backups/before-agent-priority-rc23；17迁移不变，integrity=ok、无外键错误。13份档案、69个文件哈希和业务表完全一致，没有新增/删除演示档案。公开HTTPS五模板各确认只有Agent概览，依据可展开，桌面/手机无溢出与页面异常。证据位于test-instance/agent-priority-deploy.json和agent-priority-browser-live.json。已有分析不自动重写；后续外部Agent取得强化后的填写指导。
+
+## T56 标签与入库规则 · 2026-10-24
+
+先推送8eb76b3，再从干净源码构建并部署rc.24，镜像sha256:4b56aa0b94193f4bad4bbbb3ef9ba4c6ea38f31567756d0caf4dc093dfc159a5，SOURCE_DIRTY=false。升级前一致备份/backups/before-import-tags-rc24，原17→18迁移；18迁移/integrity=ok/外键正常。入口https://8.153.19.221:9443/，443未改动，五服务healthy。
+
+升级前13档案/69文件与业务表完全保留。公网QA新增一份“标签与重点概览示例（可删除）.txt”（ee03625d313e44f481a748b36ac75c26），位于“Agent 模板验收示例（可删除）”；Agent三点概览、项目资料/待跟进双标签及“项目待跟进”服务器快捷筛选可用，临时导入凭据已撤销。QA后14档案/71文件，旧记录逐行及旧文件哈希全部保留。没有对旧用户档案重解析或改标签。
+
+测试/部署/保全证据见.local/import-tags-*.log及test-instance/import-tags-{deploy,live,browser-live,post-qa}.json；截图1440/390正常。文档组合与标签策略随一致备份保存，无新增依赖。尚无自定义规则编辑器、手工锁解除或旧全库标签重算，边界见IMPORT-TAGS。

@@ -851,3 +851,5 @@ T55最终源码323ed2e追加15项Agent集成通过（19.29s），三点概览浏
 devtest既有环境、真实SQLite/托管存储/HTTP Converter，受限1536MiB/2CPU容器并使用真实只读来源约束：203 passed（194.12s），覆盖import_tags、agent_imports、catalog、documents、agent_contract、batches、backup、parsing、indexing、search、source_initial、source_incremental、foundation。新标签规则带来的文档版本/自动标签已纳入旧断言，升级前旧schema登记仍可执行。初轮主机来源测试不满足只读挂载前提，最终容器复测全部通过；不是放宽来源边界。
 
 当前无Browser插件，使用服务器既有Playwright：标签编辑/两标签全部匹配/服务器保存组合/刷新恢复/删除/390布局，以及Agent内容标签优先与仅Agent概览，2 passed（14秒内）；原4项真实搜索/组合/URL/移动端/不完整内容及精度回归4 passed（37.8s）。首轮标签匹配测试的精确label定位和中文字体测试环境已修正，最终日志见.local/import-tags-{browser-verified,search-browser-verified}.log。桌面/手机截图位于/tmp/juanzhan-import-tags-{desktop,mobile}.png，手机已人工查看并压缩快捷筛选标题/按钮间距。无新增依赖，未把固定关键词规则声称为语义理解。
+
+T56追加5项标签专项（含新策略/保存组合真实备份恢复）全部通过，6.25s。部署后公网TLS验证示例三点概览、Agent两个内容标签替换平台格式标签、原件哈希/字节、全部标签查询、服务器快捷组合、编辑多选及1440/390布局；页面异常0。最终13旧档案/69文件全部保留；示例增加后14档案/71文件，18迁移/integrity=ok/无外键错误。证据test-instance/import-tags-{live,browser-live,post-qa}.json及import-tags-live-{desktop,mobile}.png，桌面成品截图已人工查看。
