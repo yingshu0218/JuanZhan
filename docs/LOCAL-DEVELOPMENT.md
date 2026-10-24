@@ -1,5 +1,7 @@
 # 本机开发依赖与清理记录
 
+T54 delivery cleanup: keep the active rc.22 image, application tables, original files, generated Markdown and pre-upgrade backup. Temporary /tmp/juanzhan-agent-import-*.tgz/bundle, /tmp/agent-import-*.py/mjs, .local/agent-import-extra-src, .local/pytest-agent-import-full, .local/agent-import-*.log and agent-import-before-source-sync.tar.gz can be removed by exact name after review. Private test-instance/agent-import-* reports/screenshots are evidence; do not publish credentials or real document data. The five synthetic documents remain in their clearly removable example space for user review; use normal platform deletion if later unwanted.
+
 2026-10-24 T54：无新增包、模型或系统服务。新增0017迁移、平台自有JSON模板及SQLite分析数据均为源码/业务数据，不可按缓存清理。/tmp/juanzhan-agent-import-*.tgz、后续传输bundle/tar、.local/agent-import-*.log和隔离测试样本可按名称清理；保留原件/现役镜像/业务卷/凭据/备份。
 
 T53 cleanup: no new dependencies. Keep the active rc.21 image, 8 persistent Markdown objects, original data and pre-upgrade backup. Temporary /tmp/juanzhan-markdown-*.tgz, source tar/bundles, sync/deploy/live scripts, .local/markdown-*.log and markdown-before-source-sync.tar.gz may be removed by exact name after review. Private test-instance/markdown-*.json are deployment evidence; do not publish them. All 45 live managed/derived files are business data, not disposable build cache.

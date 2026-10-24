@@ -1,5 +1,7 @@
 # 给 Codex 的开发交接
 
+T54 deployed to devtest rc.22 (2026-10-24), source 3a36641, image sha256:b9a97b2f2702a0644d159e431807e34104ffcbf76bd35ee048959426f5c5f360. Five business templates, explicit scoped import grants, immutable version/hash-bound external analyses, local parser fallback, Markdown search, and read-only MCP template/analysis tools are available at https://8.153.19.221:9443/ . Migration 0017 applied (17 total), contract 0.4.36/98 paths. Existing 8 documents and 45 files preserved; five synthetic sample documents added to the removable Agent template acceptance space (13 documents/69 files total). All five originals and independently parsed quotes verified, public desktop/mobile UI checked; readonly import denied and temporary test credentials revoked. No internal model or new dependencies. See AGENT-IMPORT and TESTING.
+
 T53 deployed to devtest rc.21, source 7bde918, image sha256:efe0e89339c663eab0ccde0465cb84bc38dda4a2efa3de38d7731729622acb22. Entry: https://8.153.19.221:9443/ . Migration 0016 applied (16 total); contract 0.4.35/94 paths. All 8 revisions have persistent Markdown copies (28505 bytes): 7 content, 1 metadata-only unavailable. REST and MCP each verified all 8 copies and hashes. Existing business tables and 37 files unchanged; 8 new copies, 45 file hashes unchanged after QA. Final focused tests: 60 passed. See MARKDOWN-COPIES, TESTING and DEVTEST.
 
 ## 当前交接 · 2026-10-21 rc.15
