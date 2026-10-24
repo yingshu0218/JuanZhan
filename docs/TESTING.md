@@ -837,3 +837,9 @@ Actual rc.22 upgrade 16 -> 17: backup before-agent-import-rc22 retained. Existin
 Public TLS UI verification opened all five Agent overviews and their quotations; desktop 1440 and mobile 390 screenshots inspected, no page errors/overflow. Readonly MCP get_analysis_templates/read_document_analysis also verified online; a readonly import attempt returned 403 and created no file. Post-QA original eight documents/business rows and 45 file hashes preserved; total now 13 documents/69 files, SQLite integrity/FK checks passed, five services healthy. Private evidence and screenshots: test-instance/agent-import-{before,after,after-qa,deploy,live,post-qa,browser-live}.json and agent-import-live-{desktop,mobile}.png. Sample space is explicitly marked removable; no production documents were used as synthetic test inputs.
 
 Rollback to rc.21 requires the pre-upgrade backup restored into a new volume; do not attach the old image directly to the 17-migration database.
+
+## T55 Agent概览优先 · 2026-10-24
+
+真实SQLite/托管原件/HTTP转换集成：tests/test_agent_imports.py、test_parsing.py、test_agents.py、test_agent_contract.py合计52 passed（59.57s）。覆盖五模板、五格式无分析兜底、已有Agent时自动任务跳过且无ParseRun、主动重解析、新Revision本地回退、引文/权限/幂等/备份及只读契约。首轮34 passed/1 failed为未设置已有中文测试字体路径，设置JUANZHAN_TEST_CJK_FONT后包含真实OCR的完整组合通过。
+
+浏览器使用服务器已有Playwright（当前无Browser插件），Agent上传/分点回填/仅单份概览/不请求本地overview/依据展开/原件下载/1440与390布局通过；最终结果见.local/agent-priority-browser-final.log。无新依赖。模板指导提高丰富度和重点要求，不等同模型外语义质量验真；历史分析不自动改写。

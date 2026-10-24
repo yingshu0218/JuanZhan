@@ -38,7 +38,10 @@ def test_templates_import_submit_read_original_and_local_fallback(pipeline,templ
     assert read.status_code==200 and read.json()['items'][0]['analysis']==body
     assert Worker(settings).run_once()['status']=='completed'
     assert client.get('/api/v1/documents/'+saved['document_id']+'/download').content==b'Confirmed delivery on Friday.'
-    assert client.get('/api/v1/documents/'+saved['document_id']+'/overview').json()['text_available']
+    with connect(settings.database) as db:
+        assert db.execute('select count(*) from parse_runs').fetchone()[0]==0
+        result=json.loads(db.execute("select result_json from jobs where kind='parse'").fetchone()[0])
+        assert result['reason']=='AGENT_ANALYSIS_AVAILABLE'
     with connect(settings.database) as db:
         assert db.execute('select count(*) from documents').fetchone()[0]==1
         assert db.execute('select count(*) from metadata_values').fetchone()[0]==0
@@ -122,3 +125,24 @@ def test_external_markdown_is_searchable_without_local_text_and_mcp_pages(pipeli
     assert not result.get('isError'),result
     from juanzhan.agent_imports import ReadAnalysis
     assert ReadAnalysis.model_fields['offset'].default==0
+
+
+def test_agent_priority_preserves_explicit_reparse_and_revision_fallback(pipeline):
+    from test_parsing import append, queue_parse
+    settings,client,_,_=pipeline
+    _,h=token(pipeline); saved=imported(pipeline,h).json()
+    assert client.post(ROOT+'/imports/'+saved['id']+'/analyses',headers=h,json=payload(saved)).status_code==201
+    assert Worker(settings).run_once()['status']=='completed'
+    doc=client.get('/api/v1/documents/'+saved['document_id']).json()
+    assert doc['processing_status']=='completed' and not doc['content_stale']
+    # An explicit request is independent of the automatic import job.
+    from juanzhan.jobs import JobSpec
+    client.app.state.jobs.enqueue(JobSpec(kind='parse',target_type='document',target_id=saved['document_id'],payload={'revision_id':saved['revision_id']},idempotency_key='explicit-agent-reparse'))
+    assert Worker(settings).run_once()['status']=='completed'
+    with connect(settings.database) as db:
+        assert db.execute('select count(*) from parse_runs').fetchone()[0]==1
+    revision=append(settings,saved['document_id'],b'New version needs local extraction.')
+    queue_parse(settings,saved['document_id'],revision)
+    assert Worker(settings).run_once()['status']=='completed'
+    with connect(settings.database) as db:
+        assert db.execute('select count(*) from parse_runs').fetchone()[0]==2

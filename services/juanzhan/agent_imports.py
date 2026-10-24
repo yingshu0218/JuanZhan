@@ -82,7 +82,7 @@ def template_protocol(settings=None,request=None,body=None):
     return {**CATALOG,'submission_schema':Submission.model_json_schema(),'limits':{'request_bytes':MAX_JSON,'markdown_characters':1000000},
         'workflow':['POST /agent/imports/{request_id}?space_id=...&filename=... with raw original bytes and Content-Type application/octet-stream',
                     'GET /agent/analysis-templates; analyze externally',
-                    'POST /agent/imports/{id}/analyses with version/hash-bound Submission; local parsing runs independently']}
+                    'POST /agent/imports/{id}/analyses with version/hash-bound Submission; current-version Agent analysis takes precedence; queued automatic local parsing skips extraction if analysis is already available; absent analysis uses local fallback']}
 
 class ReadAnalysis(Input):
     space_id:ID

@@ -1,6 +1,6 @@
 # Agent 导入与分析模板（T54）
 
-用户确认：平台不接模型。外部 Agent 导入原件后，按平台模板提交独立原文 Markdown 和分析；平台本地解析独立兜底。模板按业务内容分类，不按文件扩展名分类。
+用户确认：平台不接模型。外部 Agent 导入原件后，按平台模板提交独立原文 Markdown 和分析；当前版本有有效Agent分析时优先使用，本地解析仅作无Agent结果时的兜底。模板按业务内容分类，不按文件扩展名分类。
 
 ## 五类固定版本模板
 
@@ -36,3 +36,11 @@ request_id 与 submission_id 都必须由客户端持久保存：同一标识同
 检索：只将当前原件版本最近一份Agent提取Markdown纳入既有中文FTS，不将分析推断写入原文索引；仍沿用索引大小/完整性告警。MCP新增只读read_document_analysis，返回分析与分段Markdown，后续必须固定analysis_id。已有read_document/read_document_markdown保留本地解析语义，来源不混淆。
 
 通用API客户端可导入 `docs/reference/agent-import-openapi.json`（显式写权限专用）；原 `agent-rest-openapi.json` 仍为只读，不含原件上传或分析提交。MCP `read_document_analysis` 对长要点/多引文返回带 `analysis_truncated` 的紧凑视图，完整分析使用REST分页读取；Markdown按analysis_id分段不会混合不同记录。
+
+## Agent优先显示与提取（2026-10-24）
+
+当前版本存在有效分析时，详情只显示“内容概览 · Agent 提取”，不请求或重复展示本地概览；各条依据统一叫“原文依据”。只有旧版本分析时，本地概览继续显示，旧分析放入历史入口，避免拿旧原件结论充当当前版本。
+
+自动导入解析在开始时检查同档案/同Revision的Agent分析，已存在则完成任务并记录AGENT_ANALYSIS_AVAILABLE，不调用转换器、不伪造ParseRun。已运行或已完成的本地解析不删除；用户主动重解析/OCR仍执行。Agent尚未回填时自动解析可以先行兜底，不无限等待外部客户端。当前Agent分析可使档案整体处理状态显示completed，current_parse_run_id仍只指真实本地解析，不伪造本地正文或历史。
+
+模板填写指导保持v1字段兼容，要求概览按重要性写核心结论和独立要点，涵盖原文支持的关键条件、责任、例外、行动、待确认事项；通常3～7点但不为凑数扩写。关键内容须进入默认概览，不仅藏在字段里。回填前比对完整正文，去重、保留限定条件并分清事实和推断。平台继续只校验结构和引文，不声称自动验证分析质量，历史分析不自动重写。

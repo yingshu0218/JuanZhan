@@ -109,6 +109,11 @@ def project(db,id,store,mounts=None):
             status='unsupported' if error.get('code')=='HANDLER_NOT_AVAILABLE' else 'failed'
         elif not latest:status='failed' if job['status']=='completed' else 'not_started'
     if current and status in ('failed','unsupported'):result['content_stale']=True
+    # A current external extraction is usable content even when local fallback was skipped.
+    if db.execute('SELECT 1 FROM agent_analyses a JOIN agent_imports i ON i.id=a.import_id '
+                  'WHERE i.document_id=? AND i.revision_id=? LIMIT 1',
+                  (id,result['current_revision_id'])).fetchone():
+        status='completed'
     result['processing_status']=status
     # documents contains no backend file paths; expose the explicit public field set.
     keys=('id','space_id','folder_id','title','description','document_date','document_type_id','tag_ids',

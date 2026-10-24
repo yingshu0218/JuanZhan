@@ -222,3 +222,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 本次两个测试renderer容器juanzhan-office-preview-test/juanzhan-office-rc15-verify、juanzhan-source-office-test网络、preview-dev镜像已按确切名称删除。最终业务五服务、rc.14回退镜像、原件卷/备份卷/证书/续期工具继续保留。app/office-packages约199MiB可在不构建时清理，凭187包锁恢复；旧.local/office-preview-debs约2MiB、source-*.log/pytest-source-*合成测试目录、源码tar/bundle/传输AppleDouble备份可复核后按名清理，禁止全局Docker prune。用户正文截图/状态报告和source-before.env在test-instance为私有资料，权限与现有0700目录一致，不提交Git。source-before.env含部署凭据，仅在不需要操作回溯且当前.env已保留时按名删除。
 
 未新增Mac依赖、压缩器、Java、模型或主机全局包。独立Office依赖及字体187包的copyright在成品镜像全部存在，许可与将来再分发边界见THIRD-PARTY。
+
+2026-10-24 T55无新增依赖。本轮devtest日志为.local/agent-priority-*.log，源码传输临时包.local/agent-priority.tar.gz可清理；rc.23镜像和升级前备份按回滚保留策略清理。原件、分析记录和现有Markdown不属于临时开发文件。

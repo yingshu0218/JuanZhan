@@ -65,6 +65,12 @@ def begin(settings,job):
         doc=db.execute('SELECT * FROM documents WHERE id=?',(request['document_id'],)).fetchone()
         if doc['deleted_at'] is not None or doc['current_revision_id']!=request['revision_id']:
             raise ParseFailure('PARSE_SUPERSEDED')
+        # Only the automatic first parse is a fallback. Explicit reparse/OCR stays available.
+        if job['kind']=='parse' and owned['idempotency_key']=='parse:'+request['revision_id'] and db.execute(
+            'SELECT 1 FROM agent_analyses a JOIN agent_imports i ON i.id=a.import_id '
+            'WHERE i.document_id=? AND i.revision_id=? LIMIT 1',
+            (doc['id'],request['revision_id'])).fetchone():
+            return None, None
         previous=db.execute('SELECT parse_run_id FROM parse_attempts WHERE request_sequence=? AND attempt=?',
                             (request['sequence'],job['attempts'])).fetchone()
         if previous:raise ParseFailure('PARSE_ATTEMPT_ALREADY_STARTED')
@@ -163,6 +169,9 @@ def publish(db,job,options,result,assets):
 def execute(settings,job,client=None):
     queue=JobQueue(settings)
     options,revision=begin(settings,job)
+    if options is None:
+        queue.complete(job['id'],job['lease_token'],{'status':'skipped','reason':'AGENT_ANALYSIS_AVAILABLE'})
+        return
     from .source_snapshots import ensure
     remote=None
     try:client=client or ConverterClient(os.getenv('CONVERTER_URL','http://converter:8000'),settings.converter_token)
