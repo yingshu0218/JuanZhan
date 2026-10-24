@@ -121,3 +121,9 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 公网source-public-browser.json经真实TLS、1440/390概览/实际Word四页源文件阅读与存储入口通过，无控制台错误/溢出；未执行生产清理。source-agent-live.json公网REST/MCP9项通过且临时凭据撤销。源码完整615后端/契约与备份/确认来源专项、多格式阅读8项/PDF9项/PNG-JPEG1项/主界面12+1复验通过，详见TESTING。最终成品独立发布恢复演练49.09秒通过，见rc15-final-release-drill.json。
 
 五个项目服务均健康。Office仅私有Docker网络，不挂业务卷/宿主端口，uid10001、只读根、无capabilities、768MiB/1CPU/128进程和192MiB临时区实查通过；现有nginx-proxy/simple-shell-terminal-1未修改。两个专用测试Office容器、测试网络与preview-dev镜像已清理，保留rc.14和最终rc.15。rc.14不能直接连接15迁移库；回退须旧镜像配合升级前13迁移备份恢复到新卷，不能仅回退.env标签。压缩和正式发布延期，无Mac新依赖。
+
+## T55 Agent优先 · 2026-10-24
+
+已先推送323ed2e到GitHub main，再构建/部署0.1.0-rc.23；镜像sha256:498f99e180ea28d76daa5a3848d29355558fc5c002097b712a58ead77d27080c，SOURCE_DIRTY=false。入口https://8.153.19.221:9443/，443未改动。五服务healthy。
+
+升级前一致备份/backups/before-agent-priority-rc23；17迁移不变，integrity=ok、无外键错误。13份档案、69个文件哈希和业务表完全一致，没有新增/删除演示档案。公开HTTPS五模板各确认只有Agent概览，依据可展开，桌面/手机无溢出与页面异常。证据位于test-instance/agent-priority-deploy.json和agent-priority-browser-live.json。已有分析不自动重写；后续外部Agent取得强化后的填写指导。
