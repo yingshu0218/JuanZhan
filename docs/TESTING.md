@@ -845,3 +845,9 @@ Rollback to rc.21 requires the pre-upgrade backup restored into a new volume; do
 浏览器使用服务器已有Playwright（当前无Browser插件），Agent上传/分点回填/仅单份概览/不请求本地overview/依据展开/原件下载/1440与390布局通过；最终结果见.local/agent-priority-browser-final.log。无新依赖。模板指导提高丰富度和重点要求，不等同模型外语义质量验真；历史分析不自动改写。
 
 T55最终源码323ed2e追加15项Agent集成通过（19.29s），三点概览浏览器1 passed（5.7s）；部署后五种模板公网TLS、单概览、原文依据及1440/390布局通过，page_errors=0。截图存于test-instance/agent-priority-live-{desktop,mobile}.png，桌面已人工查看。
+
+## T56 标签与入库规则 · 2026-10-24
+
+devtest既有环境、真实SQLite/托管存储/HTTP Converter，受限1536MiB/2CPU容器并使用真实只读来源约束：203 passed（194.12s），覆盖import_tags、agent_imports、catalog、documents、agent_contract、batches、backup、parsing、indexing、search、source_initial、source_incremental、foundation。新标签规则带来的文档版本/自动标签已纳入旧断言，升级前旧schema登记仍可执行。初轮主机来源测试不满足只读挂载前提，最终容器复测全部通过；不是放宽来源边界。
+
+当前无Browser插件，使用服务器既有Playwright：标签编辑/两标签全部匹配/服务器保存组合/刷新恢复/删除/390布局，以及Agent内容标签优先与仅Agent概览，2 passed（14秒内）；原4项真实搜索/组合/URL/移动端/不完整内容及精度回归4 passed（37.8s）。首轮标签匹配测试的精确label定位和中文字体测试环境已修正，最终日志见.local/import-tags-{browser-verified,search-browser-verified}.log。桌面/手机截图位于/tmp/juanzhan-import-tags-{desktop,mobile}.png，手机已人工查看并压缩快捷筛选标题/按钮间距。无新增依赖，未把固定关键词规则声称为语义理解。

@@ -85,6 +85,8 @@ const messages = {
   ADMIN_NOT_CONFIGURED: "管理员尚未初始化，请由服务管理员完成初始化。",
   LOGIN_THROTTLED: "登录尝试过于频繁，请稍后重试。",
   DUPLICATE_DETECTED: "此空间已有相同原件，请核对后决定是否另存档案。",
+  FILTER_CAPACITY: "当前空间最多保存20组快捷筛选。",
+  TAG_CAPACITY: "当前空间标签已达1000个，请先清理不用的标签。",
   BATCH_TOO_LARGE: "本次操作内容过多，请减少选择的档案或标签。",
   VERSION_CONFLICT: "档案已被更新，请刷新后重试。",
   CSRF_REJECTED: "会话已变更，请重新登录。",

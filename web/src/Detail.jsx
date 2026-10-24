@@ -1,4 +1,5 @@
 import { InfoTip } from "./ui.jsx";
+import { DocumentTags } from "./DocumentTags.jsx";
 import { Original } from "./Original.jsx";
 import { useEffect, useState } from "react";
 import {
@@ -29,6 +30,8 @@ export function Detail({
   refreshKey,
   onOperate,
   operationPending,
+  onSaved,
+  onFilterTag,
 }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -178,20 +181,7 @@ export function Detail({
               <dd>{doc.document_date || "未设置"}</dd>
             </dl>
           </section>
-          <section>
-            <h3>标签</h3>
-            <div className="tags">
-              {doc.tag_ids.length ? (
-                doc.tag_ids.map((tag) => (
-                  <span key={tag}>
-                    {tags.find((t) => t.id === tag)?.name || "未知标签"}
-                  </span>
-                ))
-              ) : (
-                <p className="muted">暂无标签</p>
-              )}
-            </div>
-          </section>
+          <DocumentTags key={doc.id} api={api} doc={doc} onSaved={()=>{setAttempt(n=>n+1);onSaved?.();}} onFilter={onFilterTag} />
           <section>
             <h3>文件状态</h3>
             <dl>

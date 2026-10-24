@@ -56,6 +56,7 @@ def test_snapshot_partial_results_restart_and_guarded_undo(api):
 def test_noop_tag_deltas_and_undo_does_not_overwrite_later_edit(api):
     app,settings,client,headers,space=api
     id=upload(client,headers,space)['document_id']
+    initial=set(detail(client,id)['tag_ids'])
     tags=[client.post('/api/v1/tags',headers=headers,json={'space_id':space,'name':name}).json()['id'] for name in ('A','B')]
     assert patch(client,headers,id,1,tags_add=[tags[0]]).status_code==200
     job=submit(client,headers,space,[id],'add_tags',{'tag_ids':[tags[0]]},{id:2}).json()['job_id']
@@ -63,12 +64,12 @@ def test_noop_tag_deltas_and_undo_does_not_overwrite_later_edit(api):
     assert client.post('/api/v1/jobs/'+job+'/undo',headers=headers).status_code==409
     job=submit(client,headers,space,[id],'add_tags',{'tag_ids':[tags[1]]},{id:2}).json()['job_id']
     assert finish(settings,job)['succeeded']==1
-    assert set(detail(client,id)['tag_ids'])==set(tags)
+    assert set(detail(client,id)['tag_ids'])==set(tags)|initial
     patch(client,headers,id,3,title='Later edit')
     undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
     result=finish(settings,undo)
     assert result['items'][0]['error_code']=='VERSION_CONFLICT'
-    assert detail(client,id)['title']=='Later edit' and set(detail(client,id)['tag_ids'])==set(tags)
+    assert detail(client,id)['title']=='Later edit' and set(detail(client,id)['tag_ids'])==set(tags)|initial
 
 
 @pytest.mark.parametrize('operation,payload',[
@@ -262,15 +263,16 @@ def test_real_worker_atomic_completion_and_expired_lease(api):
 def test_tag_remove_successful_undo_and_no_duplicate_effect(api):
     _,settings,client,headers,space=api
     id=upload(client,headers,space)['document_id']
+    initial=set(detail(client,id)['tag_ids'])
     tag=client.post('/api/v1/tags',headers=headers,json={'space_id':space,'name':'Keep'}).json()['id']
     patch(client,headers,id,1,tags_add=[tag])
     job=submit(client,headers,space,[id],'remove_tags',{'tag_ids':[tag]},{id:2}).json()['job_id']
     finish(settings,job)
-    assert detail(client,id)['tag_ids']==[]
+    assert set(detail(client,id)['tag_ids'])==initial
     assert not JobQueue(settings).complete(job,'obsolete-token',execute)
     undo=client.post('/api/v1/jobs/'+job+'/undo',headers=headers).json()['job_id']
     finish(settings,undo)
-    assert detail(client,id)['tag_ids']==[tag] and detail(client,id)['document_version']==4
+    assert set(detail(client,id)['tag_ids'])==initial|{tag} and detail(client,id)['document_version']==4
 
 
 def test_type_and_triage_use_filing_rules_and_cross_space_references(api):

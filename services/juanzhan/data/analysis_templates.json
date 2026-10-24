@@ -10,7 +10,8 @@
     "Write a useful overview rather than a source excerpt: open with the central purpose or conclusion, then organize distinct key points in descending importance. Each point should explain the fact together with its conditions or implications. Avoid repeating the same fact across points.",
     "Cover the material information present in the document: responsibilities, scope, constraints, exceptions, decisions, next actions and unresolved issues as applicable. Usually provide 3–7 focused points when the source supports them; short sources may need fewer. Never pad content or invent missing details to reach a count.",
     "The summary is the default user view. Include important populated template fields and additional findings in the summary when material; do not hide essential conclusions only in fields. Use plain bullet text, not number cards or repeated agent/source labels. Cite evidence separately.",
-    "Before submission, compare the overview with the complete extracted Markdown: preserve qualifications, distinguish explicit facts from inference, remove generic filler and duplicate quotations, and check that important sections were not omitted. A longer overview is not automatically a better one."
+    "Before submission, compare the overview with the complete extracted Markdown: preserve qualifications, distinguish explicit facts from inference, remove generic filler and duplicate quotations, and check that important sections were not omitted. A longer overview is not automatically a better one.",
+    "Optionally submit tags: up to 20 concise content-based names, reusing the space catalog when appropriate. Prefer subjects, purpose and project themes; avoid names, account numbers and incidental amounts. Do not copy platform format labels unless useful. Omit/null to use platform fallback rules; [] explicitly chooses no automatic labels. Manual user tag edits take precedence."
   ],
   "templates": [
     {

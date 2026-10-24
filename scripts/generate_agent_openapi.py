@@ -82,7 +82,7 @@ mcp['security']=[{'agentBearer':[]}];mcp['description']='Versions 2026-07-28, 20
 mcp['responses']['202']={'description':'Accepted supported legacy notification; no body'}
 for status in ('400','404','406'):mcp['responses'][status]={'description':'MCP protocol error','content':{'application/json':{'schema':ref('McpResponse')}}}
 paths['/agent/mcp']={'post':mcp}
-value={'openapi':'3.1.0','info':{'title':'JuanZhan Agent API extension','version':'0.4.36'},'servers':[{'url':'/api/v1'}],'paths':paths,
+value={'openapi':'3.1.0','info':{'title':'JuanZhan Agent API extension','version':'0.4.37'},'servers':[{'url':'/api/v1'}],'paths':paths,
        'components':{'schemas':schemas,'securitySchemes':{'agentBearer':{'type':'http','scheme':'bearer','description':'Scoped jza_ read-only credential'},'sessionAuth':{'type':'apiKey','in':'cookie','name':'archive_session'},'bearerAuth':{'type':'http','scheme':'bearer'}}}}
 output=ROOT/'docs/reference/agent-openapi.json';output.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 print('Agent OpenAPI paths:',len(paths))

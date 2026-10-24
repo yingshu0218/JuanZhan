@@ -116,6 +116,8 @@ def apply(db, id, version, body):
                 fail(422,'INACTIVE_DOCUMENT_TYPE','Cannot assign disabled type')
         db.execute('UPDATE documents SET '+key+'=? WHERE id=?',(value,id))
     elif operation in ('add_tags','remove_tags'):
+        from .tagging import lock_manual
+        lock_manual(db,id)
         tags=next(iter(values.values()))
         for tag in set(tags):same_space(db,'tags',tag,body['space_id'])
         for tag in set(tags):

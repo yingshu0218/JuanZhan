@@ -154,6 +154,8 @@ def register_external(db, job, source, item, folder_id, triage, settings, timest
                (revision_id, document_id, entry_id, path, item['sha256'], item['size_bytes'], name,
                 item['mime_type'], item['file_modified_at'], timestamp))
     db.execute('UPDATE documents SET current_revision_id=? WHERE id=?', (revision_id, document_id))
+    from .tagging import apply
+    apply(db,document_id,revision_id,initial=True)
     record_event(db, document_id, 'document_created', None, snapshot(db, document_id),
                  timestamp=timestamp, actor='source_scan')
     JobQueue(settings).enqueue(JobSpec(kind='parse', target_type='document', target_id=document_id,

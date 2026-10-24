@@ -162,6 +162,8 @@ def publish(db,job,options,result,assets):
             db.execute('INSERT INTO parse_asset_order VALUES (?,?,?,?)',(options.parse_run_id,index,asset_id,source_ref))
             db.execute('DELETE FROM derived_gc_candidates WHERE storage_key=?',(obj.storage_key,))
         db.execute('UPDATE documents SET current_parse_run_id=? WHERE id=?',(options.parse_run_id,request['document_id']))
+        from .tagging import apply
+        apply(db,request['document_id'],request['revision_id'],text='\n'.join(block['text'] for block in result['blocks'])[:50000])
     return {'parse_run_id':options.parse_run_id,'revision_id':request['revision_id'],'status':status,
             'text_available':extraction['text_available'],'ocr_used':extraction['ocr_used']}
 

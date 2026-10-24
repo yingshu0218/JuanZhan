@@ -220,3 +220,6 @@ JobQueue在有效租约内写入当前尝试steps_json；解析在校验/提交/
 oauth模块复用现有Cookie/CSRF管理员会话和空间授权agent_tokens，0013持久化客户端/PKCE请求/哈希代码/刷新族。既有鉴权在访问令牌上同时检查授权族/访问有效期与固定resource；刷新不扩大空间范围，重用旧refresh撤销整个族。REST、MCP与stdio继续共享既有只读工具，Agent模型在服务外理解自然语言/选择检索/读证据/生成引用；agent_rest为无额外依赖的外部标准库客户端，REST OpenAPI导入契约只含七个只读路径。
 
 可选IP TLS gateway作为本项目独立Nginx服务，归一转发头并只向Archive传入受信Compose子网；Archive固定发行者来自配置，禁止Host生成OAuthissuer。Certbot位于独立运维venv，短期IP证书通过专用systemd timer续期/检验/重载，不进入业务镜像。实际范围、预算和数据不变证据见OAUTH/IP-TEST/DEVTEST。
+
+
+2026-10-24 T56在原件登记事务/解析成功发布/Agent分析提交中调用同一确定性标签模块；只替换自动拥有的绑定，人工编辑设置文档级保护。快捷组合是持久UI条件，不直接执行SQL。无LLM或新依赖，详见IMPORT-TAGS。

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.36
+  version: 0.4.37
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,43 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /saved-filters:
+    get:
+      summary: List saved UI filter drafts for a space
+      operationId: listSavedFilters
+      parameters:
+      - {name: space_id, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Saved filter drafts; validate references when applying
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/SavedFilter'}}
+    post:
+      summary: Save or replace a named filter in a space (Cookie requires CSRF)
+      operationId: saveFilter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SavedFilterInput'}
+      responses:
+        '200':
+          description: Saved; maximum 20 per space, normalized same name replaces
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SavedFilter'}
+        '413': {description: Filter capacity reached}
+        '422': {description: Invalid or oversized draft}
+  /saved-filters/{id}:
+    delete:
+      summary: Delete saved filter (Cookie requires CSRF)
+      operationId: deleteSavedFilter
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '204': {description: Deleted}
+        '404': {description: Not found}
   /agent/analysis-templates:
     $ref: "./agent-openapi.json#/paths/~1agent~1analysis-templates"
   /agent/imports/{request_id}:
@@ -3484,6 +3521,26 @@ components:
         maximum: 100
         default: 30
   schemas:
+    SavedFilterInput:
+      type: object
+      additionalProperties: false
+      required: [space_id, name, criteria]
+      properties:
+        space_id: {type: string, minLength: 1, maxLength: 255}
+        name: {type: string, minLength: 1, maxLength: 40}
+        criteria:
+          type: object
+          maxProperties: 32
+          additionalProperties: true
+          description: Inert UI search draft, maximum 16 KiB serialized. Validate through document search when applying; not an executable query.
+    SavedFilter:
+      type: object
+      required: [id, space_id, name, criteria]
+      properties:
+        id: {type: string}
+        space_id: {type: string}
+        name: {type: string}
+        criteria: {type: object, additionalProperties: true}
     BackupStart:
       type: object
       additionalProperties: false

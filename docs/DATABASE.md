@@ -188,3 +188,6 @@ T32无新迁移。备份通过SQLite Backup API包含WAL已提交事实，冻结
 ## 0011：任务步骤进度
 
 jobs新增steps_json（JSON数组，旧记录默认[]），保存当前尝试的有序步骤code/status/done/total。只持有效租约的worker可推进；领取新尝试清空上轮步骤，失败/租约过期保留失败步骤，完成步骤状态与任务结果同事务提交。无原件/业务字段变化，原0010及之前迁移保持不变。
+
+
+2026-10-24 0018新增document_tag_policy（文档/当前处理Revision/自动来源/人工锁）、automatic_document_tags（自动拥有的标签）和saved_filters（空间、规范化名称、惰性条件JSON，同名唯一）。自动标签仍落document_tags；人工变更锁定自动更新，外键级联清理，策略Revision删除置NULL以保留人工锁。组合随备份保留。见IMPORT-TAGS及原始0018 SQL。

@@ -45,8 +45,12 @@ class Submission(Input):
     summary:list[Finding]=Field(min_length=1,max_length=12)
     fields:dict[str,Finding|None]
     additional_points:list[Finding]=Field(default_factory=list,max_length=20)
+    tags:list[Annotated[str,Field(min_length=1,max_length=60)]]|None=Field(default=None,max_length=20,description="Optional content-based tag names (1–60 characters). Omit/null for platform rules; [] explicitly requests no automatic tags. Manual edits always win.")
     @model_validator(mode='after')
     def evidence(self):
+        if self.tags is not None:
+            from .tagging import clean_names
+            self.tags=clean_names(self.tags)
         if not self.markdown.strip() or not self.agent_name.strip():raise ValueError('Markdown and Agent name must not be blank')
         if set(self.fields)!=set(TEMPLATES[self.template_id]['fields']):raise ValueError('Fill every template field; unknowns must be null')
         for finding in [*self.summary,*self.additional_points,*[v for v in self.fields.values() if v]]:
@@ -187,7 +191,9 @@ def router(settings):
         except TimeoutError:fail(408,'ANALYSIS_TIMEOUT','Submission receive deadline exceeded')
         try:body=Submission.model_validate_json(raw)
         except ValueError:fail(422,'INVALID_ANALYSIS','Submission must follow the template and exact quote offsets')
-        payload=json.dumps(body.model_dump(),ensure_ascii=False,sort_keys=True,separators=(',',':'));sha=hashlib.sha256(payload.encode()).hexdigest()
+        value=body.model_dump()
+        if body.tags is None:value.pop('tags')
+        payload=json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'));sha=hashlib.sha256(payload.encode()).hexdigest()
         def save_analysis():
             with write(settings) as db:
                 row=db.execute('SELECT * FROM agent_imports WHERE id=?',(id,)).fetchone()
@@ -204,6 +210,8 @@ def router(settings):
                 if db.execute('SELECT count(*) FROM agent_analyses WHERE import_id=?',(id,)).fetchone()[0]>=50:fail(413,'ANALYSIS_CAPACITY','Import already has 50 retained analysis submissions')
                 analysis_id=uuid.uuid4().hex
                 db.execute('INSERT INTO agent_analyses VALUES (?,?,?,?,?,?,?,?,?,?)',(analysis_id,id,body.submission_id,body.template_id,body.template_version,body.agent_name,sha,body.markdown,payload,utc_now()))
+                from .tagging import apply
+                apply(db,row['document_id'],row['revision_id'],text=body.markdown,names=body.tags)
                 return {'id':analysis_id,'document_id':row['document_id'],'revision_id':row['revision_id']}
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(save_analysis)

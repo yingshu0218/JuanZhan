@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "JuanZhan opt-in Agent import and analysis API",
-    "version": "0.4.36",
+    "version": "0.4.37",
     "description": "Requires an administrator-created scoped import_enabled=true Bearer credential. Existing read-only or OAuth credentials do not gain writes. Preserve original bytes; submit version/hash-bound external analysis. No internal model."
   },
   "servers": [
@@ -1337,6 +1337,25 @@
             "maxItems": 20,
             "title": "Additional Points",
             "type": "array"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 60,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional content-based tag names (1–60 characters). Omit/null for platform rules; [] explicitly requests no automatic tags. Manual edits always win.",
+            "title": "Tags"
           }
         },
         "required": [

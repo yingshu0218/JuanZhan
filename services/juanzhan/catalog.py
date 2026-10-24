@@ -1,4 +1,5 @@
 """Space-scoped catalog definitions. No file paths or Document lifecycle APIs."""
+import json
 import sqlite3
 import unicodedata
 import uuid
@@ -70,6 +71,17 @@ class FolderPatch(Patch):
 class FolderDelete(Input):
     mode: Literal['only_if_empty', 'move_contents_to_parent', 'trash_contents']
     confirm_folder_id: ID | None = None
+
+
+class SavedFilterInput(Input):
+    space_id: ID
+    name: Annotated[str, Field(min_length=1,max_length=40)]
+    criteria: dict = Field(max_length=32,description="Bounded inert UI search draft. Revalidate against document search when applying; deleted catalog references are not silently ignored.")
+
+    @model_validator(mode='after')
+    def budget(self):
+        if len(json.dumps(self.criteria,allow_nan=False).encode())>16384:raise ValueError('Filter draft exceeds 16 KiB')
+        return self
 
 
 class TagCreate(Input):
@@ -249,6 +261,31 @@ def router(settings):
                 'SELECT * FROM tags WHERE (? IS NULL OR space_id=?) ORDER BY space_id,name_norm,id',
                 (space_id,space_id))]
 
+    @routes.get('/saved-filters')
+    def saved_filters(space_id: ID):
+        with transaction(settings) as db:
+            required(db,'spaces',space_id)
+            return [{'id':r['id'],'space_id':r['space_id'],'name':r['name'],'criteria':json.loads(r['criteria_json'])}
+                    for r in db.execute('SELECT * FROM saved_filters WHERE space_id=? ORDER BY name_norm,id',(space_id,))]
+
+    @routes.post('/saved-filters')
+    def save_filter(body: SavedFilterInput, request: Request):
+        with transaction(settings,request) as db:
+            required(db,'spaces',body.space_id)
+            old=db.execute('SELECT id FROM saved_filters WHERE space_id=? AND name_norm=?',(body.space_id,normalize(body.name))).fetchone()
+            if not old and db.execute('SELECT count(*) FROM saved_filters WHERE space_id=?',(body.space_id,)).fetchone()[0]>=20:
+                fail(413,'FILTER_CAPACITY','Space already contains 20 saved filters')
+            id=old['id'] if old else uuid.uuid4().hex
+            db.execute('INSERT INTO saved_filters VALUES (?,?,?,?,?) ON CONFLICT(space_id,name_norm) DO UPDATE SET name=excluded.name,criteria_json=excluded.criteria_json',
+                       (id,body.space_id,body.name,normalize(body.name),json.dumps(body.criteria,ensure_ascii=False,allow_nan=False)))
+            return {'id':id,'space_id':body.space_id,'name':body.name,'criteria':body.criteria}
+
+    @routes.delete('/saved-filters/{id}',status_code=204)
+    def delete_filter(id: ID, request: Request):
+        with transaction(settings,request) as db:
+            required(db,'saved_filters',id)
+            db.execute('DELETE FROM saved_filters WHERE id=?',(id,))
+
     @routes.post('/tags', status_code=201)
     def create_tag(body: TagCreate, request: Request):
         id = uuid.uuid4().hex
@@ -277,6 +314,8 @@ def router(settings):
             timestamp = now()
             # Removing a binding changes document facts: invalidate optimistic versions and audit.
             for row in documents:
+                from .tagging import lock_manual
+                lock_manual(db,row[0])
                 db.execute('UPDATE documents SET document_version=document_version+1,updated_at=? WHERE id=?', (timestamp,row[0]))
                 record_event(db, row[0], 'tag_deleted', {'tag_id':id}, {'tag_id':None}, timestamp=timestamp)
             db.execute('DELETE FROM document_tags WHERE tag_id=?', (id,))

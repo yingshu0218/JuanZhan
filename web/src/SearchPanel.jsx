@@ -1,10 +1,11 @@
+import { QuickFilters } from "./QuickFilters.jsx";
 import { InfoTip } from "./ui.jsx";
 import { useState } from "react";
 import { blankSearch, searchBody } from "./searchState.js";
 import { Notice } from "./ui.jsx";
 const names = { eq: "等于", in: "任选其一", contains: "包含文字", gte: "大于等于", lte: "小于等于", between: "闭区间", is_null: "未填写" };
 function operators(kind) { return ["eq", ...(["boolean", "single_select"].includes(kind) ? [] : ["in"]), ...(["text", "long_text"].includes(kind) ? ["contains"] : []), ...(["integer", "decimal", "date"].includes(kind) ? ["gte", "lte", "between"] : []), "is_null"]; }
-export function SearchPanel({ applied, catalog, onApply, onClear }) {
+export function SearchPanel({ api, applied, space, catalog, onApply, onClear }) {
   const [draft, setDraft] = useState(() => applied || blankSearch());
   const [error, setError] = useState("");
   function set(key, value) { setDraft((old) => ({ ...old, [key]: value })); }
@@ -17,6 +18,7 @@ export function SearchPanel({ applied, catalog, onApply, onClear }) {
   return <form className="search-panel" role="search" aria-label="档案检索" noValidate onSubmit={submit}>
     <label className="sr-only" htmlFor="archive-search">搜索正文、标题和字段</label>
     <div className="search-input-row"><input id="archive-search" type="search" maxLength={512} placeholder="搜索正文、标题和字段" value={draft.text} onChange={(e) => set("text", e.target.value)} /><button className="primary" type="submit">搜索</button></div>
+    <QuickFilters key={space} api={api} space={space} draft={draft} onApply={value=>{setDraft(value);onApply(value);}} />
     {error ? <Notice error>{error}</Notice> : null}
     <details><summary>组合过滤{applied ? " · 已应用检索" : ""}</summary>
       <label className="check-label"><input type="checkbox" checked={draft.descendants} onChange={(e) => set("descendants", e.target.checked)} />所选目录包含后代目录</label>

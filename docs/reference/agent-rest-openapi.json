@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "JuanZhan read-only document REST API",
-    "version": "0.4.36",
+    "version": "0.4.37",
     "description": "External agents provide NLU and synthesis. Use a scoped agent Bearer token, issued manually or through the separate OAuth discovery/PKCE flow. No uploads, writes or arbitrary URLs. See AGENT-API.md."
   },
   "servers": [
@@ -2038,6 +2038,25 @@
             "maxItems": 20,
             "title": "Additional Points",
             "type": "array"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 60,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional content-based tag names (1–60 characters). Omit/null for platform rules; [] explicitly requests no automatic tags. Manual edits always win.",
+            "title": "Tags"
           }
         },
         "required": [

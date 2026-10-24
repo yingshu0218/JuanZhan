@@ -195,6 +195,9 @@ def router(settings):
                     if name=='document_type_id' and not related['is_active'] and values[name]!=before[name]:
                         fail(422,'INACTIVE_DOCUMENT_TYPE','Cannot assign disabled type')
             for tag in set(body.tags_add+body.tags_remove):same_space(db,'tags',tag,before['space_id'])
+            if 'tags_add' in values or 'tags_remove' in values:
+                from .tagging import lock_manual
+                lock_manual(db,id)
             for tag in set(body.tags_remove):db.execute('DELETE FROM document_tags WHERE document_id=? AND tag_id=?',(id,tag))
             for tag in set(body.tags_add):db.execute('INSERT OR IGNORE INTO document_tags VALUES (?,?,?)',(id,before['space_id'],tag))
             columns=[key for key in values if key not in ('expected_document_version','tags_add','tags_remove')]

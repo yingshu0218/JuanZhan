@@ -1,5 +1,7 @@
 # 项目开发知识库
 
+2026-10-24 T56文档多选标签、标签筛选/跨浏览器快捷组合及平台/Agent入库标签优先级已实现，正在回归验证；见IMPORT-TAGS。新增0018（18迁移）、契约0.4.37/99路径，无新依赖。
+
 2026-10-24 T55已部署devtest rc.23（源码323ed2e）：当前版本Agent概览优先且不重复显示本地兜底，标题统一注明来源；已存在分析时自动解析跳过提取，保留主动重解析/版本回退；模板强化核心结论、关键条件及行动。52项组合后端、最终源码15项Agent集成、1项浏览器及公网五模板桌面/手机复验通过。13档案/69文件及业务表不变，17迁移，无新增依赖；入口仍为https://8.153.19.221:9443/。历史分析内容不自动重写。
 
 T54 deployed to devtest rc.22 (2026-10-24), source 3a36641, image sha256:b9a97b2f2702a0644d159e431807e34104ffcbf76bd35ee048959426f5c5f360. Five business templates, explicit scoped import grants, immutable version/hash-bound external analyses, local parser fallback, Markdown search, and read-only MCP template/analysis tools are available at https://8.153.19.221:9443/ . Migration 0017 applied (17 total), contract 0.4.36/98 paths. Existing 8 documents and 45 files preserved; five synthetic sample documents added to the removable Agent template acceptance space (13 documents/69 files total). All five originals and independently parsed quotes verified, public desktop/mobile UI checked; readonly import denied and temporary test credentials revoked. No internal model or new dependencies. See AGENT-IMPORT and TESTING.

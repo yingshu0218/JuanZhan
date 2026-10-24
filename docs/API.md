@@ -367,3 +367,6 @@ Archive契约0.4.28、63个path，新增/system/backups查询/创建、单记录
 Archive0.4.29：GET /jobs与/jobs/{id}新增document_name与steps。解析文件名固定到任务捕获的原件版本，其余文档任务取当前原件名，均剥离路径；五个解析步骤按validate/submit/extract/assets/publish推进，每步status/done/total独立。total=null时为不定进度，不表示0%；总体条表示完成步骤数，不表示耗时百分比。维护/索引任务为process单步，旧任务steps=[]，不虚构历史进度。
 
 2026-10-24 T55无接口结构变化：当前Revision有Agent分析时Web优先读取/展示analyses；自动初次parse任务可返回result.status=skipped、reason=AGENT_ANALYSIS_AVAILABLE，不创建虚假ParseRun。Document.processing_status可为completed，current_parse_run_id/content_stale仍描述真实本地解析快照；读取本地正文与Agent正文的接口保持分离。模板JSON Schema仍兼容v1，增加概览填写指导。
+
+
+2026-10-24 T56新增GET/POST /saved-filters和DELETE /saved-filters/{id}；Space内20组、规范化同名覆盖、criteria惰性UI JSON最多16KiB/32键，应用时重新验证检索。Cookie写需CSRF，管理接口不向Agent凭据开放。Submission可选tags数组最多20个，省略/null平台兜底、[]明确无自动标签、人工编辑优先。契约0.4.37/99路径，见IMPORT-TAGS。

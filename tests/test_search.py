@@ -99,7 +99,7 @@ def test_real_fts_get_post_joint_filters_stale_failure_and_trash(pipeline):
         assert client.get('/api/v1/documents',params={'space_id':space,'q':text}).json()['total']==1
     assert ids(search(client,headers,space,text='NOT OR " *'))==[]
     assert create(client,headers,space,key='amount',type='decimal',filterable=True).status_code==201
-    assert write(client,headers,id,1,{'amount':'2.0001'}).status_code==200
+    assert write(client,headers,id,detail(client,id)['document_version'],{'amount':'2.0001'}).status_code==200
     response=search(client,headers,space,text='档案',metadata=[{'key':'amount','operator':'lte','value':'2.0001'}])
     assert ids(response)==[id] and response.json()['items'][0]['search_index']['status']=='pending'
     assert response.json()['search_index']['incomplete']

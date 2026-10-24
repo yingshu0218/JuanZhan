@@ -20,7 +20,7 @@ test('explicit import grant, file and template submission render cited Agent ove
  const templates=await (await page.request.get('/api/v1/agent/analysis-templates',{headers:h})).json();
  const template=templates.templates.find(item=>item.id==='contract');
  const finding={text:'验收通过后支付1000元。',basis:'explicit',sources:[{start:0,end:text.length,quote:text}]};
- const body={submission_id:'first',revision_id:saved.revision_id,original_sha256:saved.original_sha256,template_id:'contract',template_version:1,agent_name:'浏览器外部Agent',markdown:text,summary:[{...finding,text:'这份采购合同明确双方合作关系，以验收作为付款前提。'},{...finding,text:'甲方为示例公司，乙方为示例服务商。'},finding],fields:{...template.fields,payment_terms:finding},additional_points:[]};
+ const body={submission_id:'first',revision_id:saved.revision_id,original_sha256:saved.original_sha256,template_id:'contract',template_version:1,agent_name:'浏览器外部Agent',tags:['采购','验收'],markdown:text,summary:[{...finding,text:'这份采购合同明确双方合作关系，以验收作为付款前提。'},{...finding,text:'甲方为示例公司，乙方为示例服务商。'},finding],fields:{...template.fields,payment_terms:finding},additional_points:[]};
  const submitted=await page.request.post(`/api/v1/agent/imports/${saved.id}/analyses`,{headers:h,data:body});expect(submitted.status()).toBe(201);
  const localRequests=[];page.on('request',request=>{if(/\/documents\/[^/]+\/overview(?:\?|$)/.test(request.url()))localRequests.push(request.url());});
  await page.reload();await page.getByLabel('当前空间').selectOption(space);
@@ -29,6 +29,7 @@ test('explicit import grant, file and template submission render cited Agent ove
  const analysis=page.getByRole('region',{name:'Agent分析',exact:true});
  await expect(analysis.getByRole('heading',{name:'内容概览 · Agent 提取'})).toBeVisible();
  await expect(analysis).toContainText('验收通过后支付1000元');
+ await expect(page.getByRole('region',{name:'文档标签'}).getByRole('button',{name:'采购',exact:true})).toBeVisible();
  await analysis.getByText('原文依据',{exact:true}).first().click();
  await expect(analysis.getByText(text,{exact:false}).first()).toBeVisible();
  await page.screenshot({path:'/tmp/juanzhan-agent-import-desktop.png'});

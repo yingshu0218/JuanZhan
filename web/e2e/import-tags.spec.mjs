@@ -1,0 +1,44 @@
+import {test,expect} from '@playwright/test';
+import {login,createSpace,api} from './helpers.mjs';
+
+test('multi-select tags, tag filtering and server-persistent quick combinations',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await login(page);await createSpace(page,'标签组合验收');
+ const space=await page.getByLabel('当前空间').inputValue();
+ const ids=[];
+ for(const name of ['项目A','待跟进'])ids.push((await api(page,'/tags','POST',{space_id:space,name})).data.id);
+ const csrf=(await api(page,'/auth/session')).data.csrf_token;
+ const response=await page.request.post('/api/v1/documents/upload',{headers:{'X-CSRF-Token':csrf},multipart:{space_id:space,file:{name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('Meeting minutes: deliver the archive next week.')}}});
+ expect(response.status()).toBe(201);const saved=await response.json();
+ await expect.poll(async()=>(await api(page,`/documents/${saved.document_id}`)).data.processing_status).toBe('completed');
+ await page.reload();await page.getByLabel('当前空间').selectOption(space);await page.getByRole('button',{name:'全部档案',exact:true}).click();
+ const library=page.getByRole('region',{name:'档案列表',exact:true});
+ await library.getByRole('button').filter({hasText:'notes.txt'}).click();
+ const tags=page.getByRole('region',{name:'文档标签',exact:true});
+ await tags.getByRole('button',{name:'编辑标签',exact:true}).click();
+ await tags.getByRole('checkbox',{name:'项目A',exact:true}).check();await tags.getByRole('checkbox',{name:'待跟进',exact:true}).check();
+ await tags.getByRole('button',{name:'保存标签',exact:true}).click();
+ await expect(tags.getByRole('button',{name:'项目A',exact:true})).toBeVisible();
+ await tags.getByRole('button',{name:'项目A',exact:true}).click();
+ const search=page.getByRole('search',{name:'档案检索'});
+ await search.getByText('组合过滤',{exact:false}).click();
+ await search.getByRole('checkbox',{name:'待跟进',exact:true}).check();
+ await search.getByLabel('标签匹配').selectOption('all');
+ await search.getByRole('button',{name:'搜索',exact:true}).click();
+ await search.getByLabel('筛选组合名称').fill('项目跟进');
+ await search.getByRole('button',{name:'保存组合',exact:true}).click();
+ await expect(search.getByRole('button',{name:'项目跟进',exact:true})).toBeVisible();
+ // REST read proves persistence belongs to the server rather than localStorage.
+ const stored=await api(page,`/saved-filters?space_id=${space}`);expect(stored.data[0].criteria.tag_ids.sort()).toEqual(ids.sort());
+ expect(stored.data[0].criteria.match).toBe('all');
+ await page.reload();
+ await search.getByRole('button',{name:'项目跟进',exact:true}).click();
+ await expect(library.getByText('1 份',{exact:true})).toBeVisible();
+ await page.screenshot({path:'/tmp/juanzhan-import-tags-desktop.png'});
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/juanzhan-import-tags-mobile.png'});
+ await search.getByRole('button',{name:'删除筛选 项目跟进'}).click();
+ await expect(search.getByRole('button',{name:'项目跟进',exact:true})).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

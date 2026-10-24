@@ -99,7 +99,7 @@ def test_revision_keeps_id_old_content_and_manual_facts(documents):
     updated = service.append_managed_revision(doc['id'],published(store,b'new bytes'),revision(1))
     assert updated['id']==doc['id'] and updated['document_version']==2
     assert updated['current_revision_id']!=doc['current_revision_id']
-    assert updated['current_parse_run_id']=='parse' and updated['tag_ids']==[tag]
+    assert updated['current_parse_run_id']=='parse' and set(updated['tag_ids'])==set(doc['tag_ids'])|{tag}
     assert [r['revision_no'] for r in service.revisions(doc['id'])]==[1,2]
     with connect(settings.database) as db:
         assert db.execute("SELECT value_text,is_confirmed FROM metadata_values WHERE id='v'").fetchone()==('MANUAL',1)

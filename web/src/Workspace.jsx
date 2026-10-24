@@ -22,7 +22,7 @@ import {
   Gear,
 } from "@phosphor-icons/react";
 import { SearchPanel } from "./SearchPanel.jsx";
-import { encodedState, readLocation, searchBody, preferredView, rememberView } from "./searchState.js";
+import { blankSearch, encodedState, readLocation, searchBody, preferredView, rememberView } from "./searchState.js";
 import { message } from "./api.js";
 import { Dialog, Notice, Empty } from "./ui.jsx";
 import { Sources } from "./Sources.jsx";
@@ -646,7 +646,7 @@ export function Workspace({ api, logout, authError }) {
                     prepare([...checked.values()], "add_tags", {
                       tag_ids: [tag.id],
                     });
-                  else setNotice("先勾选档案，或将档案拖到标签上。");
+                  else applySearch({ ...blankSearch(), tag_ids: [tag.id] });
                 }}
                 onDragOver={(e) => dragOver(e, "tag:" + tag.id)}
                 onDrop={(e) => drop(e, "tag", tag.id)}
@@ -745,7 +745,7 @@ export function Workspace({ api, logout, authError }) {
                     setSelected(id);
                     setMobileDetail(true);
                   }}
-                  searchPanel={<SearchPanel key={space + JSON.stringify(search)} applied={search} catalog={catalog} onApply={applySearch} onClear={clearSearch} />}
+                  searchPanel={<SearchPanel api={api} key={space + JSON.stringify(search)} applied={search} space={space} catalog={catalog} onApply={applySearch} onClear={clearSearch} />}
                   searching={!!search}
                   relevanceAvailable={!!search?.text}
                   multiType={!!search?.type_ids?.length}
@@ -786,6 +786,8 @@ export function Workspace({ api, logout, authError }) {
                   folders={catalog.folders}
                   tags={catalog.tags}
                   definitions={catalog.definitions}
+                  onSaved={()=>setRefresh(n=>n+1)}
+                  onFilterTag={id=>applySearch({...blankSearch(),tag_ids:[id]})}
                   onBack={() => { setMobileDetail(false); setSelected(null); }}
                   refreshKey={refresh}
                   operationPending={operations.pending}

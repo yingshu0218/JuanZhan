@@ -1795,3 +1795,9 @@ button.info-trigger:hover, button.info-trigger:focus-visible { background: #e4ee
 .upload-skipped ul { padding-left: 20px; }
 .upload-skipped li { margin: 8px 0; overflow-wrap: anywhere; }
 .upload-skipped small { display: block; color: var(--muted); }
+
+.quick-filters { display:grid; gap:8px; margin:8px 0; }
+.quick-filter-head { display:flex; align-items:center; gap:6px; }
+.quick-filter-list { display:flex; flex-wrap:wrap; gap:6px; }
+.quick-filter-list .summary-actions { margin:0; gap:2px; }
+.quick-filter-list button { overflow-wrap:anywhere; }

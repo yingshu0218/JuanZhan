@@ -14,7 +14,8 @@
     "test:e2e:search": "playwright test --config search.playwright.config.mjs",
     "test:e2e:agent-import": "playwright test --config agent-import.playwright.config.mjs",
     "test:e2e:jobs": "playwright test --config jobs.playwright.config.mjs",
-    "test:e2e:files": "playwright test --config files.playwright.config.mjs"
+    "test:e2e:files": "playwright test --config files.playwright.config.mjs",
+    "test:e2e:import-tags": "playwright test --config import-tags.playwright.config.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

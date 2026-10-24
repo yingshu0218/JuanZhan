@@ -155,6 +155,8 @@ class DocumentService:
                            (id,info.space_id,info.folder_id,info.document_type_id,info.title,timestamp,timestamp,timestamp))
                 revision_id = self.insert_revision(db, id, 1, object_id, obj, info)
                 db.execute('UPDATE documents SET current_revision_id=?,triage_status=? WHERE id=?', (revision_id,info.triage_status,id))
+                from .tagging import apply
+                apply(db,id,revision_id,initial=True)
                 after = snapshot(db, id)
                 record_event(db, id, 'document_created', None, after, timestamp=timestamp)
                 if after_create is not None:
