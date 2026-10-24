@@ -1,5 +1,7 @@
 # 技术架构
 
+T54 外部Agent导入协议：原件先保存并排本地解析，外部分析独立提交到agent_analyses；无内部模型或网络抓取。五类版本化模板与Agent原文引用校验边界见AGENT-IMPORT。
+
 T53 新增 revision_markdown/markdown_dirty：持久版本副本由独立 fenced worker 生成，所有已接收格式含元信息兜底；不读取原件或接模型。Agent 增加 Markdown 分段读取，见 MARKDOWN-COPIES。
 
 rc.15新增源文件生命周期：外部Revision通过revision_snapshots关联托管副本而不切换来源；reading_previews登记独立阅读PDF，原件/成功解析/人工字段不被替换。新增独立无业务卷Office/TIFF renderer，worker私有传输经鉴权的字节，固定资源和网络隔离；Web概览与原文件版本阅读分开。备份/GC统一引用视图覆盖副本与阅读缓存。当前共Archive/Converter/worker/renderer及可选HTTPS gateway五个项目服务，无新消息队列/模型/向量库。实现、界限与实测见NATIVE-READING和BATCH-SOURCE-FILES。

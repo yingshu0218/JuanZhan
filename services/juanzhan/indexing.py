@@ -54,7 +54,8 @@ def snapshot(settings,id):
         doc=db.execute('SELECT d.*,s.generation FROM documents d JOIN search_dirty s ON s.document_id=d.id WHERE d.id=?',(id,)).fetchone()
         if doc is None:return None
         run=doc['current_parse_run_id']
-        queries=[('SELECT text_content AS text FROM content_blocks WHERE parse_run_id=? ORDER BY block_index',(run,)),
+        queries=[('SELECT a.markdown_text AS text FROM agent_analyses a JOIN agent_imports i ON i.id=a.import_id WHERE i.document_id=? AND i.revision_id=? ORDER BY a.created_at DESC,a.id DESC LIMIT 1',(id,doc['current_revision_id'])),
+                 ('SELECT text_content AS text FROM content_blocks WHERE parse_run_id=? ORDER BY block_index',(run,)),
                  ('SELECT t.name AS text FROM tags t JOIN document_tags l ON l.tag_id=t.id WHERE l.document_id=? ORDER BY t.id',(id,)),
                  ('SELECT label AS text FROM document_types WHERE id=?',(doc['document_type_id'],)),
                  ('SELECT original_filename AS text FROM file_revisions WHERE id=?',(doc['current_revision_id'],))]

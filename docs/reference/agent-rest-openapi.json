@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "JuanZhan read-only document REST API",
-    "version": "0.4.35",
+    "version": "0.4.36",
     "description": "External agents provide NLU and synthesis. Use a scoped agent Bearer token, issued manually or through the separate OAuth discovery/PKCE flow. No uploads, writes or arbitrary URLs. See AGENT-API.md."
   },
   "servers": [
@@ -1008,6 +1008,279 @@
         ]
       }
     },
+    "/agent/analysis-templates": {
+      "get": {
+        "summary": "Discover five versioned business templates and submission schema",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/documents/{id}/analyses": {
+      "get": {
+        "summary": "Read retained external analysis, one record per page; current original preferred",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          }
+        ]
+      }
+    },
     "/agent/analysis-context": {
       "post": {
         "summary": "Prepare question and cited evidence; does not generate an answer",
@@ -1163,6 +1436,11 @@
             "minItems": 1,
             "title": "Space Ids",
             "type": "array"
+          },
+          "import_enabled": {
+            "default": false,
+            "title": "Import Enabled",
+            "type": "boolean"
           },
           "expires_in_days": {
             "default": 7,
@@ -1617,6 +1895,165 @@
         "title": "MarkdownInput",
         "type": "object"
       },
+      "Citation": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "index",
+          "block_id",
+          "text",
+          "locator"
+        ],
+        "additionalProperties": false
+      },
+      "Finding": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "explicit",
+              "inference"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "basis",
+          "sources"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "Submission": {
+        "additionalProperties": false,
+        "properties": {
+          "submission_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,100}$",
+            "title": "Submission Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "original_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Original Sha256",
+            "type": "string"
+          },
+          "template_id": {
+            "enum": [
+              "generic",
+              "contract",
+              "invoice",
+              "meeting",
+              "report"
+            ],
+            "title": "Template Id",
+            "type": "string"
+          },
+          "template_version": {
+            "const": 1,
+            "title": "Template Version",
+            "type": "integer"
+          },
+          "agent_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Agent Name",
+            "type": "string"
+          },
+          "markdown": {
+            "maxLength": 1000000,
+            "minLength": 1,
+            "title": "Markdown",
+            "type": "string"
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Summary",
+            "type": "array"
+          },
+          "fields": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Finding"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Fields",
+            "type": "object"
+          },
+          "additional_points": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "maxItems": 20,
+            "title": "Additional Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "submission_id",
+          "revision_id",
+          "original_sha256",
+          "template_id",
+          "template_version",
+          "agent_name",
+          "markdown",
+          "summary",
+          "fields"
+        ],
+        "title": "Submission",
+        "type": "object"
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -1651,6 +2088,9 @@
           "name": {
             "type": "string"
           },
+          "import_enabled": {
+            "type": "boolean"
+          },
           "space_ids": {
             "type": "array",
             "items": {
@@ -1667,6 +2107,7 @@
         "required": [
           "id",
           "name",
+          "import_enabled",
           "space_ids",
           "created_at",
           "expires_at"
@@ -1683,6 +2124,9 @@
               },
               "name": {
                 "type": "string"
+              },
+              "import_enabled": {
+                "type": "boolean"
               },
               "space_ids": {
                 "type": "array",
@@ -1703,6 +2147,7 @@
             "required": [
               "id",
               "name",
+              "import_enabled",
               "space_ids",
               "created_at",
               "expires_at",
@@ -1711,37 +2156,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "Citation": {
-        "type": "object",
-        "properties": {
-          "index": {
-            "type": "integer"
-          },
-          "block_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "text": {
-            "type": "string"
-          },
-          "locator": {
-            "type": "object"
-          }
-        },
-        "required": [
-          "index",
-          "block_id",
-          "text",
-          "locator"
-        ],
-        "additionalProperties": false
       },
       "OverviewPoint": {
         "type": "object",

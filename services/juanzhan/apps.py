@@ -158,6 +158,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         from . import agent_access, agent_api, agent_mcp
         app.include_router(agent_access.router(settings))
         app.include_router(agent_api.router(settings))
+        from . import agent_imports
+        app.include_router(agent_imports.router(settings))
         app.include_router(agent_mcp.router(settings))
         app.include_router(auth.router(settings))
         app.include_router(catalog.router(settings))

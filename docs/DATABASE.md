@@ -1,5 +1,7 @@
 # 数据库设计
 
+0017_agent_imports.sql新增显式导入授权标志、agent_imports及不可变agent_analyses，原件/分析版本绑定，幂等键和原件级联清理；共17迁移。分析随SQLite一致备份保存。
+
 T53 新增 0016_revision_markdown.sql（共16迁移）：版本 Markdown 对象与持久待办、Revision/ParseRun 触发更新、统一 derived_object_references 引用保护；原15迁移不修改。
 
 0015_reading_previews.sql（rc.15已部署）按Revision登记阅读PDF的storage_key/hash/size/renderer/创建时间；derived_object_references统一派生产物与阅读缓存引用，用于备份和GC。原14条迁移保持不变。业务实际13→15迁移通过，旧SQL校验不变。

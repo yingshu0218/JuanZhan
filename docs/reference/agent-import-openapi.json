@@ -1,0 +1,2322 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "JuanZhan opt-in Agent import and analysis API",
+    "version": "0.4.36",
+    "description": "Requires an administrator-created scoped import_enabled=true Bearer credential. Existing read-only or OAuth credentials do not gain writes. Preserve original bytes; submit version/hash-bound external analysis. No internal model."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/agent/spaces": {
+      "get": {
+        "summary": "List granted spaces only",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSpaces"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/analysis-templates": {
+      "get": {
+        "summary": "Discover five versioned business templates and submission schema",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/imports/{request_id}": {
+      "post": {
+        "summary": "Import raw original with explicitly enabled scoped credential; always queue local parsing",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Credential issued once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,100}$"
+            }
+          },
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "description": "Requires administrator-created import_enabled=true credential and granted space. OAuth and existing read-only tokens do not gain write permissions."
+      }
+    },
+    "/agent/imports/{id}/analyses": {
+      "post": {
+        "summary": "Submit immutable version/hash-bound external analysis; exact quotes validate against Agent Markdown, not original semantics",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Credential issued once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submission"
+              }
+            }
+          }
+        },
+        "description": "Requires administrator-created import_enabled=true credential and granted space. OAuth and existing read-only tokens do not gain write permissions."
+      }
+    },
+    "/agent/documents/{id}/analyses": {
+      "get": {
+        "summary": "Read retained external analysis, one record per page; current original preferred",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful read-only result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded request, authorization or content error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TokenInput": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Name",
+            "type": "string"
+          },
+          "space_ids": {
+            "items": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Space Ids",
+            "type": "array"
+          },
+          "import_enabled": {
+            "default": false,
+            "title": "Import Enabled",
+            "type": "boolean"
+          },
+          "expires_in_days": {
+            "default": 7,
+            "maximum": 30,
+            "minimum": 1,
+            "title": "Expires In Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "space_ids"
+        ],
+        "title": "TokenInput",
+        "type": "object"
+      },
+      "Folder": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "include_descendants": {
+            "default": false,
+            "title": "Include Descendants",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "Folder",
+        "type": "object"
+      },
+      "Metadata": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "in",
+              "contains",
+              "gte",
+              "lte",
+              "between",
+              "is_null"
+            ],
+            "title": "Operator",
+            "type": "string"
+          },
+          "value": {
+            "default": null,
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "operator"
+        ],
+        "title": "Metadata",
+        "type": "object"
+      },
+      "Sort": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "enum": [
+              "relevance",
+              "imported_at",
+              "document_date",
+              "title",
+              "size_bytes"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "order": {
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Order",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field"
+        ],
+        "title": "Sort",
+        "type": "object"
+      },
+      "Tags": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          },
+          "match": {
+            "default": "any",
+            "enum": [
+              "any",
+              "all"
+            ],
+            "title": "Match",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "Tags",
+        "type": "object"
+      },
+      "AgentSearch": {
+        "additionalProperties": false,
+        "properties": {
+          "space_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Folder"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "document_type_ids": {
+            "items": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Document Type Ids",
+            "type": "array"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tags"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "metadata": {
+            "items": {
+              "$ref": "#/components/schemas/Metadata"
+            },
+            "maxItems": 32,
+            "title": "Metadata",
+            "type": "array"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Id"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "managed",
+                  "external"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Kind"
+          },
+          "triage_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "needs_review",
+                  "filed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Triage Status"
+          },
+          "availability_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "available",
+                  "missing",
+                  "suspected_missing",
+                  "source_offline",
+                  "unknown",
+                  "needs_match"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Availability Status"
+          },
+          "processing_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "not_started",
+                  "queued",
+                  "running",
+                  "completed",
+                  "failed",
+                  "unsupported",
+                  "discarded"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Processing Status"
+          },
+          "is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Favorite"
+          },
+          "trash": {
+            "default": "exclude",
+            "enum": [
+              "exclude",
+              "only",
+              "include"
+            ],
+            "title": "Trash",
+            "type": "string"
+          },
+          "document_date_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Document Date From"
+          },
+          "document_date_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Document Date To"
+          },
+          "sort": {
+            "items": {
+              "$ref": "#/components/schemas/Sort"
+            },
+            "maxItems": 5,
+            "title": "Sort",
+            "type": "array"
+          },
+          "page": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 20,
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "space_id"
+        ],
+        "title": "AgentSearch",
+        "type": "object"
+      },
+      "AnalysisInput": {
+        "additionalProperties": false,
+        "properties": {
+          "space_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "document_ids": {
+            "items": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Document Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "space_id",
+          "question",
+          "document_ids"
+        ],
+        "title": "AnalysisInput",
+        "type": "object"
+      },
+      "MarkdownInput": {
+        "additionalProperties": false,
+        "properties": {
+          "space_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "document_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Document Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Revision Id"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sha256"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 16777216,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "length": {
+            "default": 16000,
+            "maximum": 32000,
+            "minimum": 1,
+            "title": "Length",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "space_id",
+          "document_id"
+        ],
+        "title": "MarkdownInput",
+        "type": "object"
+      },
+      "Citation": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "index",
+          "block_id",
+          "text",
+          "locator"
+        ],
+        "additionalProperties": false
+      },
+      "Finding": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "explicit",
+              "inference"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "basis",
+          "sources"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "Submission": {
+        "additionalProperties": false,
+        "properties": {
+          "submission_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,100}$",
+            "title": "Submission Id",
+            "type": "string"
+          },
+          "revision_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Revision Id",
+            "type": "string"
+          },
+          "original_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Original Sha256",
+            "type": "string"
+          },
+          "template_id": {
+            "enum": [
+              "generic",
+              "contract",
+              "invoice",
+              "meeting",
+              "report"
+            ],
+            "title": "Template Id",
+            "type": "string"
+          },
+          "template_version": {
+            "const": 1,
+            "title": "Template Version",
+            "type": "integer"
+          },
+          "agent_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Agent Name",
+            "type": "string"
+          },
+          "markdown": {
+            "maxLength": 1000000,
+            "minLength": 1,
+            "title": "Markdown",
+            "type": "string"
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Summary",
+            "type": "array"
+          },
+          "fields": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Finding"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Fields",
+            "type": "object"
+          },
+          "additional_points": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "maxItems": 20,
+            "title": "Additional Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "submission_id",
+          "revision_id",
+          "original_sha256",
+          "template_id",
+          "template_version",
+          "agent_name",
+          "markdown",
+          "summary",
+          "fields"
+        ],
+        "title": "Submission",
+        "type": "object"
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "AgentToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "import_enabled": {
+            "type": "boolean"
+          },
+          "space_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "import_enabled",
+          "space_ids",
+          "created_at",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "IssuedAgentToken": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "import_enabled": {
+                "type": "boolean"
+              },
+              "space_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "expires_at": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "import_enabled",
+              "space_ids",
+              "created_at",
+              "expires_at",
+              "token"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "OverviewPoint": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "index": {
+            "type": "integer"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            }
+          }
+        },
+        "required": [
+          "label",
+          "details",
+          "index",
+          "sources"
+        ],
+        "additionalProperties": false
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "document_version": {
+            "type": "integer"
+          },
+          "current_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_revision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parse_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processing_status": {
+            "type": "string"
+          },
+          "availability_status": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "text_available": {
+            "type": "boolean"
+          },
+          "ocr_used": {
+            "type": "boolean"
+          },
+          "stale_for_current_revision": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "method": {
+            "const": "extractive-v2"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverviewPoint"
+            }
+          },
+          "omitted": {
+            "type": "boolean"
+          },
+          "partial": {
+            "type": "boolean"
+          },
+          "covered": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document_id",
+          "document_version",
+          "current_revision_id",
+          "content_revision_id",
+          "parse_run_id",
+          "processing_status",
+          "availability_status",
+          "warnings",
+          "text_available",
+          "ocr_used",
+          "stale_for_current_revision",
+          "title",
+          "method",
+          "points",
+          "omitted",
+          "partial",
+          "covered",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "AgentBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "text_truncated": {
+            "type": "boolean"
+          },
+          "locator": {
+            "type": "object"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "type",
+          "text",
+          "text_truncated",
+          "locator",
+          "confidence"
+        ],
+        "additionalProperties": false
+      },
+      "BusinessFields": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "const": "current_document"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "value_encoding": {
+                  "enum": [
+                    "native",
+                    "integer-string"
+                  ]
+                },
+                "value_truncated": {
+                  "type": "boolean"
+                },
+                "origin": {
+                  "type": "string"
+                },
+                "is_confirmed": {
+                  "type": "boolean"
+                },
+                "source_parse_run_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "type",
+                "value",
+                "value_encoding",
+                "value_truncated",
+                "origin",
+                "is_confirmed",
+                "source_parse_run_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "partial": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "scope",
+          "items",
+          "total",
+          "partial"
+        ],
+        "additionalProperties": false
+      },
+      "AgentContent": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "document_version": {
+            "type": "integer"
+          },
+          "business_fields": {
+            "$ref": "#/components/schemas/BusinessFields"
+          },
+          "content_revision_id": {
+            "type": "string"
+          },
+          "parse_run_id": {
+            "type": "string"
+          },
+          "availability_status": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ocr_used": {
+            "type": "boolean"
+          },
+          "stale_for_current_revision": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentBlock"
+            }
+          }
+        },
+        "required": [
+          "document_id",
+          "document_version",
+          "business_fields",
+          "content_revision_id",
+          "parse_run_id",
+          "availability_status",
+          "warnings",
+          "ocr_used",
+          "stale_for_current_revision",
+          "page",
+          "page_size",
+          "total",
+          "blocks"
+        ],
+        "additionalProperties": false
+      },
+      "AgentMarkdown": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "revision_id": {
+            "type": "string"
+          },
+          "parse_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "const": "markdown"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "content_status": {
+            "enum": [
+              "content",
+              "empty",
+              "unavailable"
+            ]
+          },
+          "refresh_pending": {
+            "type": "boolean"
+          },
+          "stale_for_current_revision": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_characters": {
+            "type": "integer"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "revision_id",
+          "parse_run_id",
+          "format",
+          "filename",
+          "sha256",
+          "size_bytes",
+          "content_status",
+          "refresh_pending",
+          "stale_for_current_revision",
+          "offset",
+          "next_offset",
+          "total_characters",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "AgentSpaces": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "AgentCatalog": {
+        "type": "object",
+        "properties": {
+          "folders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "parent_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "parent_id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "document_types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type_key": {
+                  "type": "string"
+                },
+                "is_active": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "type_key",
+                "is_active"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "constraints": {
+                  "type": "object"
+                },
+                "filterable": {
+                  "type": "boolean"
+                },
+                "is_active": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "type",
+                "constraints",
+                "filterable",
+                "is_active"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "folders",
+          "tags",
+          "document_types",
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "AgentSearchResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "space_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "document_date": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "document_version": {
+                  "type": "integer"
+                },
+                "current_revision_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current_parse_run_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "processing_status": {
+                  "type": "string"
+                },
+                "availability_status": {
+                  "type": "string"
+                },
+                "content_stale": {
+                  "type": "boolean"
+                },
+                "search_index": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "id",
+                "space_id",
+                "title",
+                "document_date",
+                "document_version",
+                "current_revision_id",
+                "current_parse_run_id",
+                "processing_status",
+                "availability_status",
+                "content_stale",
+                "search_index"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "search_index": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "search_index"
+        ],
+        "additionalProperties": false
+      },
+      "AnalysisContext": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer_generated": {
+            "const": false
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "overview": {
+                  "$ref": "#/components/schemas/Overview"
+                },
+                "evidence": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentContent"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "business_fields": {
+                  "$ref": "#/components/schemas/BusinessFields"
+                }
+              },
+              "required": [
+                "overview",
+                "evidence",
+                "business_fields"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "question",
+          "answer_generated",
+          "instructions",
+          "documents"
+        ],
+        "additionalProperties": false
+      },
+      "AgentTool": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "inputSchema": {
+            "type": "object"
+          },
+          "annotations": {
+            "type": "object",
+            "properties": {
+              "readOnlyHint": {
+                "type": "boolean"
+              },
+              "destructiveHint": {
+                "type": "boolean"
+              },
+              "idempotentHint": {
+                "type": "boolean"
+              },
+              "openWorldHint": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "readOnlyHint",
+              "destructiveHint",
+              "idempotentHint",
+              "openWorldHint"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "inputSchema",
+          "annotations"
+        ],
+        "additionalProperties": false
+      },
+      "AgentCapabilities": {
+        "type": "object",
+        "properties": {
+          "instructions": {
+            "type": "string"
+          },
+          "formats": {
+            "type": "object"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTool"
+            }
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "request_bytes": {
+                "type": "integer"
+              },
+              "response_bytes": {
+                "type": "integer"
+              },
+              "requests_per_minute": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "request_bytes",
+              "response_bytes",
+              "requests_per_minute"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "instructions",
+          "formats",
+          "tools",
+          "limits"
+        ],
+        "additionalProperties": false
+      },
+      "McpRequest": {
+        "type": "object",
+        "required": [
+          "jsonrpc",
+          "method"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "const": "2.0"
+          },
+          "id": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpResponse": {
+        "type": "object",
+        "required": [
+          "jsonrpc",
+          "id"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "const": "2.0"
+          },
+          "id": {
+            "type": [
+              "string",
+              "integer",
+              "null"
+            ]
+          },
+          "result": {
+            "type": "object"
+          },
+          "error": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "agentBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Scoped jza_ read-only credential"
+      }
+    }
+  }
+}

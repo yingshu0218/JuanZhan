@@ -47,10 +47,20 @@ def test_rest_import_profile_is_scoped_and_contains_no_management_writes():
     generator=runpy.run_path(str(ROOT/'scripts/export_agent_rest_openapi.py'))
     schema=json.loads((ROOT/'docs/reference/agent-rest-openapi.json').read_text())
     assert schema==generator['profile']();check_refs(schema,schema)
-    assert len(schema['paths'])==8
+    assert len(schema['paths'])==10
     for path,item in schema['paths'].items():
         assert path.startswith('/agent/') and path!='/agent/mcp'
         for method,operation in item.items():
             assert method in ('get','post')
             if method=='post':assert path in ('/agent/search','/agent/analysis-context')
             assert operation['security']==[{'agentBearer':[]}]
+
+
+def test_opt_in_import_profile_has_explicit_separate_writes():
+    import runpy
+    generator=runpy.run_path(str(ROOT/'scripts/export_agent_rest_openapi.py'))
+    schema=json.loads((ROOT/'docs/reference/agent-import-openapi.json').read_text())
+    assert schema==generator['import_profile']();check_refs(schema,schema)
+    assert set(schema['paths'])=={'/agent/spaces','/agent/analysis-templates','/agent/imports/{request_id}','/agent/imports/{id}/analyses','/agent/documents/{id}/analyses'}
+    for path,item in schema['paths'].items():
+        if 'post' in item:assert path.startswith('/agent/imports/')

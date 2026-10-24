@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "instructions": [
+    "Select by business content, not file extension. Use generic when unsure.",
+    "Submit extracted Markdown separately from analysis. Never add inferred statements to source Markdown.",
+    "For every populated field or point cite an exact quote and character offsets in the submitted Markdown. Use basis=explicit or inference.",
+    "Unknown fields must be null. Do not invent names, amounts, dates or confidence scores.",
+    "Additional sections can use other templates in separate submissions. Original files and confirmed business fields are not modified.",
+    "Citation offsets count Unicode code points: use Python slices or JavaScript Array.from(markdown), not UTF-8 byte positions or UTF-16 string indexes."
+  ],
+  "templates": [
+    {
+      "id": "generic",
+      "version": 1,
+      "label": "通用文档",
+      "fields": {
+        "topic": null,
+        "main_points": null,
+        "conclusions": null,
+        "open_questions": null
+      }
+    },
+    {
+      "id": "contract",
+      "version": 1,
+      "label": "合同",
+      "fields": {
+        "parties": null,
+        "obligations": null,
+        "payment_terms": null,
+        "term": null,
+        "breach": null,
+        "termination": null
+      }
+    },
+    {
+      "id": "invoice",
+      "version": 1,
+      "label": "账单／发票",
+      "fields": {
+        "issuer": null,
+        "recipient": null,
+        "billing_period": null,
+        "line_items": null,
+        "amount": null,
+        "currency": null,
+        "tax": null,
+        "payment_status": null
+      }
+    },
+    {
+      "id": "meeting",
+      "version": 1,
+      "label": "会议记录",
+      "fields": {
+        "topics": null,
+        "decisions": null,
+        "actions": null,
+        "owners": null,
+        "deadlines": null
+      }
+    },
+    {
+      "id": "report",
+      "version": 1,
+      "label": "方案／报告",
+      "fields": {
+        "objective": null,
+        "arguments": null,
+        "evidence": null,
+        "plan": null,
+        "limitations": null,
+        "open_questions": null
+      }
+    }
+  ]
+}

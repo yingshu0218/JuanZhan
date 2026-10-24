@@ -1,5 +1,7 @@
 # 开发任务与验收
 
+T54 Agent导入与版本化分析模板：五类业务模板、显式导入权限、原件字节上传/幂等与分析回填、引用校验、版本历史、平台展示和真实文件验收。状态见STATUS/TESTING。
+
 T53 全类型持久 Markdown 副本：版本独立、后台补齐、REST/MCP 读取、完整性/分段固定版本、备份与 GC 保护；实现及验收见 MARKDOWN-COPIES、TESTING、DEVTEST。
 
 T52 版本控制辅助文件排除：共享清单增加Git配置/指针及Git/SVN/Hg/Bazaar元数据目录，目录选择/拖放不递归这些目录，API拒绝相应辅助文件。保留README/源码/项目清单，范围及验收部署见UPLOAD-EXCLUSIONS、STATUS、TESTING。

@@ -14,6 +14,7 @@ class TokenInput(BaseModel):
     model_config=ConfigDict(extra='forbid')
     name: str=Field(min_length=1,max_length=100,pattern=r'^[^\x00-\x1f\x7f]+$')
     space_ids: list[Annotated[str,Field(min_length=1,max_length=255)]]=Field(min_length=1,max_length=50)
+    import_enabled: bool=Field(default=False,strict=True)
     expires_in_days: int=Field(default=7,ge=1,le=30,strict=True)
 
 def authorize_agent(settings,request,token):
@@ -44,8 +45,8 @@ def router(settings):
     def tokens(request: Request):
         require_session(request)
         with connect(settings.database) as db:
-            values=db.execute('SELECT id,name,created_at,expires_at FROM agent_tokens WHERE expires_at>? ORDER BY created_at,id',(int(time.time()),)).fetchall()
-            return [{'id':row[0],'name':row[1],'created_at':timestamp(row[2]),'expires_at':timestamp(row[3]),
+            values=db.execute('SELECT id,name,created_at,expires_at,import_enabled FROM agent_tokens WHERE expires_at>? ORDER BY created_at,id',(int(time.time()),)).fetchall()
+            return [{'id':row[0],'name':row[1],'import_enabled':bool(row[4]),'created_at':timestamp(row[2]),'expires_at':timestamp(row[3]),
                      'space_ids':[r[0] for r in db.execute('SELECT space_id FROM agent_token_spaces WHERE token_id=? ORDER BY space_id',(row[0],))]} for row in values]
     @routes.post('',status_code=201)
     def create(body: TokenInput,request: Request):
@@ -58,8 +59,9 @@ def router(settings):
             db.execute('DELETE FROM agent_tokens WHERE expires_at<=?',(now,))
             if db.execute('SELECT count(*) FROM agent_tokens').fetchone()[0]>=1000:fail(429,'AGENT_TOKEN_CAPACITY','Revoke unused credentials before creating more')
             db.execute('INSERT INTO agent_tokens(id,name,token_hash,created_at,expires_at) VALUES (?,?,?,?,?)',(id,body.name,digest(raw),now,expiry))
+            db.execute('UPDATE agent_tokens SET import_enabled=? WHERE id=?',(int(body.import_enabled),id))
             db.executemany('INSERT INTO agent_token_spaces VALUES (?,?)',[(id,space) for space in body.space_ids])
-        return {'id':id,'name':body.name,'space_ids':body.space_ids,'created_at':timestamp(now),'expires_at':timestamp(expiry),'token':raw}
+        return {'id':id,'name':body.name,'import_enabled':body.import_enabled,'space_ids':body.space_ids,'created_at':timestamp(now),'expires_at':timestamp(expiry),'token':raw}
     @routes.delete('/{id}',status_code=204)
     def revoke(id: str,request: Request):
         with session_write(settings,request) as db:db.execute('DELETE FROM agent_tokens WHERE id=?',(id,))

@@ -123,7 +123,7 @@ def test_mcp_discovery_and_tools_are_readonly_and_interoperate(pipeline,version)
     response=rpc(client,h,'tools/list',version=version)
     assert response.status_code==200,response.text
     names={tool['name'] for tool in response.json()['result']['tools']}
-    assert names=={'list_spaces','get_catalog','search_documents','get_document_overview','read_document','read_document_markdown','prepare_analysis','get_formats'}
+    assert names=={'list_spaces','get_catalog','search_documents','get_document_overview','read_document','read_document_markdown','get_analysis_templates','read_document_analysis','prepare_analysis','get_formats'}
     for tool in response.json()['result']['tools']:assert tool['annotations']['readOnlyHint']
     result=rpc(client,h,'tools/call',{'name':'get_document_overview','arguments':{'space_id':space,'document_id':id}},version).json()['result']
     assert not result['isError'] and result['structuredContent']['document_id']==id

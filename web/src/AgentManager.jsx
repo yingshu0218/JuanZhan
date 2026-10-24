@@ -4,6 +4,7 @@ import { message } from './api.js';
 
 export function AgentManager({ api, spaces, onClose }) {
   const [items,setItems]=useState([]),[selected,setSelected]=useState([]),[name,setName]=useState(''),[days,setDays]=useState(7);
+  const [importEnabled,setImportEnabled]=useState(false);
   const [clients,setClients]=useState([]);
   const [secret,setSecret]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const endpoint=location.origin+'/api/v1/agent/mcp';
@@ -17,7 +18,7 @@ export function AgentManager({ api, spaces, onClose }) {
   }
   async function create(event) {
     event.preventDefault();setBusy(true);setError('');setSecret(null);
-    try { const data=await api.request('/agent-tokens',{method:'POST',body:{name,space_ids:selected,expires_in_days:Number(days)}});setSecret(data);setName('');await reload(); }
+    try { const data=await api.request('/agent-tokens',{method:'POST',body:{name,space_ids:selected,expires_in_days:Number(days),import_enabled:importEnabled}});setSecret(data);setName('');await reload(); }
     catch(e){setError(message(e));}finally{setBusy(false);}
   }
   async function revoke(id) {
@@ -26,20 +27,20 @@ export function AgentManager({ api, spaces, onClose }) {
     catch(e){setError(message(e));}finally{setBusy(false);}
   }
   return <Dialog title="Agent 接入" onClose={onClose} wide>
-    <InfoTip>Agent只能读取勾选空间中的档案、概要和正文，不能修改或删除。模型由外部agent提供。凭据仅显示一次，请保存在agent的私有配置中；关闭窗口后不会保留明文。</InfoTip>
+    <InfoTip>默认凭据只能读取勾选空间的档案；明确开启导入后才可新建档案并提交分析，不能修改或删除既有档案。模型由外部agent提供。凭据仅显示一次，请保存在agent的私有配置中；关闭窗口后不会保留明文。</InfoTip>
     <label>MCP 地址<input readOnly value={endpoint} onFocus={event=>event.target.select()} /></label>
     <label>REST 地址<input readOnly value={location.origin+'/api/v1/agent'} onFocus={event=>event.target.select()} /></label>
     {clients.length>0 && <section><h3>OAuth 客户端</h3><InfoTip>删除客户端会撤销该客户端的全部授权。访问令牌1小时，刷新授权最长30天。</InfoTip><ul className="agent-credentials">{clients.map(client=><li key={client.id}><strong>{client.name}</strong><span style={{overflowWrap:'anywhere'}}>{client.redirect_uris.join('、')}</span><button disabled={busy} onClick={()=>removeClient(client.id)}>删除客户端 {client.name}</button></li>)}</ul></section>}
     {error && <Notice error>{error}</Notice>}
     {secret && <section className="agent-secret" aria-label="新建Agent凭据"><h3>新凭据</h3><InfoTip>仅当前窗口可见。使用Authorization: Bearer配置；不要填写到文档正文或公开链接。可以随时撤销。</InfoTip><label>Agent Token<input readOnly value={secret.token} autoComplete="off" spellCheck="false" onFocus={event=>event.target.select()} /></label><button onClick={()=>setSecret(null)}>隐藏凭据</button></section>}
     <form onSubmit={create} aria-busy={busy}>
-      <h3>创建只读凭据</h3>
+      <h3>创建凭据</h3><label className="check-label"><input type="checkbox" checked={importEnabled} onChange={event=>setImportEnabled(event.target.checked)} />允许导入原件及提交分析</label><InfoTip>默认只读。勾选后允许在所选空间创建档案和提交版本绑定的Agent分析，仍不能修改、删除既有档案或人工字段。OAuth授权保持只读。</InfoTip>
       <label>名称<input required maxLength={100} value={name} onChange={event=>setName(event.target.value)} /></label>
       <label>有效天数<input type="number" required min={1} max={30} value={days} onChange={event=>setDays(event.target.value)} /></label>
       <fieldset disabled={busy}><legend>允许访问的空间</legend>{spaces.map(space=><label className="check-label" key={space.id}><input type="checkbox" checked={selected.includes(space.id)} onChange={event=>setSelected(values=>event.target.checked?[...values,space.id]:values.filter(value=>value!==space.id))} />{space.name}</label>)}</fieldset>
       <button className="primary" disabled={busy || !selected.length || selected.length>50}>{busy?'正在处理…':'创建凭据'}</button>
     </form>
     <h3>有效凭据</h3>
-    {loading?<p role="status">正在读取凭据…</p>:!items.length?<p>暂无凭据</p>:<ul className="agent-credentials">{items.map(item=><li key={item.id}><strong>{item.name}</strong><span>{item.space_ids.map(id=>spaces.find(space=>space.id===id)?.name||'空间不可用').join('、')}</span><time dateTime={item.expires_at}>{new Date(item.expires_at).toLocaleString('zh-CN')} 到期</time><button disabled={busy} onClick={()=>revoke(item.id)} aria-label={'撤销'+item.name}>撤销</button></li>)}</ul>}
+    {loading?<p role="status">正在读取凭据…</p>:!items.length?<p>暂无凭据</p>:<ul className="agent-credentials">{items.map(item=><li key={item.id}><strong>{item.name} · {item.import_enabled?"可导入":"只读"}</strong><span>{item.space_ids.map(id=>spaces.find(space=>space.id===id)?.name||'空间不可用').join('、')}</span><time dateTime={item.expires_at}>{new Date(item.expires_at).toLocaleString('zh-CN')} 到期</time><button disabled={busy} onClick={()=>revoke(item.id)} aria-label={'撤销'+item.name}>撤销</button></li>)}</ul>}
   </Dialog>;
 }
