@@ -55,6 +55,7 @@ export function Workspace({ api, logout, authError }) {
   function openTasks(id) { setTaskId(id); setTasksOpen(true); }
   const [catalogOpen,setCatalogOpen]=useState(false);
   const [uploadPolicyOpen,setUploadPolicyOpen]=useState(false);
+  const pendingSelection=useRef(null);
   const [agentOpen,setAgentOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false),[backupOpen,setBackupOpen]=useState(false);
   const [storageOpen,setStorageOpen]=useState(false);
@@ -360,7 +361,7 @@ export function Workspace({ api, logout, authError }) {
         setIndexState(result.search_index || null);
         setCatalog({ folders, types, tags, definitions, sources });
         setSelected((current) =>
-          result.items.some((doc) => doc.id === current) ? current : null,
+          current && (pendingSelection.current===current || result.items.some((doc) => doc.id === current)) ? current : null,
         );
       })
       .catch((e) => {
@@ -516,7 +517,7 @@ export function Workspace({ api, logout, authError }) {
           {storageOpen && <StorageManager api={api} onClose={()=>setStorageOpen(false)} />}
           {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
           <TaskEntry api={api} onOpen={openTasks} refreshKey={refresh} />
-          {tasksOpen && <TaskCenter api={api} spaces={spaces} onOpenDocument={doc=>{setTasksOpen(false);clearSearch();setType('');setSpace(doc.space_id);chooseSection('all');setSelected(doc.id);setMobileDetail(true);}} initialId={taskId} onClose={() => setTasksOpen(false)} />}
+          {tasksOpen && <TaskCenter api={api} spaces={spaces} onOpenDocument={doc=>{pendingSelection.current=doc.id;setRefresh(n=>n+1);setTasksOpen(false);clearSearch();setType('');setSpace(doc.space_id);chooseSection('all');setSelected(doc.id);setMobileDetail(true);}} initialId={taskId} onClose={() => setTasksOpen(false)} />}
           <button className="primary" disabled={!space} onClick={importFiles}>
             <UploadSimple size={18} />
             <span>导入文件</span>
@@ -791,7 +792,7 @@ export function Workspace({ api, logout, authError }) {
                   definitions={catalog.definitions}
                   onSaved={()=>setRefresh(n=>n+1)}
                   onFilterTag={id=>applySearch({...blankSearch(),tag_ids:[id]})}
-                  onBack={() => { setMobileDetail(false); setSelected(null); }}
+                  onBack={() => { pendingSelection.current=null;setMobileDetail(false); setSelected(null); }}
                   refreshKey={refresh}
                   operationPending={operations.pending}
                   onOperate={(doc) =>

@@ -35,7 +35,14 @@ test("upload links directly to persistent automatically refreshed task progress"
   await center.getByRole("button", { name: "关闭任务中心", exact: true }).click();
   await expect(page.getByRole("button", { name: "任务中心", exact: true })).toContainText(/排队 \d+ · 处理中 \d+/);
   await page.reload(); await page.getByRole("button", { name: "任务中心", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "任务中心", exact: true }).locator(".task-row").filter({ hasText: receipt.job_id })).toBeVisible();
+  const reopened=page.getByRole("dialog", {name:"任务中心",exact:true});
+  for(let number=1;number<=10;number++){
+    await expect(reopened.locator('.task-pages')).toContainText(`第 ${number} 页`);
+    if(await reopened.locator('.task-row').filter({hasText:receipt.job_id}).count())break;
+    if(!(await reopened.getByRole('button',{name:'下一页',exact:true}).isEnabled()))break;
+    await reopened.getByRole('button',{name:'下一页',exact:true}).click();
+  }
+  await expect(reopened.locator('.task-row').filter({hasText:receipt.job_id})).toBeVisible();
   expect(errors).toEqual([]);
 });
 

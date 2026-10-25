@@ -40,5 +40,28 @@ print(json.dumps(result))`,directory,space],{encoding:'utf8'}));
  await pending.getByRole('checkbox',{name:'选择文件 task-two.txt',exact:true}).check();await pending.getByRole('button',{name:'重新处理所选（1）',exact:true}).click();
  await expect.poll(async()=>(await api(page,'/pending-documents?space_id='+space)).data.total,{timeout:45000}).toBe(0);
  for(const item of created)expect((await page.request.get('/api/v1/documents/'+item.document_id+'/download')).status()).toBe(200);
+
+ // An older pending document must open even when it is outside the library's first page.
+ execFileSync('../.venv/bin/python',['-c',`import sys
+from pathlib import Path
+from io import BytesIO
+sys.path[:0]=['../services','../tests']
+from juanzhan.config import Settings
+from juanzhan.documents import DocumentService,Registration
+from juanzhan.storage import ManagedStore
+from test_parsing import append
+s=Settings(Path(sys.argv[1]),'');service=DocumentService(s);store=ManagedStore(s.data_dir/'managed')
+append(s,sys.argv[3],b'new revision awaiting processing')
+for i in range(31):
+ name='zz-filler-%02d.txt'%i
+ obj=store.put(BytesIO(name.encode()),max_bytes=1000)
+ service.register_managed(obj,Registration(space_id=sys.argv[2],title=name,original_filename=name,mime_type='text/plain'))
+`,directory,space,created[0].document_id]);
+ await page.setViewportSize({width:1440,height:1000});
+ await pending.getByRole('button',{name:'刷新待处理文件',exact:true}).click();
+ await pending.getByRole('button').filter({hasText:'task-one.txt'}).click();
+ await expect(center).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'档案列表'}).getByRole('button').filter({hasText:'zz-filler-30.txt'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'task-one.txt',exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });

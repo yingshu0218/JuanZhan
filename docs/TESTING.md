@@ -885,3 +885,5 @@ T59公网rc.27默认分类勾选、JSON前端跳过/服务端422、配置未被Q
 浏览器当前源码5 passed（46.4s），服务器既有Playwright：两任务批量暂停，恢复其一，取消/移除另一任务后文件仍待处理；重新处理并实际补齐解析/Markdown/FTS后消失；原件可下载、390布局无溢出。保留原4任务/进度/OCR选项/真实故障流程。专用测试服务启用实际MD/FTS调度，不能把仅解析完成当完整完成。旧测试等待第二个子任务的时序已改为轮询真实结束；默认新格式排除后，ZIP/BIN Markdown用例显式调整测试配置放行，未知二进制解析用.dat，不放宽生产默认。
 
 日志.local/job-controls-final-regression.log、job-controls-agent-race.log、job-controls-final-focus.log、job-controls-ui-verified.log；截图/tmp/juanzhan-controls-{paused,pending-mobile}.png。无新依赖。远端Converter不能冻结，已提交请求仍受其独立上限/TTL约束，旧租约不得发布；处理判据只读已登记产物，不每次全文件哈希。见TASK-CONTROLS。
+
+T60补充定位验收：待处理文件不在档案列表首页时，显式保留所选档案并刷新目录/列表，避免自动清掉详情。加入31份较新的隔离测试档案，验证旧待处理文件可打开；原任务历史断言按真实分页寻找记录。最终5项浏览器通过（1.4m），日志.local/job-controls-navigation-verified.log。仅前端修正，后端/20迁移/103路径不变。
