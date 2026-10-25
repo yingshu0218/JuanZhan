@@ -53,7 +53,7 @@ export function Dialog({ title, onClose, children, wide = false }) {
     >
       <div className="dialog-head">
         <h2>{title}</h2>
-        <button aria-label={"关闭" + title} onClick={onClose}>
+        <button type="button" aria-label={"关闭" + title} onClick={onClose}>
           <X size={22} />
         </button>
       </div>

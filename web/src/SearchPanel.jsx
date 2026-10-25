@@ -1,26 +1,32 @@
 import { QuickFilters } from "./QuickFilters.jsx";
-import { InfoTip } from "./ui.jsx";
+import { Dialog, InfoTip } from "./ui.jsx";
 import { useState } from "react";
 import { blankSearch, searchBody } from "./searchState.js";
 import { Notice } from "./ui.jsx";
 const names = { eq: "等于", in: "任选其一", contains: "包含文字", gte: "大于等于", lte: "小于等于", between: "闭区间", is_null: "未填写" };
 function operators(kind) { return ["eq", ...(["boolean", "single_select"].includes(kind) ? [] : ["in"]), ...(["text", "long_text"].includes(kind) ? ["contains"] : []), ...(["integer", "decimal", "date"].includes(kind) ? ["gte", "lte", "between"] : []), "is_null"]; }
-export function SearchPanel({ api, applied, space, catalog, onApply, onClear }) {
+export function SearchPanel({ api, applied, space, catalog, onApply, onClear, controls }) {
   const [draft, setDraft] = useState(() => applied || blankSearch());
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   function set(key, value) { setDraft((old) => ({ ...old, [key]: value })); }
   function row(index, change) { setDraft((old) => ({ ...old, metadata: old.metadata.map((item, i) => i === index ? { ...item, ...change } : item) })); }
   function submit(event) {
     event.preventDefault(); setError("");
-    try { searchBody(draft); onApply(draft); } catch (e) { setError(e.message); }
+    try { searchBody(draft); setOpen(false); onApply(draft); } catch (e) { setError(e.message); }
   }
   const fields = catalog.definitions.filter((field) => field.is_active && field.filterable);
   return <form className="search-panel" role="search" aria-label="档案检索" noValidate onSubmit={submit}>
     <label className="sr-only" htmlFor="archive-search">搜索正文、标题和字段</label>
     <div className="search-input-row"><input id="archive-search" type="search" maxLength={512} placeholder="搜索正文、标题和字段" value={draft.text} onChange={(e) => set("text", e.target.value)} /><button className="primary" type="submit">搜索</button></div>
-    <QuickFilters key={space} api={api} space={space} draft={draft} onApply={value=>{setDraft(value);onApply(value);}} />
-    {error ? <Notice error>{error}</Notice> : null}
-    <details><summary>组合过滤{applied ? " · 已应用检索" : ""}</summary>
+    <div className="search-toolbar-row">{controls}
+      <button type="button" onClick={()=>setOpen(true)}>组合过滤{applied ? " · 已应用" : ""}</button>
+      <QuickFilters key={space} api={api} space={space} draft={draft} onApply={value=>{setDraft(value);onApply(value);}} />
+      {applied ? <button type="button" onClick={onClear}>清除搜索</button> : null}
+    </div>
+    {error && !open ? <Notice error>{error}</Notice> : null}
+    {open && <Dialog title="组合过滤" onClose={()=>setOpen(false)} wide>
+      {error ? <Notice error>{error}</Notice> : null}
       <label className="check-label"><input type="checkbox" checked={draft.descendants} onChange={(e) => set("descendants", e.target.checked)} />所选目录包含后代目录</label>
       <label>来源方式<select value={draft.source_kind} onChange={(e) => set("source_kind", e.target.value)}><option value="">全部方式</option><option value="managed">托管原件</option><option value="external">只读来源</option></select></label>
       <label>指定来源<select value={draft.source_id} onChange={(e) => set("source_id", e.target.value)}><option value="">全部来源</option>{(catalog.sources || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
@@ -48,7 +54,7 @@ export function SearchPanel({ api, applied, space, catalog, onApply, onClear }) 
         {!fields.length ? <p className="muted">尚无启用且可筛选的业务字段。</p> : null}
       </fieldset>
       <InfoTip>提交后与当前空间、目录、类型及导航范围一起检索。</InfoTip>
-    </details>
-    {applied ? <button type="button" onClick={onClear}>清除搜索</button> : null}
+      <div className="summary-actions"><button type="submit" className="primary">应用筛选</button><button type="button" onClick={()=>setOpen(false)}>返回</button></div>
+    </Dialog>}
   </form>;
 }

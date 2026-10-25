@@ -6,7 +6,7 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { Empty, Notice, InfoTip, processing, formatDate } from "./ui.jsx";
-import { useState } from "react";
+import { cloneElement, useState } from "react";
 function Thumbnail({ doc, view }) {
   const [failed, setFailed] = useState(null);
   const asset = doc.thumbnail_asset_id;
@@ -79,8 +79,7 @@ export function Library({
           </button>
         </div>
       </div>
-      {searchPanel}
-      <div className="filters">
+      {cloneElement(searchPanel, { controls: (<div className="filters">
         <label className="sr-only" htmlFor="type-filter">
           筛选文档类型
         </label>
@@ -112,7 +111,7 @@ export function Library({
           <option value="title">按标题排序</option>
           <option value="-document_date">业务日期</option>
         </select>
-      </div>
+      </div>) })}
       {searching && indexState && !loading && !error ? <div className="search-status" aria-label="检索范围状态">
         {indexState.incomplete ? <Notice>当前结果可能不完整：范围内{indexState.total}份档案，未建索引{indexState.missing}份、索引待更新{indexState.pending}份、索引失败{indexState.failed}份。部分正文可能仍在处理、缺少文本或来自旧版本；这些状态可能重叠。</Notice> : <p className="muted">已在所选范围 {indexState.total} 份档案中检索。</p>}
         <button onClick={retry}>刷新检索结果</button>

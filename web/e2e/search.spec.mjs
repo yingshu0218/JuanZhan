@@ -19,10 +19,10 @@ async function settle(page, space) {
 }
 async function submit(page, text) {
   if (text !== undefined) await form(page).getByLabel("搜索正文、标题和字段").fill(text);
-  await form(page).getByRole("button", { name: "搜索", exact: true }).click();
+  await form(page).getByRole("button", { name: await page.getByRole("dialog", {name:"组合过滤",exact:true}).isVisible() ? "应用筛选" : "搜索", exact: true }).click();
 }
 async function advanced(page) {
-  if (!(await form(page).locator("details").evaluate((d) => d.open))) await form(page).locator("summary").click();
+  if (!(await page.getByRole("dialog", {name:"组合过滤",exact:true}).isVisible())) await form(page).getByRole("button", {name:/^组合过滤/}).click();
 }
 
 test("real Chinese search, typed combinations, URL history, exact batch scope and mobile return", async ({ page }) => {

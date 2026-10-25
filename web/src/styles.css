@@ -1811,3 +1811,12 @@ button.info-trigger:hover, button.info-trigger:focus-visible { background: #e4ee
 .upload-folder-button { border:1px solid #9ab09f; background:#fff; }
 .upload-items:empty { display:none; }
 @media(max-height:600px) { .upload-dropzone { padding:10px; gap:8px; } }
+
+/* Keep the archive filter toolbar to two rows; detailed controls live in dialogs. */
+.search-panel { max-height: none; overflow: visible; padding-bottom: 12px; }
+.search-toolbar-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; overflow-x: auto; }
+.search-toolbar-row > button { flex: 0 0 auto; white-space: nowrap; padding: 6px 8px; font-size: 12px; }
+.search-toolbar-row .filters { display: flex; padding: 0; gap: 6px; flex: 1 0 180px; min-width: 180px; }
+.search-toolbar-row .filters select { flex: 1; min-width: 0; width: 50%; height: 34px; }
+.search-panel .dialog { font-size: 13px; }
+.search-panel .dialog .search-dates > label { flex: 1; min-width: 0; }

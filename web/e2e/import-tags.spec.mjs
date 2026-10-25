@@ -24,7 +24,8 @@ test('multi-select tags, tag filtering and server-persistent quick combinations'
  await search.getByText('组合过滤',{exact:false}).click();
  await search.getByRole('checkbox',{name:'待跟进',exact:true}).check();
  await search.getByLabel('标签匹配').selectOption('all');
- await search.getByRole('button',{name:'搜索',exact:true}).click();
+ await search.getByRole('button',{name:'应用筛选',exact:true}).click();
+ await search.getByRole('button',{name:'快捷筛选',exact:true}).click();
  await search.getByLabel('筛选组合名称').fill('项目跟进');
  await search.getByRole('button',{name:'保存组合',exact:true}).click();
  await expect(search.getByRole('button',{name:'项目跟进',exact:true})).toBeVisible();
@@ -32,12 +33,14 @@ test('multi-select tags, tag filtering and server-persistent quick combinations'
  const stored=await api(page,`/saved-filters?space_id=${space}`);expect(stored.data[0].criteria.tag_ids.sort()).toEqual(ids.sort());
  expect(stored.data[0].criteria.match).toBe('all');
  await page.reload();
+ await search.getByRole('button',{name:'快捷筛选',exact:true}).click();
  await search.getByRole('button',{name:'项目跟进',exact:true}).click();
  await expect(library.getByText('1 份',{exact:true})).toBeVisible();
  await page.screenshot({path:'/tmp/juanzhan-import-tags-desktop.png'});
  await page.setViewportSize({width:390,height:844});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:'/tmp/juanzhan-import-tags-mobile.png'});
+ await search.getByRole('button',{name:'快捷筛选',exact:true}).click();
  await search.getByRole('button',{name:'删除筛选 项目跟进'}).click();
  await expect(search.getByRole('button',{name:'项目跟进',exact:true})).toHaveCount(0);
  expect(errors).toEqual([]);

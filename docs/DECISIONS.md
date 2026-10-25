@@ -469,3 +469,5 @@ ADR-061实施选择（2026-10-21）：DOC采用catdoc只读文本工具，XLS采
 依赖/哈希/许可锁定并随镜像保留。工具只在既有CPU/内存/文件/墙钟受限子进程运行，最小环境、无shell、不加载外部资源；DOC/RTF定位未知，PPT按实际列表和备注给section定位，不造物理页码。XLS源浮点与缓存值明确警告，不改人工字段。Archive CFB嗅探限定4MiB与FAT/DIFAT头预算，大容器保留未知OLE类型；解析状态独立于原件存储。验证以TESTING最新记录为准，不提前标为已部署。
 
 2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.
+
+2026-10-25 用户确认筛选常驻区不超过两行；组合条件、保存与管理快捷组合改为页内控件。窄屏横向滚动第二行，保持文件列表高度。
