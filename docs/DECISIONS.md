@@ -467,3 +467,5 @@ ADR-060 实施选择：XLSX/PPTX/ODT/ODS/ODP复用既有SafeZip、defusedxml和�
 ADR-061实施选择（2026-10-21）：DOC采用catdoc只读文本工具，XLS采用xlrd2.0.2，RTF采用striprtf0.0.33；olefile0.47用于有界CFB容器识别。PPT最终采用本库受限MS-PPT当前persist目录解析器：读取最新UserEdit链、当前Document、实际幻灯片和备注引用，不扫描废弃编辑或把主题CString当正文。初始catppt方案因真实样本备注遗漏被替换；不为此新增Java/办公套件。PPTX同步读取只读notesSlide关系并标明备注来源。
 
 依赖/哈希/许可锁定并随镜像保留。工具只在既有CPU/内存/文件/墙钟受限子进程运行，最小环境、无shell、不加载外部资源；DOC/RTF定位未知，PPT按实际列表和备注给section定位，不造物理页码。XLS源浮点与缓存值明确警告，不改人工字段。Archive CFB嗅探限定4MiB与FAT/DIFAT头预算，大容器保留未知OLE类型；解析状态独立于原件存储。验证以TESTING最新记录为准，不提前标为已部署。
+
+2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.

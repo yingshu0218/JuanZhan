@@ -877,3 +877,11 @@ T58公网rc.26三视口及1001合成文件拒绝验证通过：实际数量正�
 首轮旧策略断言、新契约文件临时重排与字体环境已修正，最终组合通过。无新增依赖。格式按名称/后缀过滤，不声称内容鉴定或全格式安全扫描；已有档案不删除，来源只读扫描不追溯套用上传规则。
 
 T59公网rc.27默认分类勾选、JSON前端跳过/服务端422、配置未被QA修改、两视口无溢出/页面异常验证通过。升级保留358档案与1008文件，19迁移，证据见DEVTEST。
+
+## T60 后台任务控制与待处理清单 · 2026-10-25
+
+受限1536MiB/2CPU、真实只读来源约束容器组合237 passed（277.12s）：job_controls、jobs、batches、parsing、indexing、markdown_copies、source_initial、source_incremental、backup、backup_management、agent_imports、agent_contract、search、foundation。后续当前源码25项任务/Agent专项通过（29.52s），最终任务控制10项专项通过（12.42s）。真实SQLite/文件/HTTP覆盖暂停/恢复、旧租约拒绝、运行中子进程停止、不复用旧ParseAttempt号、失败重试余额补偿、逐项冲突/CSRF、任务移除不删原件、三产物完成判据/新版本重新出现、Agent版本优先与晚到Agent阻止兜底、当前格式排除、备份恢复不重启旧实例备份操作、只读来源预扫描暂停/取消。
+
+浏览器当前源码5 passed（46.4s），服务器既有Playwright：两任务批量暂停，恢复其一，取消/移除另一任务后文件仍待处理；重新处理并实际补齐解析/Markdown/FTS后消失；原件可下载、390布局无溢出。保留原4任务/进度/OCR选项/真实故障流程。专用测试服务启用实际MD/FTS调度，不能把仅解析完成当完整完成。旧测试等待第二个子任务的时序已改为轮询真实结束；默认新格式排除后，ZIP/BIN Markdown用例显式调整测试配置放行，未知二进制解析用.dat，不放宽生产默认。
+
+日志.local/job-controls-final-regression.log、job-controls-agent-race.log、job-controls-final-focus.log、job-controls-ui-verified.log；截图/tmp/juanzhan-controls-{paused,pending-mobile}.png。无新依赖。远端Converter不能冻结，已提交请求仍受其独立上限/TTL约束，旧租约不得发布；处理判据只读已登记产物，不每次全文件哈希。见TASK-CONTROLS。

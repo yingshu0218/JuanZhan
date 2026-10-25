@@ -225,3 +225,5 @@ oauth模块复用现有Cookie/CSRF管理员会话和空间授权agent_tokens，0
 2026-10-24 T56在原件登记事务/解析成功发布/Agent分析提交中调用同一确定性标签模块；只替换自动拥有的绑定，人工编辑设置文档级保护。快捷组合是持久UI条件，不直接执行SQL。无LLM或新依赖，详见IMPORT-TAGS。
 
 2026-10-25 T59共享upload_formats.json分类清单与数据库策略，Web每批读取并预过滤、服务器上传和Agent导入校验当前策略，登记事务再核对；不接模型、不追删已有档案，见UPLOAD-POLICY。
+
+2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.

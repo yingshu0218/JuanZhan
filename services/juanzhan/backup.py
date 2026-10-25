@@ -170,6 +170,7 @@ def restore(bundle, destination):
             db.execute("UPDATE jobs SET status='cancelled',lease_token=NULL,lease_owner=NULL,lease_expires_at=NULL,"
                        "error_json=?,retryable=0 WHERE target_type IN ('system_backup','system_recovery') AND status IN ('queued','running')",
                        (json.dumps({'code':'RESTORED_BACKUP_OPERATION','message':'Backup operation disabled in recovered instance','retryable':False}),))
+            db.execute("UPDATE job_controls SET mode='cancelled' WHERE mode='paused' AND job_id IN (SELECT id FROM jobs WHERE target_type IN ('system_backup','system_recovery') AND json_extract(error_json,'$.code')='RESTORED_BACKUP_OPERATION')")
             for (id,) in db.execute("SELECT id FROM jobs WHERE status='running'").fetchall():
                 queue._failure(db,row(db,id),'RESTORED_LEASE','Worker lease invalidated during restore',True,queue.clock())
         for directory, _, _ in os.walk(destination,topdown=False):sync_directory(directory)

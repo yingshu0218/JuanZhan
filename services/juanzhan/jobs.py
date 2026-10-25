@@ -48,17 +48,23 @@ def row(db,id):
     result = cursor.fetchone()
     if result is None:
         fail(404,'NOT_FOUND','Job not found')
-    return dict(zip([column[0] for column in cursor.description],result))
+    value=dict(zip([column[0] for column in cursor.description],result))
+    from .job_controls import present
+    control=db.execute('SELECT mode FROM job_controls WHERE job_id=?',(id,)).fetchone() if present(db) else None
+    value['control_state']=control[0] if control else None
+    return value
 
 
 def public(job, *, summary=False):
     result = {key:job[key] for key in ('id','kind','status','attempts','max_attempts','progress_done',
                                       'progress_total','created_at','updated_at')}
+    result['deleted']=job.get('control_state')=='deleted'
+    if job.get('control_state')=='paused':result['status']='paused'
     result['target_type'] = job['target_type']
     result['target_id'] = job['target_id']
     result['document_name'] = None
     result['steps'] = json.loads(job['steps_json'])
-    result['can_retry'] = bool(job['retryable'] and job['attempts'] < job['max_attempts'] and
+    result['can_retry'] = bool(not job.get('control_state') and job['retryable'] and job['attempts'] < job['max_attempts'] and
                                (job['status'] == 'failed' or (job['status'] == 'queued' and job['attempts'] > 0)))
     result['available_at'] = stamp(job['available_at'])
     if not summary:
@@ -119,7 +125,7 @@ class JobQueue:
         from .job_steps import finish
         finish(db,job,'failed')
         again = retryable and bool(job['auto_retry']) and job['attempts']<job['max_attempts']
-        delay = min(2**max(job['attempts']-1,0),60) if again else 0
+        delay = min(2**min(max(job['attempts']-1,0),6),60) if again else 0
         db.execute('UPDATE jobs SET status=?,error_json=?,retryable=?,available_at=?,lease_token=NULL,'
                    'lease_owner=NULL,lease_expires_at=NULL,updated_at=? WHERE id=?',
                    ('queued' if again else 'failed',encoded({'code':code,'message':message,'retryable':retryable}),
@@ -143,8 +149,11 @@ class JobQueue:
                 self._failure(db,row(db,id),'LEASE_EXPIRED','Previous worker lease expired',True,now)
             # Keep linked preview state consistent even for externally exhausted rows.
             for (id,) in db.execute("SELECT id FROM jobs WHERE status='queued' AND attempts>=max_attempts").fetchall():
+                if row(db,id).get('control_state'):continue
                 self._failure(db,row(db,id),'ATTEMPTS_EXHAUSTED','Attempt limit reached',False,now)
-            candidate = db.execute("SELECT id FROM jobs WHERE status='queued' AND available_at<=? AND attempts<max_attempts "
+            from .job_controls import present
+            controlled="AND NOT EXISTS(SELECT 1 FROM job_controls c WHERE c.job_id=jobs.id) " if present(db) else ''
+            candidate = db.execute("SELECT id FROM jobs WHERE status='queued' AND available_at<=? AND attempts<max_attempts "+controlled+
                                    "ORDER BY CASE WHEN ? AND kind='reindex' AND target_type='document_search' THEN 0 ELSE 1 END,created_at,id LIMIT 1",(now,int(prefer_index))).fetchone()
             if candidate is None:
                 return None
@@ -241,6 +250,7 @@ class JobQueue:
     def retry(self,id,*,request=None):
         with self.write(request) as db:
             job = row(db,id)
+            if job.get('control_state'):fail(409,'JOB_NOT_RETRYABLE','Use task controls to resume paused work')
             eligible = (job['status']=='failed' or (job['status']=='queued' and job['attempts']>0))
             if not eligible or not job['retryable'] or job['attempts']>=job['max_attempts']:
                 fail(409,'JOB_NOT_RETRYABLE','Job is terminal, active or has exhausted its attempt budget')
@@ -266,10 +276,12 @@ def router(settings):
     @routes.get('')
     def list_jobs(page: int = Query(default=1, ge=1, le=1000000),
                   page_size: int = Query(default=20, ge=1, le=100),
-                  status: Literal['queued','running','completed','failed','cancelled'] | None = None):
+                  status: Literal['queued','running','paused','completed','failed','cancelled'] | None = None):
         # Global authenticated task inventory. List responses deliberately omit result bodies.
-        where = ' WHERE status=?' if status else ''
-        values = (status,) if status else ()
+        where = " WHERE NOT EXISTS(SELECT 1 FROM job_controls c WHERE c.job_id=jobs.id AND c.mode='deleted')"
+        if status=='paused':where+=" AND EXISTS(SELECT 1 FROM job_controls c WHERE c.job_id=jobs.id AND c.mode='paused')"
+        elif status:where+=" AND status=? AND NOT EXISTS(SELECT 1 FROM job_controls c WHERE c.job_id=jobs.id AND c.mode='paused')"
+        values = (status,) if status and status!='paused' else ()
         with connect(settings.database) as db:
             db.execute('BEGIN')
             total = db.execute('SELECT count(*) FROM jobs'+where, values).fetchone()[0]

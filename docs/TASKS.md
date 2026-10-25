@@ -1,5 +1,7 @@
 # 开发任务与验收
 
+2026-10-25 T60: Bulk pause/resume/cancel/remove task records and independent pending document inventory implemented; final QA in progress. See TASK-CONTROLS. Migration 0020 (20 total), API 0.4.39/103 paths, no new dependencies.
+
 2026-10-25 T59已部署devtest rc.27（c829d94）：系统设置提供上传格式规则，默认排除JSON/配置/源码/程序/压缩包/数据库日志/开发缓存，支持分类与自定义扩展名；网页/拖放/Agent统一校验。120后端/11浏览器及公网JSON拦截验证通过，升级保留358档案/1008文件。19迁移、契约0.4.38/100路径，无新依赖；不追删原件，见UPLOAD-POLICY。
 
 2026-10-25 T58已部署devtest rc.26（adb5659）：1000有效文件/5000目录独立计数，辅助文件不占配额，错误报告实际计数且无伪0B文件。9上传/面板及3备份浏览器检查、公网三视口验证通过；14档案/71文件保留。应用提示/确认使用页内控件，系统文件选择/安全授权仍受浏览器约束。无API/迁移/依赖变化，见TESTING/DEVTEST。

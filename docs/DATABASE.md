@@ -193,3 +193,5 @@ jobs新增steps_json（JSON数组，旧记录默认[]），保存当前尝试的
 2026-10-24 0018新增document_tag_policy（文档/当前处理Revision/自动来源/人工锁）、automatic_document_tags（自动拥有的标签）和saved_filters（空间、规范化名称、惰性条件JSON，同名唯一）。自动标签仍落document_tags；人工变更锁定自动更新，外键级联清理，策略Revision删除置NULL以保留人工锁。组合随备份保留。见IMPORT-TAGS及原始0018 SQL。
 
 2026-10-25 0019新增单行upload_policy(version,config_json)，19迁移；策略随备份恢复，固定系统辅助清单与可配置格式清单分离。
+
+2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.

@@ -516,7 +516,7 @@ export function Workspace({ api, logout, authError }) {
           {storageOpen && <StorageManager api={api} onClose={()=>setStorageOpen(false)} />}
           {catalogOpen && <CatalogManager key={space} api={api} spaceId={space} spaceName={spaces.find(item=>item.id===space)?.name||'当前空间'} onClose={()=>setCatalogOpen(false)} onChanged={()=>setRefresh(value=>value+1)} />}
           <TaskEntry api={api} onOpen={openTasks} refreshKey={refresh} />
-          {tasksOpen && <TaskCenter api={api} initialId={taskId} onClose={() => setTasksOpen(false)} />}
+          {tasksOpen && <TaskCenter api={api} spaces={spaces} onOpenDocument={doc=>{setTasksOpen(false);clearSearch();setType('');setSpace(doc.space_id);chooseSection('all');setSelected(doc.id);setMobileDetail(true);}} initialId={taskId} onClose={() => setTasksOpen(false)} />}
           <button className="primary" disabled={!space} onClick={importFiles}>
             <UploadSimple size={18} />
             <span>导入文件</span>

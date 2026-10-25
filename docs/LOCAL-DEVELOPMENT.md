@@ -233,3 +233,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 2026-10-25 T58无新增依赖。.local/upload-count-*.log/传输tar与/tmp计数测试目录可清理；原件/档案保留。rc.26与升级前备份按回滚策略保留。
 
 2026-10-25 T59无新依赖，.local/upload-policy-*日志/传输包与/tmp浏览器证据可清理；rc.27及升级前备份按回滚策略保留，业务原件/配置非临时文件。
+
+2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.

@@ -66,7 +66,7 @@ def begin(settings,job):
         if doc['deleted_at'] is not None or doc['current_revision_id']!=request['revision_id']:
             raise ParseFailure('PARSE_SUPERSEDED')
         # Only the automatic first parse is a fallback. Explicit reparse/OCR stays available.
-        if job['kind']=='parse' and owned['idempotency_key']=='parse:'+request['revision_id'] and db.execute(
+        if job['kind']=='parse' and (owned['idempotency_key']=='parse:'+request['revision_id'] or owned['idempotency_key'].startswith('pending:')) and db.execute(
             'SELECT 1 FROM agent_analyses a JOIN agent_imports i ON i.id=a.import_id '
             'WHERE i.document_id=? AND i.revision_id=? LIMIT 1',
             (doc['id'],request['revision_id'])).fetchone():

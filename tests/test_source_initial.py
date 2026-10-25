@@ -174,3 +174,17 @@ def test_anonymous_manifest_limit_failure_leaves_no_metadata_or_temp_files(api,m
     with pytest.raises(SourcePathError,match='SOURCE_MANIFEST_LIMIT'):initial(settings,job)
     assert table_counts(settings)==before and set(settings.data_dir.iterdir())==files
     assert source_row(settings,source)['initial_import_completed_at'] is None
+
+
+def test_task_controls_pause_and_cancel_preview_without_touching_source_files(api):
+    settings,client,headers,space=api
+    source=create(client,headers,space).json()['id']
+    job=submit(client,headers,source).json()['job_id']
+    for action in ('pause','resume','cancel'):
+        r=client.post('/api/v1/jobs/control',headers=headers,json={'action':action,'job_ids':[job]})
+        assert r.status_code==200 and r.json()['succeeded']==1,r.text
+    with connect(settings.database) as db:
+        assert db.execute('select status from scan_runs').fetchone()[0]=='cancelled'
+        assert db.execute('select finished_at from scan_runs').fetchone()[0]
+        assert db.execute('select count(*) from documents').fetchone()[0]==0
+    assert submit(client,headers,source).status_code==202

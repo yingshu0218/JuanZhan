@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.38
+  version: 0.4.39
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,79 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /jobs/control:
+    post:
+      summary: Pause/resume/cancel/soft-delete up to 1000 selected jobs
+      description: Admin authenticated; Cookie writes require CSRF. Per-item failures
+        do not erase successful items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskControlInput'
+      responses:
+        '200':
+          description: Current persistent state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskControlResult'
+        '422':
+          description: Invalid selection
+      operationId: controlTasks
+  /pending-documents:
+    get:
+      summary: Detect unfinished current document revisions, independently of task history
+      parameters:
+      - name: space_id
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: Current persistent state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingFilePage'
+      operationId: listPendingDocuments
+  /pending-documents/process:
+    post:
+      summary: Explicitly process up to 100 pinned current document revisions using
+        existing rules
+      description: Admin authenticated; Cookie writes require CSRF. Per-item failures
+        do not erase successful items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PendingProcessInput'
+      responses:
+        '200':
+          description: Current persistent state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskControlResult'
+        '422':
+          description: Invalid selection
+      operationId: processPendingDocuments
   /system/upload-policy:
     get:
       operationId: getUploadPolicy
@@ -2791,6 +2864,7 @@ paths:
           - completed
           - failed
           - cancelled
+          - paused
       responses:
         '200':
           description: 任务清单
@@ -3553,6 +3627,118 @@ components:
         maximum: 100
         default: 30
   schemas:
+    TaskControlInput:
+      additionalProperties: false
+      properties:
+        action:
+          enum:
+          - pause
+          - resume
+          - cancel
+          - delete
+          title: Action
+          type: string
+        job_ids:
+          items:
+            maxLength: 255
+            minLength: 1
+            type: string
+          maxItems: 1000
+          minItems: 1
+          title: Job Ids
+          type: array
+      required:
+      - action
+      - job_ids
+      title: ControlInput
+      type: object
+    PendingProcessInput:
+      additionalProperties: false
+      properties:
+        request_id:
+          pattern: ^[A-Za-z0-9_-]{1,100}$
+          title: Request Id
+          type: string
+        documents:
+          items:
+            $ref: '#/components/schemas/DocumentTarget'
+          maxItems: 100
+          minItems: 1
+          title: Documents
+          type: array
+      required:
+      - request_id
+      - documents
+      title: Process
+      type: object
+    DocumentTarget:
+      additionalProperties: false
+      properties:
+        id:
+          maxLength: 255
+          minLength: 1
+          title: Id
+          type: string
+        revision_id:
+          maxLength: 255
+          minLength: 1
+          title: Revision Id
+          type: string
+      required:
+      - id
+      - revision_id
+      title: DocumentTarget
+      type: object
+    PendingFile:
+      type: object
+      properties:
+        id:
+          type: string
+        space_id:
+          type: string
+        title:
+          type: string
+        current_revision_id:
+          type: string
+        original_filename:
+          type: string
+        document_version:
+          type: integer
+        format_excluded:
+          type: boolean
+        pending_reasons:
+          type: array
+          items:
+            type: string
+            enum:
+            - analysis
+            - markdown
+            - index
+    TaskControlResult:
+      type: object
+      properties:
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    PendingFilePage:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingFile'
     UploadPolicyInput:
       type: object
       additionalProperties: false
@@ -3960,7 +4146,9 @@ components:
     Job:
       type: object
       properties:
-        id: *id001
+        id:
+          type: string
+          description: 不透明 ID，调用方不得假设自增或文件路径格式
         kind:
           type: string
         status:
@@ -3971,9 +4159,11 @@ components:
           - completed
           - failed
           - cancelled
-        attempts: *id004
-        max_attempts: *id004
-        progress_done: *id004
+          - paused
+        attempts: &job_id001
+          type: integer
+        max_attempts: *job_id001
+        progress_done: *job_id001
         progress_total:
           type:
           - integer
@@ -3988,9 +4178,13 @@ components:
         target_type:
           type: string
         target_id:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
         document_name:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           description: 解析任务取捕获版本的文件名，其余文档任务取当前原件名；不含来源路径，系统任务为null。
         steps:
           type: array
@@ -4004,6 +4198,9 @@ components:
         available_at:
           type: string
           format: date-time
+        deleted:
+          type: boolean
+          description: Soft-deleted from inventory; referenced internal record remains.
       required:
       - id
       - kind
@@ -5329,20 +5526,21 @@ components:
           - completed
           - failed
           - cancelled
-        attempts: &job_summary_001
+          - paused
+        attempts: &summary_id001
           type: integer
-        max_attempts: *job_summary_001
-        progress_done: *job_summary_001
+        max_attempts: *summary_id001
+        progress_done: *summary_id001
         progress_total:
           type:
           - integer
           - 'null'
         error:
           description: 任意合法 JSON 值
-        created_at: &job_summary_002
+        created_at: &summary_id002
           type: string
           format: date-time
-        updated_at: *job_summary_002
+        updated_at: *summary_id002
         target_type:
           type: string
         target_id:
@@ -5350,7 +5548,9 @@ components:
           - string
           - 'null'
         document_name:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           description: 解析任务取捕获版本的文件名，其余文档任务取当前原件名；不含来源路径，系统任务为null。
         steps:
           type: array
@@ -5364,7 +5564,9 @@ components:
         available_at:
           type: string
           format: date-time
-  responses:
+        deleted:
+          type: boolean
+          description: Soft-deleted from inventory; referenced internal record remains.
     Unauthorized:
       description: 未登录或 Token 无效
       content:

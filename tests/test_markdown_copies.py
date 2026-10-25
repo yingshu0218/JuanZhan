@@ -35,7 +35,10 @@ CASES=[(k,v[1],'content') for k,v in samples().items()]+[
 
 @pytest.mark.parametrize('ext,data,status',CASES,ids=[str(i)+'-'+c[0] for i,c in enumerate(CASES)])
 def test_all_families_persist_md_without_changing_original(pipeline,ext,data,status):
-    settings,client,_,_=pipeline
+    settings,client,csrf,_=pipeline
+    if ext in ('zip','bin'):
+        policy=client.get('/api/v1/system/upload-policy').json()
+        assert client.put('/api/v1/system/upload-policy',headers=csrf,json={'expected_version':policy['version'],'excluded_groups':[g for g in policy['excluded_groups'] if g not in ('archives','executables')],'custom_extensions':[]}).status_code==200
     saved=upload(pipeline,data,'sample.'+ext);Worker(settings).run_once()
     generate(settings)
     response=fetch(pipeline,saved['document_id']);assert response.status_code==200,response.text

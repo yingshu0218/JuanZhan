@@ -21,7 +21,7 @@ def job_state(db, job, status, timestamp, *, result=None, error=None):
     if run is None:
         # A removed/legacy target must fail in its handler, never block queue claim.
         return
-    terminal = status in ('completed', 'failed')
+    terminal = status in ('completed', 'failed', 'cancelled')
     db.execute('UPDATE scan_runs SET status=?,started_at=CASE WHEN ?=\'running\' THEN COALESCE(started_at,?) ELSE started_at END,'
                'finished_at=?,result_json=?,error_json=? WHERE id=?',
                (status, status, timestamp, timestamp if terminal else None, result, error, job['target_id']))

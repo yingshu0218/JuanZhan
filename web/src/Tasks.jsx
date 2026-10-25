@@ -1,9 +1,10 @@
+import { PendingDocuments } from "./PendingDocuments.jsx";
 import { InfoTip } from "./ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, Notice } from "./ui.jsx";
 import { message } from "./api.js";
 import { JobProgress } from "./JobProgress.jsx";
-const statuses = { queued: "排队中", running: "处理中", completed: "已完成", failed: "失败", cancelled: "已取消" };
+const statuses = { queued: "排队中", running: "处理中", paused:"已暂停", completed: "已完成", failed: "失败", cancelled: "已取消" };
 function safeResult(value) {
   if (!value || typeof value !== "object") return null;
   const allowed = new Set(["backup_id", "recovery_id", "files", "external_sources_included", "activation_required", "automatic_backup_disabled", "credentials_revoked", "status", "reason", "document_id", "parse_run_id", "parse_job_id", "revision_id", "job_id", "succeeded", "skipped", "failed", "purged", "external_file_deleted", "gc_job_id", "generation", "tokenizer_version", "code", "error_code", "document_version", "text_available", "ocr_used", "source_id", "estimated_files", "estimated_bytes", "discovered", "retained_objects", "deleted_objects", "ignored_files", "items"]);
@@ -82,9 +83,11 @@ export function TaskStatus({ api, id, onTerminal, compact = false }) {
     <InfoTip>自动跟踪最多两分钟；关闭窗口不取消后台任务，可重新打开查看。</InfoTip>
   </section>;
 }
-export function TaskCenter({ api, onClose, initialId = null }) {
+export function TaskCenter({ api, onClose, initialId = null, spaces=[], onOpenDocument }) {
+  const [tab,setTab]=useState("jobs"),[selected,setSelected]=useState(new Set()),[busy,setBusy]=useState(false),[confirmation,setConfirmation]=useState(null),[notice,setNotice]=useState("");
   const [status, setStatus] = useState(""), [page, setPage] = useState(1), [data, setData] = useState(null), [id, setId] = useState(initialId), [error, setError] = useState(""), [refresh, setRefresh] = useState(0);
   useEffect(() => {
+    if(tab!=="jobs")return;
     const abort = new AbortController(); let timer; setData(null); setError("");
     async function load() {
       if (!document.hidden) {
@@ -96,24 +99,32 @@ export function TaskCenter({ api, onClose, initialId = null }) {
       if (!abort.signal.aborted) timer = setTimeout(load, 3000);
     }
     load(); return () => { abort.abort(); clearTimeout(timer); };
-  }, [api, status, page, refresh]);
+  }, [api, status, page, refresh, tab]);
+  async function selectResults(){setBusy(true);setError("");try{const ids=[];for(let number=1;number<=50;number++){const result=await api.request(`/jobs?page=${number}&page_size=100${status?`&status=${status}`:""}`);if(result.total>1000)throw Error('筛选结果超过1000项，请先按状态缩小范围。');ids.push(...result.items.map(job=>job.id));if(number*100>=result.total)break;}setSelected(new Set(ids));}catch(e){setError(message(e));}finally{setBusy(false);}}
+  async function control(action){setBusy(true);setError("");setNotice("");try{const result=await api.request('/jobs/control',{method:'POST',body:{action,job_ids:[...selected]}});setNotice(`已操作 ${result.succeeded} 项，未操作 ${result.failed} 项。`);if(result.failed)setError([...new Set(result.items.filter(item=>item.error_code).map(item=>message({code:item.error_code})))].join('；'));setSelected(new Set());setConfirmation(null);setRefresh(n=>n+1);}catch(e){setError(message(e));}finally{setBusy(false);}}
   return <Dialog title="任务中心" wide onClose={onClose}>
-    <InfoTip>全部空间与系统维护任务。每 3 秒自动更新，刷新页面后仍可查询。关闭窗口不会取消任务。</InfoTip><InfoTip>排队中的任务尚未开始；处理中不代表已完成。总量未知时不显示估算百分比。</InfoTip>
-    <label>任务状态 <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); setId(null); }}><option value="">全部状态</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+    <div className="summary-actions"><button aria-pressed={tab==='jobs'} onClick={()=>setTab('jobs')}>后台任务</button><button aria-pressed={tab==='pending'} onClick={()=>setTab('pending')}>待处理文件</button></div>
+    {tab==='pending'?<PendingDocuments api={api} spaces={spaces} onOpenDocument={onOpenDocument}/>:<>
+    <InfoTip>全部空间与系统维护任务。每 3 秒自动更新，刷新页面后仍可查询。关闭窗口不会取消任务。暂停会停止后续执行，恢复时解析可能从头运行；已提交的独立转换可能继续至自身超时，但旧结果不会写入档案。取消只停止本次任务，不关闭未来自动计划。删除任务是移除列表记录，审计保留；已完成的业务步骤不撤销，原件和待处理文件保留。</InfoTip><InfoTip>排队中的任务尚未开始；处理中不代表已完成。总量未知时不显示估算百分比。</InfoTip>
+    <label>任务状态 <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); setId(null);setSelected(new Set()); }}><option value="">全部状态</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     <button onClick={() => setRefresh(n => n + 1)}>刷新列表</button>
+    <div className="summary-actions"><button disabled={busy} onClick={()=>setSelected(new Set((data?.items||[]).map(job=>job.id)))}>选择本页任务</button><button disabled={busy} onClick={selectResults}>选择筛选结果</button><button disabled={busy||!selected.size} onClick={()=>control('pause')}>批量暂停</button><button disabled={busy||!selected.size} onClick={()=>control('resume')}>批量恢复</button><button disabled={busy||!selected.size} onClick={()=>setConfirmation('cancel')}>批量取消</button><button disabled={busy||!selected.size} onClick={()=>setConfirmation('delete')}>批量删除记录</button><span>已选择 {selected.size} 项</span></div>
+    {confirmation&&<section aria-label="确认任务操作"><Notice>{confirmation==='delete'?'取消未完成任务并从任务列表移除记录':'取消所选任务'}，原件、已有结果和待处理文件保留；已经完成的业务步骤不会撤销。</Notice><button disabled={busy||!selected.size} onClick={()=>control(confirmation)}>确认{confirmation==='delete'?'删除任务记录':'取消任务'}</button><button disabled={busy} onClick={()=>setConfirmation(null)}>返回任务列表</button></section>}
+    {notice&&<Notice>{notice}</Notice>}
     {error && <Notice error>{error}</Notice>}
     <div className="tasks-layout">
       {id && data && !data.items.some(job => job.id === id) && <TaskStatus key={id} api={api} id={id} />}
       {data?.items.length === 0 && <p>暂无任务</p>}
       {data?.items.map(job => <div className="task-card" key={job.id}>
+        <label className="check-label"><input type="checkbox" aria-label={'选择任务 '+job.id} checked={selected.has(job.id)} disabled={busy||(!selected.has(job.id)&&selected.size>=1000)} onChange={e=>setSelected(old=>{const next=new Set(old);if(e.target.checked)next.add(job.id);else next.delete(job.id);return next;})}/>选择任务</label>
         <button className="task-row" onClick={() => setId(id === job.id ? null : job.id)} aria-pressed={id === job.id}>
           {id === job.id ? <strong className="job-filename">{job.document_name || kindLabel(job)}</strong> : <JobProgress job={job} />}
           <strong>{kindLabel(job)} · {statuses[job.status]}</strong><small>{new Date(job.created_at).toLocaleString()} · {job.id}</small>
         </button>
-        {id === job.id && <TaskStatus api={api} id={id} />}
+        {id === job.id && <TaskStatus key={id+refresh} api={api} id={id} />}
       </div>)}
       {data && <div className="task-pages"><button disabled={page === 1} onClick={() => setPage(n => n - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 项</span><button disabled={page * 20 >= data.total} onClick={() => setPage(n => n + 1)}>下一页</button></div>}
-    </div>
+    </div></>}
   </Dialog>;
 }
 export function Reprocess({ api, doc }) {

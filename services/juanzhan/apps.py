@@ -176,6 +176,9 @@ def create_app(kind, settings=None, *, converter_config=None):
         from . import adoptions
         app.include_router(adoptions.router(settings))
         app.include_router(content.router(settings))
+        from . import job_controls,pending_documents
+        app.include_router(job_controls.router(settings))
+        app.include_router(pending_documents.router(settings))
         app.include_router(jobs.router(settings))
         from . import upload_policy
         app.include_router(upload_policy.router(settings))

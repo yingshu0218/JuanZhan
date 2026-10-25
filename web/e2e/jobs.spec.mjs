@@ -71,7 +71,7 @@ test("batch reprocessing confirms options and tracks actual child tasks", async 
   await expect(result.getByRole("button", { name: "撤销本次成功变更" })).toHaveCount(0);
   await result.getByRole("button", { name: "查看解析任务", exact: true }).first().click();
   await expect(result.getByRole("heading", { name: "解析 · 已完成", exact: true })).toBeVisible({ timeout: 30000 });
-  for (const id of ids) expect((await api(page, `/documents/${id}/parse-runs`)).data.total).toBe(2);
+  for (const id of ids) { await expect.poll(async () => (await api(page, `/documents/${id}/parse-runs`)).data.total, {timeout:30000}).toBe(2); await expect.poll(async () => (await api(page, `/documents/${id}`)).data.processing_status, {timeout:30000}).toBe("completed"); }
   await page.screenshot({ path: "/tmp/juanzhan-batch-reprocess-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

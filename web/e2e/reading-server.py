@@ -72,6 +72,9 @@ def main():
                     if os.environ.get("JUANZHAN_E2E_INDEXING") == "1":
                         from juanzhan.indexing import schedule
                         schedule(settings,limit=1)
+                    if os.environ.get("JUANZHAN_E2E_MARKDOWN") == "1":
+                        from juanzhan.markdown_copies import schedule as schedule_markdown
+                        schedule_markdown(settings,limit=1)
                     worker.run_once(prefer_index=os.environ.get("JUANZHAN_E2E_INDEXING") == "1");stop.wait(.05)
             thread=threading.Thread(target=work,daemon=True);thread.start()
             try:uvicorn.run(create_app('archive',settings),host='127.0.0.1',port=8767,log_level='warning')

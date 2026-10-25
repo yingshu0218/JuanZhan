@@ -1,5 +1,7 @@
 # UI/UX — 当前交互方向
 
+2026-10-25 T60: Bulk pause/resume/cancel/remove task records and independent pending document inventory implemented; final QA in progress. See TASK-CONTROLS. Migration 0020 (20 total), API 0.4.39/103 paths, no new dependencies.
+
 2026-10-25 T59上传格式规则：后台分类勾选/自定义扩展名，默认排除JSON/开发配置/源码/程序安装包/压缩包/数据库日志及开发依赖缓存，常见档案保留。网页/拖放/Agent共用策略，服务端强制；原档案不追溯删除。0019（19迁移）、契约0.4.38/100路径，无新依赖，见UPLOAD-POLICY。
 
 2026-10-25 T58：文件配额与目录分开计数，1000文件/5000目录，辅助文件不占配额；队列同样独立限额，提示列实际计数，错误不再伪装0B文件。应用提示/确认使用页内控件，备份下载不新开窗口；系统文件选择与浏览器安全授权不能由网页替换。无API/迁移/依赖变化，验收见TESTING。

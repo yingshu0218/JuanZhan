@@ -105,7 +105,7 @@ def test_failed_new_revision_retains_successful_content_and_business_fields(pipe
 
 
 def test_unsupported_does_not_promote(pipeline):
-    settings,client,_,_=pipeline;uploaded=upload(pipeline,b'\x00unknown','sample.bin')
+    settings,client,_,_=pipeline;uploaded=upload(pipeline,b'\x00unknown','sample.dat')
     assert Worker(settings).run_once()['status']=='completed'
     job=JobQueue(settings).get(uploaded['job_id']);assert job['result']['status']=='unsupported'
     assert rows(settings,'SELECT status FROM parse_runs')[0]['status']=='unsupported'
