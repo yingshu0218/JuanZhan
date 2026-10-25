@@ -141,3 +141,9 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 先推送cf1f941，再构建/部署rc.25（干净源码），镜像sha256:7ea9d19a255aaaca5a5bff7a733563a7a7136a6d08d1d63e59e9bc0945200ab6。升级前一致备份/backups/before-upload-panel-rc25；18迁移、14档案/71文件及所有业务表完全一致，integrity=ok/无外键错误，五服务healthy。入口https://8.153.19.221:9443/，443未改动。
 
 公网1440×1000、390×844、667×375确认拖放文案、双按钮均在视口内、仅一个标题提示、收起按钮有效、page_errors=[]；未上传新的线上文件。证据test-instance/upload-panel-{deploy,browser-live}.json和upload-panel-live-{desktop,mobile,short}.png，桌面面板截图已人工查看。无新依赖/API/迁移。
+
+## T58 上传配额计数 · 2026-10-25
+
+先推送adb5659，再从干净源码构建/部署rc.26；镜像sha256:64b1015c33e27afb35ac7e67b9da5eb94241e4cb1d676bd51c9ca48a9ec5ff6c，SOURCE_DIRTY=false。升级前一致备份/backups/before-upload-count-rc26。14档案/71文件和业务表完全保留，18迁移/integrity=ok/无外键错误，五服务healthy。HTTPS仍为9443，443未改。
+
+公网三个视口空面板/双入口/关闭验证通过；1001个合成文件在浏览器计数阶段拒绝，显示准确数量，无0B伪文件、无上传HTTP请求、无新增线上档案，page_errors=[]。512文件+513目录测试队列截图已人工查看（测试暂停目录准备以仅检查接纳）。证据test-instance/upload-count-{deploy,browser-live}.json、upload-count-live-{desktop,mobile,short,error}.png；原生OS选择器/浏览器授权提示不是应用可替换的弹窗。
