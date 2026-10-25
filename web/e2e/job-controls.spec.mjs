@@ -23,7 +23,7 @@ print(json.dumps({'document_id':doc['id']}))`,directory,space,bytes.toString('he
  await page.getByRole('button',{name:'任务中心',exact:true}).click();
  const center=page.getByRole('dialog',{name:'任务中心',exact:true});await center.getByRole('button',{name:'待处理文件',exact:true}).click();
  const pending=center.getByRole('region',{name:'待处理文件清单',exact:true});await pending.getByLabel('待处理空间').selectOption(space);
- await expect(pending.getByText('旧解析未识别文字；重新处理默认启用OCR，也可由外部Agent提交分析。',{exact:true})).toBeVisible();
+ await expect(pending.getByText('旧解析未识别文字；重新处理默认启用OCR。',{exact:true})).toBeVisible();
  await expect(pending.getByRole('checkbox',{name:'识别图片及扫描PDF中的文字（OCR）',exact:true})).toBeChecked();
  await pending.getByRole('checkbox',{name:'选择文件 ocr-pending.png',exact:true}).check();
  await pending.getByRole('checkbox',{name:'识别图片及扫描PDF中的文字（OCR）',exact:true}).check();
