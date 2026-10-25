@@ -857,3 +857,5 @@ T56追加5项标签专项（含新策略/保存组合真实备份恢复）全部
 ## T57 导入面板可理解性 · 2026-10-25
 
 空队列变为明确的拖放区和并排文件/文件夹入口，提示合并到标题旁，面板border-box防止窄屏外溢。无后台/接口/迁移/依赖变化。本轮CUA浏览器入口导航测试环境超时并重置，改用服务器既有Playwright执行可重复检查；7 passed（20.9s）。含点击文件夹按钮触发真实chooser并上传22文件、原生混合拖放/空目录/重试、辅助文件选择/拖放排除、1440×1000/390×844/667×375空面板按钮边界、关闭面板及pageerror=0。证据.local/upload-panel-final.log及/tmp/juanzhan-upload-panel-{desktop,mobile,short}.png。未在用户原生macOS文件选择器中自动提交私人文件。
+
+T57成品公网复验已通过三个视口/双入口/关闭/pageerror，截图test-instance/upload-panel-live-desktop.png已人工检查；14档案71文件、18迁移保持不变。

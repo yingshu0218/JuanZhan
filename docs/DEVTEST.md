@@ -135,3 +135,9 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 升级前13档案/69文件与业务表完全保留。公网QA新增一份“标签与重点概览示例（可删除）.txt”（ee03625d313e44f481a748b36ac75c26），位于“Agent 模板验收示例（可删除）”；Agent三点概览、项目资料/待跟进双标签及“项目待跟进”服务器快捷筛选可用，临时导入凭据已撤销。QA后14档案/71文件，旧记录逐行及旧文件哈希全部保留。没有对旧用户档案重解析或改标签。
 
 测试/部署/保全证据见.local/import-tags-*.log及test-instance/import-tags-{deploy,live,browser-live,post-qa}.json；截图1440/390正常。文档组合与标签策略随一致备份保存，无新增依赖。尚无自定义规则编辑器、手工锁解除或旧全库标签重算，边界见IMPORT-TAGS。
+
+## T57 导入面板 · 2026-10-25
+
+先推送cf1f941，再构建/部署rc.25（干净源码），镜像sha256:7ea9d19a255aaaca5a5bff7a733563a7a7136a6d08d1d63e59e9bc0945200ab6。升级前一致备份/backups/before-upload-panel-rc25；18迁移、14档案/71文件及所有业务表完全一致，integrity=ok/无外键错误，五服务healthy。入口https://8.153.19.221:9443/，443未改动。
+
+公网1440×1000、390×844、667×375确认拖放文案、双按钮均在视口内、仅一个标题提示、收起按钮有效、page_errors=[]；未上传新的线上文件。证据test-instance/upload-panel-{deploy,browser-live}.json和upload-panel-live-{desktop,mobile,short}.png，桌面面板截图已人工查看。无新依赖/API/迁移。
