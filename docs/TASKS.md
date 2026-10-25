@@ -1,6 +1,6 @@
 # 开发任务与验收
 
-2026-10-25 T60: Bulk pause/resume/cancel/remove task records and independent pending document inventory implemented; final QA in progress. See TASK-CONTROLS. Migration 0020 (20 total), API 0.4.39/103 paths, no new dependencies.
+2026-10-25 T60 deployed to devtest rc.29 (fff9bb3; core 9b5961a): durable bulk pause/resume/cancel/remove controls and independent pending documents. Related backend regression 237 passed, final Agent/task focus 25 passed, control focus 10 passed, browser workflows 5 passed plus old-file navigation checked. Original 358 documents/1622 files preserved; one removable synthetic control example added. Migration 20, API 0.4.39/103 paths, no new dependencies. See TASK-CONTROLS and DEVTEST.
 
 2026-10-25 T59已部署devtest rc.27（c829d94）：系统设置提供上传格式规则，默认排除JSON/配置/源码/程序/压缩包/数据库日志/开发缓存，支持分类与自定义扩展名；网页/拖放/Agent统一校验。120后端/11浏览器及公网JSON拦截验证通过，升级保留358档案/1008文件。19迁移、契约0.4.38/100路径，无新依赖；不追删原件，见UPLOAD-POLICY。
 

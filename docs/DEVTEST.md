@@ -153,3 +153,13 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 先推送c829d94，再从干净源码构建/部署rc.27，镜像sha256:ea9ba495bc813f5479c45f8f2130a5c3f255792e41f5853f375e3c3eb654f91d，SOURCE_DIRTY=false。升级前一致备份/backups/before-upload-policy-rc27，18→19迁移；升级前后358档案/1008文件及业务表完全保留，integrity=ok/外键正常，五服务healthy。用户批量导入形成的既有文件没有追溯清理；正常后台任务继续处理。端口9443，443未改。
 
 公网系统设置→上传格式规则确认七类默认排除勾选，1440/390页内设置可用；JSON浏览器预过滤零上传HTTP请求，直接multipart JSON返回422 UPLOAD_FORMAT_EXCLUDED，未新增档案/原件。验证未更改线上策略，GET前后相同。证据test-instance/upload-policy-{deploy,browser-live}.json及upload-policy-live-{desktop,mobile}.png，默认勾选截图已人工查看（成品截图关闭测试浏览器动画以免截在淡入中间）。无新增依赖。
+
+## T60 后台控制与待处理清单 · 2026-10-25
+
+核心9b5961a先推送，再从干净源码构建/部署rc.28，镜像sha256:1d067d6414092df776acbf56136b1cca90f5f452fb9a0abd689e54da6d4f8288；备份/backups/before-job-controls-rc28。旧worker停止后迁移19→20，校验全部旧业务行和358档案/1622文件，再启动新worker，避免旧代码领取暂停任务。无外键错误/integrity=ok；没有对原有用户队列执行批量控制。
+
+仅新增“后台控制验收（可删除）”空间和“后台控制测试（可删除）.txt”一份合成原件。对其自身job_id验证pause/resume/cancel/delete，任务移除后原件字节保持、文件仍在待处理清单。只读成品核对批量按钮、空间筛选和1440/390布局，页面异常0。证据test-instance/job-controls-{deploy,browser-live}.json及job-controls-live-{tasks,pending,mobile}.png；待处理截图已人工查看。
+
+最后补齐旧文件不在首页时的详情定位，fff9bb3先推送后构建rc.29，镜像sha256:8e335d72e3405d8ed1b1a413426d3bbf409666706b83c65ba0b9b18a9b71801e，SOURCE_DIRTY=false。备份/backups/before-job-controls-navigation-rc29；20迁移不变。359档案/1624文件及jobs、job_controls、控制审计、上传规则、保存筛选等所有旧行保留，五服务healthy；HTTPS仍为9443，443未改。只读公网复验旧合成任务deleted/原件/待处理状态及详情打开通过，没有再新增原件或控制真实任务；证据test-instance/job-controls-navigation-{deploy,live}.json。
+
+任务删除为库存软删除；控制记录/审计和成功历史保留，待处理清单根据当前产物判定。远端转换可能继续至自身上限，租约围栏阻止旧结果发布。详见TASK-CONTROLS。

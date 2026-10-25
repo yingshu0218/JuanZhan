@@ -887,3 +887,5 @@ T59公网rc.27默认分类勾选、JSON前端跳过/服务端422、配置未被Q
 日志.local/job-controls-final-regression.log、job-controls-agent-race.log、job-controls-final-focus.log、job-controls-ui-verified.log；截图/tmp/juanzhan-controls-{paused,pending-mobile}.png。无新依赖。远端Converter不能冻结，已提交请求仍受其独立上限/TTL约束，旧租约不得发布；处理判据只读已登记产物，不每次全文件哈希。见TASK-CONTROLS。
 
 T60补充定位验收：待处理文件不在档案列表首页时，显式保留所选档案并刷新目录/列表，避免自动清掉详情。加入31份较新的隔离测试档案，验证旧待处理文件可打开；原任务历史断言按真实分页寻找记录。最终5项浏览器通过（1.4m），日志.local/job-controls-navigation-verified.log。仅前端修正，后端/20迁移/103路径不变。
+
+T60最终公网rc.29：仅合成示例的四种控制操作已验证，取消/移除任务不删原件也不移除待处理文件；旧文件详情定位已修复并验证。升级保留358旧档案/1622旧文件，示例后359/1624；第二次发布额外逐行校验任务、控制审计、上传策略和保存筛选。20迁移、五服务healthy、页面异常0，证据见DEVTEST。

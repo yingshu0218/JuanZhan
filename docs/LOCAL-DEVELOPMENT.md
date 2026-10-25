@@ -235,3 +235,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 2026-10-25 T59无新依赖，.local/upload-policy-*日志/传输包与/tmp浏览器证据可清理；rc.27及升级前备份按回滚策略保留，业务原件/配置非临时文件。
 
 2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.
+
+T60 final frontend candidate rc.29 adds no dependencies. The navigation build logs and before-job-controls-navigation-rc29 backup follow the same cleanup/rollback policy. Existing originals, task control state, audit and upload policy are durable business data.
