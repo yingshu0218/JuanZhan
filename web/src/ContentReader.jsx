@@ -115,7 +115,7 @@ export function ContentReader({ api, doc, definitions, onChanged }) {
       {content.empty ? <p>尚无成功解析的正文。{processing[doc.processing_status] || "请刷新处理状态"}；原件和业务字段仍保留。</p> : content.loading ? <p role="status">正在读取正文…</p> : content.error ? content.error.code === "CONTENT_NOT_AVAILABLE" ? <p>尚无成功解析的正文。{processing[doc.processing_status] || "请刷新处理状态"}；原件和业务字段仍保留。</p> : <Notice error>{message(content.error)} 可使用顶部刷新重新读取。</Notice> : <>
         {content.data.stale_for_current_revision ? <Notice>这是已保存的缓存正文，可能来自旧版本或原件当前不可用；不代表当前原件已验证。</Notice> : null}
         {content.data.ocr_used && <Notice>正文含 OCR 识别内容，请复核。</Notice>}
-        {!content.data.text_available ? <Notice>此次结果没有可读文本；扫描文件可能需要显式启用 OCR。</Notice> : null}
+        {!content.data.text_available ? <Notice>此次结果没有可读文本；可查看识别状态，或由外部Agent补充分析。</Notice> : null}
         {format === "summary" ? <DocumentSummary data={content.data} documentTitle={doc.title} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} onChapters={() => setFormat("overview")} /> : format === "overview" ? <ContentOverview data={content.data} onRead={index => { setPage(Math.floor(index / 20) + 1); setFormat("blocks"); }} /> : format === "blocks" ? <><Blocks blocks={content.data.body} annotations={annotations} />{!content.data.body.length ? <p>此次解析没有正文块。</p> : null}</> : <pre className="plain-content">{content.data.body || "此次解析没有文本。"}</pre>}
         {format === "blocks" ? <Pager page={page} data={content.data} onChange={setPage} label="正文分页" /> : !condensed ? <InfoTip>以安全源文本显示，不执行 HTML 或外部资源。</InfoTip> : null}
         <details className="reader-diagnostics"><summary>正文来源与解析说明{content.data.warnings.length ? `（${content.data.warnings.length} 条提示）` : ""}</summary>

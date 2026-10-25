@@ -39,3 +39,33 @@ test('a folder with 512 files and 513 directories enters the queue with separate
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/juanzhan-upload-count-mobile.png'});
  }finally{await page.close();release();await rm(root,{recursive:true,force:true});}
 });
+
+test('flat image batch is guided into a named folder before upload, with current-folder and cancel alternatives',async({page})=>{
+ const {api}=await import('./helpers.mjs');
+ const {execFileSync}=await import('node:child_process');
+ const encoded=JSON.parse(execFileSync('../.venv/bin/python',['-c',"import sys,json,base64;sys.path.insert(0,'../tests');from format_samples import raster_sample;print(json.dumps([base64.b64encode(raster_sample(text='Archive picture '+str(i))).decode() for i in range(10)]))"],{encoding:'utf8'}));
+ const files=encoded.map((value,i)=>({name:`batch-${i}.png`,mimeType:'image/png',buffer:Buffer.from(value,'base64')}));
+ const dialogs=[];page.on('dialog',d=>{dialogs.push(d.type());d.dismiss();});
+ await login(page);await createSpace(page,'散图归档引导');const space=await page.getByLabel('当前空间').inputValue();
+ const picker=page.getByLabel('选择上传文件',{exact:true});
+ await picker.setInputFiles(files);
+ const group=page.getByRole('dialog',{name:'批量图片归档',exact:true});await expect(group).toBeVisible();
+ expect((await api(page,'/documents?space_id='+space)).data.total).toBe(0);
+ await group.getByLabel('图片归档文件夹名称').fill('../bad');await group.getByRole('button',{name:'新建文件夹并导入',exact:true}).click();
+ await expect(group.getByRole('alert')).toContainText('有效文件夹名称');
+ await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/juanzhan-image-group-mobile.png'});
+ await group.getByLabel('图片归档文件夹名称').fill('项目图片');await group.getByRole('button',{name:'新建文件夹并导入',exact:true}).click();
+ await expect.poll(async()=>(await api(page,'/documents?space_id='+space)).data.total,{timeout:30000}).toBe(10);
+ const folders=(await api(page,'/folders?space_id='+space)).data;const folder=folders.find(f=>f.name==='项目图片');expect(folder).toBeTruthy();
+ expect((await api(page,'/documents?space_id='+space)).data.items.every(d=>d.folder_id===folder.id)).toBe(true);
+ await picker.setInputFiles([]);await picker.setInputFiles(files);await expect(group).toBeVisible();
+ await group.getByRole('button',{name:'取消本批',exact:true}).click();expect((await api(page,'/documents?space_id='+space)).data.total).toBe(10);
+ await picker.setInputFiles([]);await picker.setInputFiles(files);await expect(group).toBeVisible();
+ // Reject upload requests here to inspect the target choice without intentionally importing duplicate originals.
+ const requested=[];await page.route('**/api/v1/documents/upload',async route=>{requested.push(route.request().postData());await route.abort();});
+ await group.getByRole('button',{name:'仍放在当前目录',exact:true}).click();
+ await expect.poll(()=>requested.length).toBe(10);
+ expect(requested.every(body=>!body.includes('name="folder_id"'))).toBe(true);
+ expect(dialogs).toEqual([]);
+});

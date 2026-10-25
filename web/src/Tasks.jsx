@@ -128,7 +128,7 @@ export function TaskCenter({ api, onClose, initialId = null, spaces=[], onOpenDo
   </Dialog>;
 }
 export function Reprocess({ api, doc }) {
-  const [open, setOpen] = useState(false), [ocr, setOcr] = useState(false), [language, setLanguage] = useState("eng"), [confirmed, setConfirmed] = useState(false), [intent, setIntent] = useState(null), [job, setJob] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [open, setOpen] = useState(false), [ocr, setOcr] = useState(true), [language, setLanguage] = useState("eng,chi_sim"), [confirmed, setConfirmed] = useState(false), [intent, setIntent] = useState(null), [job, setJob] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
   async function submit() {
     const body = intent || { expected_document_version: doc.document_version, expected_revision_id: doc.current_revision_id, request_id: crypto.randomUUID(), ocr, ocr_languages: ocr ? language : "", force: true, generate_preview: true };
     setIntent(body); setBusy(true); setError("");
@@ -137,7 +137,7 @@ export function Reprocess({ api, doc }) {
     finally { setBusy(false); }
   }
   return <>
-    <button disabled={!!doc.deleted_at || !doc.current_revision_id} onClick={() => { setOpen(true); setIntent(null); setJob(null); setError(""); setOcr(false); setConfirmed(false); }}>重新解析 / OCR</button>
+    <button disabled={!!doc.deleted_at || !doc.current_revision_id} onClick={() => { setOpen(true); setIntent(null); setJob(null); setError(""); setOcr(true); setLanguage("eng,chi_sim"); setConfirmed(false); }}>重新解析 / OCR</button>
     {open && <Dialog title="重新解析档案" onClose={() => setOpen(false)}>
       {job ? <><Notice>任务已受理，请跟踪实际结果。结束后关闭窗口并刷新档案查看正文。</Notice><TaskStatus api={api} id={job} /></> : <>
         <InfoTip>处理当前版本原件，保留人工字段与最近成功正文；失败不会清空已有内容。</InfoTip>

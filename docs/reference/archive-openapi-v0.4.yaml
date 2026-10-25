@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.39
+  version: 0.4.40
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -2194,7 +2194,7 @@ paths:
       - Documents
       summary: 重新解析文档（不修改人工元数据）
       operationId: post_documents_id_reprocess
-      description: 鉴权及Cookie CSRF，在同一写事务复核expected_document_version与expected_revision_id；回收拒绝。request_id绑定该档案、Revision及OCR/语言/预览选项，重发同请求复用原Job，异选项409。其他活动解析返回409；已有成功正文须force=true明确重跑。OCR默认关闭，语言仅eng/chi_sim且无重复；模型可用性由后台Converter最终确认。只排队，不覆盖人工字段/旧成功正文或增加业务版本；重试按Job固定预算。
+      description: 鉴权及Cookie CSRF，在同一写事务复核expected_document_version与expected_revision_id；回收拒绝。request_id绑定该档案、Revision及OCR/语言/预览选项，重发同请求复用原Job，异选项409。其他活动解析返回409；已有成功正文须force=true明确重跑。OCR默认开启，无指定语言时使用chi_sim与eng；PDF只识别无文字层页，语言仅eng/chi_sim且无重复；模型可用性由后台Converter最终确认。只排队，不覆盖人工字段/旧成功正文或增加业务版本；重试按Job固定预算。
       x-roadmap-phase: MVP
       parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -2225,7 +2225,7 @@ paths:
                   pattern: ^[A-Za-z0-9_-]{1,128}$
                 ocr:
                   type: boolean
-                  default: false
+                  default: true
                 force:
                   type: boolean
                   default: false
@@ -3655,6 +3655,15 @@ components:
     PendingProcessInput:
       additionalProperties: false
       properties:
+        ocr:
+          type: boolean
+          default: true
+          description: Enable OCR by default only for supported images/PDF requiring analysis. Agent results still take precedence.
+        ocr_languages:
+          type: string
+          default: ''
+          enum: ['', eng, chi_sim, 'eng,chi_sim', 'chi_sim,eng']
+          description: Requires ocr=true when nonempty. Empty selects chi_sim and eng at the Archive layer.
         request_id:
           pattern: ^[A-Za-z0-9_-]{1,100}$
           title: Request Id
@@ -3692,6 +3701,14 @@ components:
     PendingFile:
       type: object
       properties:
+        mime_type:
+          type: string
+        ocr_required:
+          type: boolean
+          description: Current supported image has not undergone OCR, or scanned PDF has no text and OCR is disabled.
+        ocr_no_text:
+          type: boolean
+          description: Current successful OCR produced no readable text; remains pending.
         id:
           type: string
         space_id:
@@ -5115,7 +5132,7 @@ components:
           description: >-
             严格匹配operation。move_folder为{folder_id: ID或null}，add_tags/remove_tags为{tag_ids: ID数组}，
             set_type为{document_type_id: ID或null}，set_triage为{triage_status: needs_review或filed}，
-            set_favorite为{is_favorite: 布尔}，trash/restore为{}；reprocess仅允许ocr、force、generate_preview严格布尔与ocr_languages（eng、chi_sim或两者逗号连接），默认false、false、true与空串。语言要求ocr=true。
+            set_favorite为{is_favorite: 布尔}，trash/restore为{}；reprocess仅允许ocr、force、generate_preview严格布尔与ocr_languages（eng、chi_sim或两者逗号连接），默认true、false、true与空串（OCR无指定语言时用中英文）。语言要求ocr=true。
             set_metadata为{values: 字段key到值或null的非空对象, confirm: 严格布尔}；最多1000字段，复用MetadataPatch值规则且仍受整个批次64KiB预算限制。整数严格64位，Decimal最多四位小数字符串，boolean false不等于null。不允许额外字段。
           type: object
           additionalProperties: true

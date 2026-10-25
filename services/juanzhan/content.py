@@ -22,7 +22,7 @@ PageSize=Annotated[int,Query(ge=1,le=100)]
 class Reprocess(VersionChange):
     expected_revision_id: Annotated[str,Field(min_length=1,max_length=255)]
     request_id: Annotated[str,Field(pattern=r'^[A-Za-z0-9_-]{1,128}$')]
-    ocr: bool = Field(default=False,strict=True)
+    ocr: bool = Field(default=True,strict=True)
     force: bool = Field(default=False,strict=True)
     ocr_languages: str = Field(default='',max_length=255)
     generate_preview: bool = Field(default=True,strict=True)

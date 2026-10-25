@@ -52,7 +52,7 @@ def test_auth_csrf_version_unknown_options_and_reprocess_idempotency(pipeline):
     assert client.post(root+'/reprocess',json=body).status_code==403
     assert client.post(root+'/reprocess',headers=headers,json={**body,'path':'/etc/passwd'}).status_code==422
     assert client.post(root+'/reprocess',headers=headers,json={**body,'ocr':'true'}).status_code==422
-    assert client.post(root+'/reprocess',headers=headers,json={**body,'ocr_languages':'eng'}).json()['error']['code']=='OCR_DISABLED'
+    assert client.post(root+'/reprocess',headers=headers,json={**body,'ocr':False,'ocr_languages':'eng'}).json()['error']['code']=='OCR_DISABLED'
     assert request(pipeline,uploaded,ocr=True,ocr_languages='eng,eng').status_code==422
     assert request(pipeline,uploaded,expected_document_version=999).status_code==409
     assert request(pipeline,uploaded,expected_revision_id='changed').json()['error']['code']=='REVISION_CONFLICT'
@@ -62,7 +62,7 @@ def test_auth_csrf_version_unknown_options_and_reprocess_idempotency(pipeline):
     first=client.post(root+'/reprocess',headers=headers,json=body)
     again=client.post(root+'/reprocess',headers=headers,json=body)
     assert first.status_code==again.status_code==202 and first.json()==again.json()
-    assert client.post(root+'/reprocess',headers=headers,json={**body,'ocr':True}).json()['error']['code']=='IDEMPOTENCY_CONFLICT'
+    assert client.post(root+'/reprocess',headers=headers,json={**body,'ocr':False}).json()['error']['code']=='IDEMPOTENCY_CONFLICT'
     Worker(settings).run_once()
     assert client.post(root+'/reprocess',headers=headers,json=body).json()['job_id']==first.json()['job_id']
     assert len(rows(settings,'SELECT * FROM parse_runs'))==2
@@ -147,7 +147,7 @@ def test_concurrent_distinct_requests_do_not_duplicate_active_parse(pipeline):
     with ThreadPoolExecutor(max_workers=2) as pool:
         responses=list(pool.map(lambda _:request(pipeline,a,force=True),range(2)))
     assert sorted(r.status_code for r in responses)==[202,409]
-    assert len(rows(settings,"SELECT * FROM jobs WHERE kind='parse' AND status='queued'"))==1
+    assert len(rows(settings,"SELECT * FROM jobs WHERE kind IN ('parse','ocr') AND status='queued'"))==1
 
 
 def test_response_budget_checked_in_sql_before_materializing_pages(pipeline,monkeypatch):

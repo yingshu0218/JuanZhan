@@ -1,4 +1,4 @@
-import { InfoTip } from "./ui.jsx";
+import { Dialog, InfoTip } from "./ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import { UploadSimple, CheckCircle, XCircle, X } from "@phosphor-icons/react";
 import { message } from "./api.js";
@@ -9,6 +9,8 @@ export function useUploads(api, onSaved) {
   const [open, setOpen] = useState(false);
   const [scanning, setScanning] = useState(null);
   const [skipped, setSkipped] = useState({ total: 0, samples: [] });
+  const [imageGroup, setImageGroup] = useState(null);
+  const imageGroupRef = useRef(null);
   const reader = useRef(null);
   const refreshTimer = useRef(null);
   const controllers = useRef(new Map());
@@ -71,13 +73,34 @@ export function useUploads(api, onSaved) {
   async function enqueue(files, spaceId, folderId) {
     if (!spaceId) return;
     const chosen=[...files];if(!chosen.length)return;
-    try { const policy=await api.request("/system/upload-policy");if(alive.current)add(selectedFiles(chosen,policy), spaceId, folderId); }
+    try { const policy=await api.request("/system/upload-policy");if(alive.current)prepare(selectedFiles(chosen,policy), spaceId, folderId); }
     catch (error) { report(error.message); }
   }
   function report(error) {
     setOpen(true);
     setItems(rows => [...rows, { id: crypto.randomUUID(), kind:'notice', file: { name: '未加入上传队列', size: 0 }, status: 'failed', error }]);
   }
+  function prepare(list, spaceId, folderId) {
+    if (list.length >= 10 && list.every(entry => entry.kind === 'file' && !entry.parentPath && /\.(png|jpe?g|tiff?|webp|gif|bmp|heic|avif)$/i.test(entry.file.name))) {
+      if (imageGroupRef.current) { report('请先完成上一批图片的归档选择；本批尚未加入队列。'); return; }
+      const proposal = { list, spaceId, folderId };
+      imageGroupRef.current = proposal; setImageGroup(proposal); setOpen(true);
+    } else add(list, spaceId, folderId);
+  }
+  function groupImages(name) {
+    const proposal = imageGroupRef.current;
+    if (!proposal) return;
+    const folderName = name?.trim().normalize('NFC');
+    if (name !== null && (!folderName || folderName.length > 120 || /[\/\\\u0000-\u001f]/.test(folderName) || ['.', '..'].includes(folderName))) return '请输入有效文件夹名称（最多120字，不能含路径分隔符）。';
+    let list = proposal.list;
+    if (folderName) list = Object.assign([
+      { kind: 'folder', file: { name: folderName, size: 0 }, path: folderName, parentPath: '' },
+      ...list.map(entry => ({ ...entry, path: folderName + '/' + entry.path, parentPath: folderName })),
+    ], { skipped: list.skipped });
+    imageGroupRef.current = null; setImageGroup(null);
+    add(list, proposal.spaceId, proposal.folderId);
+  }
+  function cancelImageGroup() { imageGroupRef.current = null; setImageGroup(null); }
   function add(list, spaceId, folderId) {
     if (list.skipped?.total) {
       setOpen(true);
@@ -101,7 +124,7 @@ export function useUploads(api, onSaved) {
     if (reader.current) { report('正在读取另一个文件夹，请稍后添加。'); return; }
     const controller = new AbortController(); reader.current = controller;
     setOpen(true); setScanning(0);
-    try { const rows = await droppedFiles(transfer, controller.signal, count => { if (alive.current) setScanning(count); }, api.request("/system/upload-policy")); if (alive.current) add(rows, spaceId, folderId); }
+    try { const rows = await droppedFiles(transfer, controller.signal, count => { if (alive.current) setScanning(count); }, api.request("/system/upload-policy")); if (alive.current) prepare(rows, spaceId, folderId); }
     catch (error) { if (alive.current && error.name !== 'AbortError') report(error.message || '文件夹读取失败，本批尚未上传。'); }
     finally { if (reader.current === controller) reader.current = null; if (alive.current) setScanning(null); }
   }
@@ -120,7 +143,18 @@ export function useUploads(api, onSaved) {
     });
   }
   function retry(id) { if (!controllers.current.has(id)) change(id, { status: 'waiting', policy: 'reject', error: null, progress: 0 }); }
-  return { items, open, setOpen, enqueue, enqueueDrop, scanning, skipped, stopReading: () => reader.current?.abort(), cancel, separate, retry, busy: id => controllers.current.has(id) };
+  return { items, open, setOpen, enqueue, enqueueDrop, scanning, skipped, imageGroup, groupImages, cancelImageGroup, stopReading: () => reader.current?.abort(), cancel, separate, retry, busy: id => controllers.current.has(id) };
+}
+function ImageGroupDialog({ queue }) {
+  const [name,setName] = useState(() => '图片归档 ' + new Date().toLocaleDateString('sv-SE'));
+  const [error,setError] = useState('');
+  return <Dialog title="批量图片归档" onClose={queue.cancelImageGroup}>
+    <p>本批 {queue.imageGroup.list.length} 张图片</p>
+    <label>文件夹名称<input aria-label="图片归档文件夹名称" maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label>
+    <InfoTip>同批10张及以上散图建议归入一个文件夹；已有目录结构时直接保留。归档目录固定为选择这批文件时的位置，同名目录会复用。图片仍是独立档案，默认识别文字，不合并或改写原件。</InfoTip>
+    {error&&<Notice error>{error}</Notice>}
+    <div className="summary-actions"><button className="primary" onClick={()=>setError(queue.groupImages(name)||'')}>新建文件夹并导入</button><button onClick={()=>queue.groupImages(null)}>仍放在当前目录</button><button onClick={queue.cancelImageGroup}>取消本批</button></div>
+  </Dialog>;
 }
 function SavedState({ api, item }) {
   const [job, setJob] = useState(null);
@@ -172,6 +206,7 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask, onDr
   if (!queue.open) return null;
   return (
     <section className="upload-panel" aria-label="上传队列">
+      {queue.imageGroup && <ImageGroupDialog queue={queue} />}
       <div className="dialog-head">
         <div className="upload-title"><h2>导入文件</h2><InfoTip>支持多个文件或整个文件夹，保留目录层级；每批最多1000个文件，目录独立计数（最多5000个），最多32层。辅助文件会自动跳过。收起面板不取消上传，关闭页面会停止未完成的上传。</InfoTip></div>
         <button aria-label="收起上传队列" onClick={() => queue.setOpen(false)}>

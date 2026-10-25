@@ -83,7 +83,11 @@ def begin(settings,job):
         from .derived import schedule_gc
         schedule_gc(db,settings,'parse-gc:'+job['id']+':'+str(job['attempts']),time.time()+86400)
         revision=dict(db.execute('SELECT * FROM file_revisions WHERE id=?',(request['revision_id'],)).fetchone())
-        options=options.model_copy(update={'declared_mime':revision['mime_type']})
+        # Archive imports default to local OCR for raster images and textless PDF pages.
+        # Explicit caller choices remain authoritative; the converter protocol default is independent.
+        ocr=payload.get('ocr_enabled',job['kind']=='ocr' or revision['mime_type'] in ('image/png','image/jpeg','image/tiff','application/pdf'))
+        options=options.model_copy(update={'declared_mime':revision['mime_type'],'ocr_enabled':ocr,
+            'ocr_languages':(payload.get('ocr_languages') or 'chi_sim,eng') if ocr else ''})
         return options,revision
 
 

@@ -65,7 +65,7 @@ test("batch reprocessing confirms options and tracks actual child tasks", async 
   await page.getByRole("button", { name: "批量操作", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "档案操作", exact: true });
   await dialog.getByLabel("操作类型").selectOption("reprocess");
-  await expect(dialog.getByLabel("启用 OCR（耗时较长）")).not.toBeChecked();
+  await expect(dialog.getByLabel("启用 OCR（耗时较长）")).toBeChecked();
   await expect(dialog.getByRole("button", { name: "确认提交", exact: true })).toBeDisabled();
   await dialog.getByLabel("启用 OCR（耗时较长）").check();
   await dialog.getByLabel("OCR 语言").selectOption("chi_sim");
@@ -99,7 +99,7 @@ test("durable tasks and explicit real reprocessing on desktop and mobile", async
   await page.getByRole("button",{name:"整理操作",exact:true}).click();
   const dialog = page.getByRole("dialog", {name:"档案操作",exact:true});
   await dialog.getByLabel("操作类型").selectOption("reprocess");
-  await expect(dialog.getByLabel("启用 OCR（耗时较长）")).not.toBeChecked();
+  await expect(dialog.getByLabel("启用 OCR（耗时较长）")).toBeChecked();
   await expect(dialog.getByRole("button",{name:"确认提交",exact:true})).toBeDisabled();
   await dialog.getByLabel("启用 OCR（耗时较长）").check();
   await dialog.getByLabel("OCR 语言").selectOption("eng,chi_sim");

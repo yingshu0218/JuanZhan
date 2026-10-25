@@ -1,7 +1,7 @@
 """Current-version processing inventory derived from persisted results, never jobs."""
 import hashlib
 import json
-from typing import Annotated
+from typing import Annotated,Literal
 from fastapi import APIRouter,Query,Request,HTTPException
 from pydantic import Field
 from .catalog import Input,ID
@@ -14,7 +14,9 @@ AGENT="EXISTS(SELECT 1 FROM agent_analyses a JOIN agent_imports i ON i.id=a.impo
 LOCAL="COALESCE(p.status='completed' AND p.revision_id=d.current_revision_id AND p.text_available=1,0)"
 MD="COALESCE(m.content_status='content' AND m.parse_run_id=d.current_parse_run_id,0)"
 INDEX="COALESCE(s.generation>=x.generation AND s.tokenizer_version=? AND x.last_error IS NULL,0)"
-BASE=f"SELECT d.id,d.space_id,d.title,d.current_revision_id,d.document_version,r.original_filename,({AGENT} OR {LOCAL}) AS analysis_ready,({AGENT} OR {MD}) AS markdown_ready,{INDEX} AS index_ready FROM documents d JOIN file_revisions r ON r.id=d.current_revision_id LEFT JOIN parse_runs p ON p.id=d.current_parse_run_id LEFT JOIN revision_markdown m ON m.revision_id=d.current_revision_id LEFT JOIN document_search_state s ON s.document_id=d.id LEFT JOIN search_dirty x ON x.document_id=d.id WHERE d.deleted_at IS NULL"
+BASE=f"""SELECT d.id,d.space_id,d.title,d.current_revision_id,d.document_version,r.original_filename,r.mime_type,
+CASE WHEN r.mime_type IN ('image/png','image/jpeg','image/tiff') AND NOT COALESCE(p.revision_id=d.current_revision_id AND p.ocr_used=1,0) THEN 1 WHEN r.mime_type='application/pdf' AND p.revision_id=d.current_revision_id AND p.status='completed' AND p.text_available=0 AND p.ocr_used=0 THEN 1 ELSE 0 END AS ocr_required,
+COALESCE(p.revision_id=d.current_revision_id AND p.status='completed' AND p.text_available=0 AND p.ocr_used=1,0) AS ocr_no_text,({AGENT} OR {LOCAL}) AS analysis_ready,({AGENT} OR {MD}) AS markdown_ready,{INDEX} AS index_ready FROM documents d JOIN file_revisions r ON r.id=d.current_revision_id LEFT JOIN parse_runs p ON p.id=d.current_parse_run_id LEFT JOIN revision_markdown m ON m.revision_id=d.current_revision_id LEFT JOIN document_search_state s ON s.document_id=d.id LEFT JOIN search_dirty x ON x.document_id=d.id WHERE d.deleted_at IS NULL"""
 
 def facts(db,*,id=None,space_id=None):
     sql=BASE;values=[VERSION]
@@ -24,6 +26,7 @@ def facts(db,*,id=None,space_id=None):
 
 def describe(row):
     value=dict(row)
+    for key in ('ocr_required','ocr_no_text'):value[key]=bool(value[key]) and not bool(value['analysis_ready'])
     value['pending_reasons']=[key for key in ('analysis','markdown','index') if not value.pop(key+'_ready')]
     return value
 
@@ -33,6 +36,8 @@ class DocumentTarget(Input):
 class Process(Input):
     request_id:Annotated[str,Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')]
     documents:list[DocumentTarget]=Field(min_length=1,max_length=100)
+    ocr:bool=Field(default=True,strict=True)
+    ocr_languages:Literal['','eng','chi_sim','eng,chi_sim','chi_sim,eng']=''
 
 def router(settings):
     routes=APIRouter(prefix='/api/v1/pending-documents');queue=JobQueue(settings)
@@ -56,6 +61,7 @@ def router(settings):
         from .upload_exclusions import excluded_file
         from .job_controls import control
         from .catalog import required
+        if body.ocr_languages and not body.ocr:fail(422,'OCR_DISABLED','Languages require OCR')
         results=[]
         with queue.write(request) as db:
             import sqlite3
@@ -71,7 +77,10 @@ def router(settings):
                     if 'analysis' in needs:
                         if excluded_file(row['original_filename']):fail(422,'UPLOAD_EXCLUDED','Auxiliary files are excluded')
                         check(db,row['original_filename'])
-                        specs.append(('parse','document',target.id,{'revision_id':target.revision_id}))
+                        payload={'revision_id':target.revision_id}
+                        if body.ocr and row['mime_type'] in ('application/pdf','image/png','image/jpeg','image/tiff'):
+                            payload.update(ocr_enabled=True,ocr_languages=','.join(sorted(body.ocr_languages.split(','))) if body.ocr_languages else 'chi_sim,eng')
+                        specs.append(('parse','document',target.id,payload))
                     else:
                         if 'markdown' in needs:
                             db.execute('INSERT OR IGNORE INTO markdown_dirty(revision_id) VALUES (?)',(target.revision_id,))
@@ -84,8 +93,11 @@ def router(settings):
                                 db.execute('UPDATE search_dirty SET last_error=NULL WHERE document_id=?',(target.id,))
                                 specs.append(('reindex','document_search',target.id,{'generation':generation[0],'tokenizer_version':VERSION}))
                     for kind,type,id,payload in specs:
-                        active=db.execute("SELECT j.id,c.mode FROM jobs j LEFT JOIN job_controls c ON c.job_id=j.id WHERE j.kind=? AND j.target_type=? AND j.target_id=? AND j.status IN ('queued','running') AND COALESCE(c.mode,'')!='deleted' AND (? IS NULL OR json_extract(j.payload_json,'$.revision_id')=?) ORDER BY j.created_at DESC,j.id DESC LIMIT 1",(kind,type,id,payload.get('revision_id'),payload.get('revision_id'))).fetchone()
+                        active=db.execute("SELECT j.id,j.kind,j.payload_json,c.mode FROM jobs j LEFT JOIN job_controls c ON c.job_id=j.id WHERE (j.kind=? OR (?='parse' AND j.kind='ocr')) AND j.target_type=? AND j.target_id=? AND j.status IN ('queued','running') AND COALESCE(c.mode,'')!='deleted' AND (? IS NULL OR json_extract(j.payload_json,'$.revision_id')=?) ORDER BY j.created_at DESC,j.id DESC LIMIT 1",(kind,kind,type,id,payload.get('revision_id'),payload.get('revision_id'))).fetchone()
                         if active:
+                            options=json.loads(active['payload_json'])
+                            if payload.get('ocr_enabled') and (not options.get('ocr_enabled',active['kind']=='ocr' or row['mime_type'] in ('application/pdf','image/png','image/jpeg','image/tiff')) or (payload.get('ocr_languages') and set((options.get('ocr_languages') or 'chi_sim,eng').split(','))!=set(payload['ocr_languages'].split(',')))):
+                                fail(409,'PARSE_ALREADY_RUNNING','An active parse has different OCR options')
                             if active['mode']=='paused':control(db,queue,active['id'],'resume')
                             jobs.append(active['id'])
                         else:

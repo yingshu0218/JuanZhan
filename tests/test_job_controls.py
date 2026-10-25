@@ -155,3 +155,96 @@ def test_agent_arriving_after_pending_requeue_skips_local_fallback(pipeline):
  assert client.post(ROOT+'/imports/'+saved['id']+'/analyses',headers=h,json=payload(saved)).status_code==201
  assert Worker(settings).run_once()['status']=='completed'
  with connect(settings.database) as db:assert db.execute('select count(*) from parse_runs').fetchone()[0]==0
+
+
+def test_pending_real_image_needs_explicit_ocr_then_readable_md_and_index(pipeline):
+ from format_samples import raster_sample
+ from test_indexing import drain
+ from juanzhan.markdown_copies import schedule
+ settings,client,csrf,_=pipeline
+ image=raster_sample(text='Archive invoice total 2026')
+ saved=upload(pipeline,image,'pending-scan.png');worker=Worker(settings)
+ with connect(settings.database) as db:db.execute("UPDATE jobs SET payload_json=json_set(payload_json,'$.ocr_enabled',json('false')) WHERE id=?",(saved['job_id'],));db.commit()
+ assert worker.run_once()['status']=='completed'
+ item=client.get('/api/v1/pending-documents').json()['items'][0]
+ assert item['ocr_required'] and not item['ocr_no_text'] and item['mime_type']=='image/png'
+ body={'request_id':'explicit-pending-ocr','documents':[{'id':saved['document_id'],'revision_id':saved['revision_id']}],'ocr':True,'ocr_languages':'eng'}
+ response=client.post('/api/v1/pending-documents/process',headers=csrf,json=body)
+ assert response.status_code==200,response.text
+ jobs=response.json()['items'][0]['job_ids'];assert len(jobs)==1
+ # Transport retries reuse the identical job rather than schedule duplicate OCR.
+ assert client.post('/api/v1/pending-documents/process',headers=csrf,json=body).json()['items'][0]['job_ids']==jobs
+ assert worker.run_once()['status']=='completed'
+ with connect(settings.database) as db:
+  run=db.execute('SELECT p.ocr_used,p.text_available FROM documents d JOIN parse_runs p ON p.id=d.current_parse_run_id WHERE d.id=?',(saved['document_id'],)).fetchone()
+  assert run==(1,1)
+ schedule(settings)
+ while worker.run_once():pass
+ drain(settings)
+ assert client.get('/api/v1/pending-documents').json()['total']==0
+ assert client.get('/api/v1/documents/'+saved['document_id']+'/download').content==image
+
+
+def test_pending_ocr_blank_image_stays_pending_without_false_completion(pipeline):
+ from format_samples import raster_sample
+ settings,client,csrf,_=pipeline
+ saved=upload(pipeline,raster_sample(text=''),'blank.png')
+ with connect(settings.database) as db:db.execute("UPDATE jobs SET payload_json=json_set(payload_json,'$.ocr_enabled',json('false')) WHERE id=?",(saved['job_id'],));db.commit()
+ assert Worker(settings).run_once()['status']=='completed'
+ body={'request_id':'blank-ocr','documents':[{'id':saved['document_id'],'revision_id':saved['revision_id']}],'ocr':True,'ocr_languages':'eng'}
+ assert client.post('/api/v1/pending-documents/process',headers=csrf,json=body).json()['succeeded']==1
+ assert Worker(settings).run_once()['status']=='completed'
+ item=client.get('/api/v1/pending-documents').json()['items'][0]
+ assert item['ocr_no_text'] and not item['ocr_required'] and 'analysis' in item['pending_reasons']
+
+
+def test_pending_ocr_validates_options_and_does_not_silently_reuse_nonocr_work(pipeline):
+ from format_samples import raster_sample
+ settings,client,csrf,_=pipeline;saved=upload(pipeline,raster_sample(),'scan.png')
+ with connect(settings.database) as db:db.execute("UPDATE jobs SET payload_json=json_set(payload_json,'$.ocr_enabled',json('false')) WHERE id=?",(saved['job_id'],));db.commit()
+ body={'request_id':'ocr-options','documents':[{'id':saved['document_id'],'revision_id':saved['revision_id']}],'ocr':True,'ocr_languages':'chi_sim,eng'}
+ assert client.post('/api/v1/pending-documents/process',json=body).status_code==403
+ for change in ({'ocr':'true'},{'ocr_languages':'fra'},{'ocr':False}):
+  assert client.post('/api/v1/pending-documents/process',headers=csrf,json={**body,**change}).status_code==422
+ result=client.post('/api/v1/pending-documents/process',headers=csrf,json=body).json()
+ assert result['failed']==1 and result['items'][0]['error_code']=='PARSE_ALREADY_RUNNING'
+ with connect(settings.database) as db:assert db.execute("SELECT count(*) FROM jobs WHERE kind IN ('parse','ocr')").fetchone()[0]==1
+
+
+def test_pending_ocr_option_does_not_force_ocr_on_text_or_overwrite_agent(pipeline):
+ from test_agent_imports import token,imported,payload,ROOT
+ settings,client,csrf,_=pipeline;_,h=token(pipeline);saved=imported(pipeline,h).json()
+ with connect(settings.database) as db:initial=db.execute("select id from jobs where kind='parse'").fetchone()[0]
+ act(client,csrf,'cancel',[initial])
+ body={'request_id':'pending-ocr-agent','documents':[{'id':saved['document_id'],'revision_id':saved['revision_id']}],'ocr':True,'ocr_languages':'eng'}
+ result=client.post('/api/v1/pending-documents/process',headers=csrf,json=body).json();assert result['succeeded']==1
+ with connect(settings.database) as db:
+  import json
+  job=db.execute('SELECT payload_json FROM jobs WHERE id=?',(result['items'][0]['job_ids'][0],)).fetchone()
+  assert not json.loads(job[0]).get('ocr_enabled')
+ assert client.post(ROOT+'/imports/'+saved['id']+'/analyses',headers=h,json=payload(saved)).status_code==201
+ assert Worker(settings).run_once()['status']=='completed'
+ with connect(settings.database) as db:assert db.execute('select count(*) from parse_runs').fetchone()[0]==0
+
+
+@pytest.mark.parametrize('format,name',[('PNG','auto.png'),('PDF','scanned.pdf')])
+def test_uploaded_raster_or_textless_pdf_automatically_uses_bilingual_ocr(pipeline,format,name):
+ from format_samples import raster_sample
+ settings,client,_,_=pipeline;saved=upload(pipeline,raster_sample(format,text='Archive invoice total 2026'),name)
+ assert Worker(settings).run_once()['status']=='completed'
+ with connect(settings.database) as db:
+  run=db.execute('SELECT p.ocr_used,p.text_available FROM documents d JOIN parse_runs p ON p.id=d.current_parse_run_id WHERE d.id=?',(saved['document_id'],)).fetchone()
+  assert run[0:2]==(1,1)
+  import json
+  key=db.execute("SELECT a.storage_key FROM documents d JOIN derived_assets a ON a.parse_run_id=d.current_parse_run_id WHERE d.id=? AND a.asset_kind='json'",(saved['document_id'],)).fetchone()[0]
+  from juanzhan.storage import ManagedStore
+  with ManagedStore(settings.data_dir/'derived').open(key) as f:result=json.load(f)
+  assert set(result['extraction']['ocr_languages'])=={'eng','chi_sim'}
+
+
+def test_native_pdf_keeps_text_layer_without_running_ocr(pipeline):
+ from format_samples import samples
+ settings,client,_,_=pipeline;saved=upload(pipeline,samples()['pdf'][1],'native-text.pdf')
+ assert Worker(settings).run_once()['status']=='completed'
+ with connect(settings.database) as db:
+  assert db.execute('SELECT p.ocr_used,p.text_available FROM documents d JOIN parse_runs p ON p.id=d.current_parse_run_id WHERE d.id=?',(saved['document_id'],)).fetchone()==(0,1)

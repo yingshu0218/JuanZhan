@@ -340,7 +340,7 @@ def test_restore_batch_conflict_does_not_restore_other_versions(api):
 
 
 @pytest.mark.parametrize('payload',[
-    {'ocr':'true'},{'ocr_languages':'eng'},{'ocr':True,'ocr_languages':'fra'},
+    {'ocr':'true'},{'ocr':False,'ocr_languages':'eng'},{'ocr':True,'ocr_languages':'fra'},
     {'request_id':'injected'},{'expected_document_version':1},{'force':1},
 ])
 def test_reprocess_rejects_invalid_options(api,payload):

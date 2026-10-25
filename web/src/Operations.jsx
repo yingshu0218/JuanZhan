@@ -271,7 +271,7 @@ function OperationForm({ draft, catalog, submit, busy }) {
   const [favorite, setFavorite] = useState(
     draft.payload?.is_favorite === false ? "false" : "true",
   );
-  const [ocr, setOcr] = useState(false);
+  const [ocr, setOcr] = useState(true);
   const [language, setLanguage] = useState("eng,chi_sim");
   const [confirmed, setConfirmed] = useState(false);
   const [fieldId, setFieldId] = useState("");

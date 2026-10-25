@@ -1,5 +1,7 @@
 # UI/UX — 当前交互方向
 
+2026-10-25 T62开发：全量原件359/359哈希与大小一致，核对170份待处理原因；按最新用户决定默认中英文OCR、补清单识别选项与散图页内归档引导。无新依赖/迁移，契约0.4.40/103路径。后端最终专项31项、任务/OCR浏览器6项与归档引导3项通过；待部署和存量补识别，见BATCH-PARSING-AUDIT。
+
 2026-10-25 T60: Bulk pause/resume/cancel/remove task records and independent pending document inventory implemented; final QA in progress. See TASK-CONTROLS. Migration 0020 (20 total), API 0.4.39/103 paths, no new dependencies.
 
 2026-10-25 T59上传格式规则：后台分类勾选/自定义扩展名，默认排除JSON/开发配置/源码/程序安装包/压缩包/数据库日志及开发依赖缓存，常见档案保留。网页/拖放/Agent共用策略，服务端强制；原档案不追溯删除。0019（19迁移）、契约0.4.38/100路径，无新依赖，见UPLOAD-POLICY。

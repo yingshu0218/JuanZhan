@@ -2,6 +2,41 @@ import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {login,createSpace,api} from './helpers.mjs';
+test('pending scanned image exposes OCR choice and leaves inventory only after readable results',async({page})=>{
+ await login(page);await createSpace(page,'待处理OCR验收');
+ const space=await page.getByLabel('当前空间').inputValue();
+ const bytes=execFileSync('../.venv/bin/python',['-c',"import sys;sys.path.insert(0,'../tests');from format_samples import raster_sample;sys.stdout.buffer.write(raster_sample(text='Archive invoice total 2026'))"]);
+ const directory=(await readFile(process.env.JUANZHAN_E2E_ARCHIVE_POINTER,'utf8')).trim();
+ const saved=JSON.parse(execFileSync('../.venv/bin/python',['-c',`import sys,json
+from pathlib import Path
+from io import BytesIO
+sys.path.insert(0,'../services')
+from juanzhan.config import Settings
+from juanzhan.documents import DocumentService,Registration
+from juanzhan.storage import ManagedStore
+from juanzhan.jobs import JobQueue,JobSpec
+s=Settings(Path(sys.argv[1]),'');obj=ManagedStore(s.data_dir/'managed').put(BytesIO(bytes.fromhex(sys.argv[3])),max_bytes=1000000)
+def enqueue(db,doc):JobQueue(s).enqueue(JobSpec(kind='parse',target_type='document',target_id=doc['id'],payload={'revision_id':doc['current_revision_id'],'ocr_enabled':False},idempotency_key='legacy-ocr:'+doc['id']),db=db)
+doc=DocumentService(s).register_managed(obj,Registration(space_id=sys.argv[2],title='ocr-pending.png',original_filename='ocr-pending.png',mime_type='image/png'),after_create=enqueue)
+print(json.dumps({'document_id':doc['id']}))`,directory,space,bytes.toString('hex')],{encoding:'utf8'}));
+ await expect.poll(async()=>(await api(page,'/documents/'+saved.document_id)).data.processing_status,{timeout:30000}).toBe('completed');
+ await page.getByRole('button',{name:'任务中心',exact:true}).click();
+ const center=page.getByRole('dialog',{name:'任务中心',exact:true});await center.getByRole('button',{name:'待处理文件',exact:true}).click();
+ const pending=center.getByRole('region',{name:'待处理文件清单',exact:true});await pending.getByLabel('待处理空间').selectOption(space);
+ await expect(pending.getByText('旧解析未识别文字；重新处理默认启用OCR，也可由外部Agent提交分析。',{exact:true})).toBeVisible();
+ await expect(pending.getByRole('checkbox',{name:'识别图片及扫描PDF中的文字（OCR）',exact:true})).toBeChecked();
+ await pending.getByRole('checkbox',{name:'选择文件 ocr-pending.png',exact:true}).check();
+ await pending.getByRole('checkbox',{name:'识别图片及扫描PDF中的文字（OCR）',exact:true}).check();
+ await pending.getByLabel('识别语言',{exact:true}).selectOption('eng');
+ await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/juanzhan-pending-ocr-mobile.png'});
+ const submitted=page.waitForRequest(r=>r.url().endsWith('/pending-documents/process')&&r.method()==='POST');
+ await pending.getByRole('button',{name:'重新处理所选（1）',exact:true}).click();
+ const body=(await submitted).postDataJSON();expect(body.ocr).toBe(true);expect(body.ocr_languages).toBe('eng');
+ await expect.poll(async()=>(await api(page,'/pending-documents?space_id='+space)).data.total,{timeout:45000}).toBe(0);
+ expect(await(await page.request.get('/api/v1/documents/'+saved.document_id+'/download')).body()).toEqual(bytes);
+});
+
 test('bulk task controls preserve pending files until actual current-version processing completes',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await login(page);await createSpace(page,'任务控制与待处理验收');

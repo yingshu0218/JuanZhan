@@ -41,3 +41,5 @@
 - POST /api/v1/pending-documents/process：request_id及最多100项{id,revision_id}，逐项返回job_ids/已完成或错误。
 
 管理员鉴权、Cookie写需CSRF；Agent凭据不获控制/全实例管理权限。Archive契约0.4.39/103路径，Converter契约不变。待处理判据基于已登记持久产物；不在每次列表轮询中重新哈希或读取整个原文件，文件完整性仍由既有下载/读取接口验证。
+
+2026-10-25 T62覆盖默认OCR关闭：待处理重新处理默认开启中英文识别，支持显式语言/关闭；图片和无文字层PDF识别后仍按可读正文/MD/索引判据移出，空白OCR保留。新增mime_type/ocr_required/ocr_no_text，既有活动任务选项不一致逐项报冲突，Agent优先保持。契约0.4.40/103路径，20迁移。详见BATCH-PARSING-AUDIT。
