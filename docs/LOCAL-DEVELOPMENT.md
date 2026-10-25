@@ -237,3 +237,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 2026-10-25 T60: User requested bulk task controls and unfinished files retained until verified processed. Implementation, completion criteria, lease fencing, soft deletion, migration 0020, API 0.4.39 and cleanup boundaries are recorded in TASK-CONTROLS. No new dependencies.
 
 T60 final frontend candidate rc.29 adds no dependencies. The navigation build logs and before-job-controls-navigation-rc29 backup follow the same cleanup/rollback policy. Existing originals, task control state, audit and upload policy are durable business data.
+
+2026-10-25 T61：无新依赖，构建及浏览器验证沿用devtest Node/Playwright；临时包/脚本为devtest /tmp/compact-filters-*，截图和备份记录在/opt/juanzhan-dev/test-instance/compact-filters-*，构建日志在/opt/juanzhan-dev/.local/compact-filters-build.log。保留当前镜像与升级备份用于回滚。

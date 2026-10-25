@@ -163,3 +163,5 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 最后补齐旧文件不在首页时的详情定位，fff9bb3先推送后构建rc.29，镜像sha256:8e335d72e3405d8ed1b1a413426d3bbf409666706b83c65ba0b9b18a9b71801e，SOURCE_DIRTY=false。备份/backups/before-job-controls-navigation-rc29；20迁移不变。359档案/1624文件及jobs、job_controls、控制审计、上传规则、保存筛选等所有旧行保留，五服务healthy；HTTPS仍为9443，443未改。只读公网复验旧合成任务deleted/原件/待处理状态及详情打开通过，没有再新增原件或控制真实任务；证据test-instance/job-controls-navigation-{deploy,live}.json。
 
 任务删除为库存软删除；控制记录/审计和成功历史保留，待处理清单根据当前产物判定。远端转换可能继续至自身上限，租约围栏阻止旧结果发布。详见TASK-CONTROLS。
+
+2026-10-25 T61 rc.30，源码1ba2a97，镜像sha256:3d92f66e02a9f7012b08e4eccb44f786760f5c15f0f6a326ce81f9d0ff52c849；五服务healthy。升级保留359文档/1624文件和既有业务行，20迁移无变化。公网只读Playwright验证1440/390两行高度90.8px、组合/快捷筛选Dialog与关闭行为、0页面错误。验收使用既有可删除示例，未操作用户任务。
