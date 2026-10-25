@@ -51,7 +51,7 @@ def test_auxiliary_uploads_are_excluded_without_persistence(uploads,filename):
     assert stored()==files_before
 
 
-@pytest.mark.parametrize('filename',['.env','README.md','package.json','main.py','notes.tmp','notes.bak','report.docx~','Thumbs.db.txt','~$budget.txt','desktop.ini.pdf'])
+@pytest.mark.parametrize('filename',['README.md','notes.tmp','notes.bak','report.docx~','Thumbs.db.txt','~$budget.txt','desktop.ini.pdf'])
 def test_hidden_documents_and_backups_are_preserved(uploads,filename):
     app,settings,client,headers,space,bearer=uploads
     response=send(client,headers,space,filename=filename)

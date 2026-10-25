@@ -8,10 +8,10 @@ function parts(path) {
   if (result.length > 32 || result.some(name => !name.trim() || name === '.' || name === '..' || name.length > 255 || /[\\\u0000-\u001f\u007f]/u.test(name))) throw Error('目录名称或层级不符合要求，最多支持32层目录。');
   return result;
 }
-function tree() {
+function tree(policy) {
   const directories = new Set(), files = [], skipped = { total: 0, samples: [] };
   function exclude(path, isDirectory = false) {
-    const reason = uploadExclusion(path, isDirectory);
+    const reason = uploadExclusion(path, isDirectory, policy);
     if (!reason) return false;
     skipped.total++;
     if (skipped.samples.length < 20) skipped.samples.push({ path, reason });
@@ -38,9 +38,9 @@ function tree() {
     result() { return Object.assign([...[...directories].sort((a, b) => a.split('/').length - b.split('/').length).map(path => ({ kind: 'folder', file: { name: path.split('/').at(-1), size: 0 }, path, parentPath: path.split('/').slice(0, -1).join('/') })), ...files], { skipped }); },
   };
 }
-export function selectedFiles(files) {
+export function selectedFiles(files,policy) {
   if (files.length > 10000) throw Error('读取项目超过10000项，请拆分文件夹后上传；本批尚未上传。');
-  const result = tree();
+  const result = tree(policy);
   for (const file of files) result.file(file, file.webkitRelativePath || file.name);
   return result.result();
 }
@@ -54,12 +54,12 @@ function callbackCall(start, signal) {
     catch (error) { cleanup(); reject(error); }
   });
 }
-export async function droppedFiles(transfer, signal, onCount = () => {}) {
+export async function droppedFiles(transfer, signal, onCount = () => {}, policy) {
   // Capture entries during the drop event, before its DataTransfer store is protected.
   const items = [...transfer.items].filter(item => item.kind === 'file');
   const roots = items.map(item => ({ entry: item.webkitGetAsEntry?.(), file: item.getAsFile() }));
   const fallback = [...transfer.files];
-  const result = tree(); let count = 0;
+  const result = tree(await policy); let count = 0;
   async function visit(entry, parent = '') {
     abort(signal);
     const path = parent ? parent + '/' + entry.name : entry.name;

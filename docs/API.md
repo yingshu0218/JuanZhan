@@ -370,3 +370,5 @@ Archive0.4.29：GET /jobs与/jobs/{id}新增document_name与steps。解析文件
 
 
 2026-10-24 T56新增GET/POST /saved-filters和DELETE /saved-filters/{id}；Space内20组、规范化同名覆盖、criteria惰性UI JSON最多16KiB/32键，应用时重新验证检索。Cookie写需CSRF，管理接口不向Agent凭据开放。Submission可选tags数组最多20个，省略/null平台兜底、[]明确无自动标签、人工编辑优先。契约0.4.37/99路径，见IMPORT-TAGS。
+
+2026-10-25 T59新增GET/PUT /system/upload-policy（Cookie写需CSRF/version校验），Agent templates附当前上传策略；原件上传422 UPLOAD_FORMAT_EXCLUDED，无原件与档案登记。0.4.38/100路径，见UPLOAD-POLICY。

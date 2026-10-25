@@ -174,7 +174,7 @@ def test_analysis_retains_confirmed_fields_when_no_body_and_large_integer_precis
     settings,client,csrf,space=pipeline
     from test_fields import create as create_field
     from test_metadata import write
-    id=upload(pipeline,b'\x00unknown','unsupported.bin')['document_id'];Worker(settings).run_once()
+    id=upload(pipeline,b'\x00unknown','unsupported.dat')['document_id'];Worker(settings).run_once()
     assert create_field(client,csrf,space,key='code',type='integer').status_code==201
     version=client.get('/api/v1/documents/'+id).json()['document_version']
     assert write(client,csrf,id,version,{'code':9223372036854775807}).status_code==200

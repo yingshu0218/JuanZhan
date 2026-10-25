@@ -196,6 +196,8 @@ def router(settings):
                     fail(422,'INVALID_REQUEST','Invalid upload metadata')
                 if excluded_file(info.original_filename):
                     fail(422,'UPLOAD_EXCLUDED','Auxiliary configuration, metadata or temporary lock file is excluded from upload')
+                from .upload_policy import check_file,check
+                await run_in_threadpool(check_file,settings,info.original_filename)
                 def save():
                     with transaction(settings) as db:
                         required(db,'spaces',info.space_id)
@@ -209,6 +211,7 @@ def router(settings):
                     info_with_mime=info.model_copy(update={'mime_type':mime})
                     result={}
                     def enqueue(db,document):
+                        check(db,info.original_filename)
                         job=request.app.state.jobs.enqueue(JobSpec(kind='parse',target_type='document',
                             target_id=document['id'],idempotency_key='parse:'+document['current_revision_id'],
                             payload={'revision_id':document['current_revision_id']}),db=db)

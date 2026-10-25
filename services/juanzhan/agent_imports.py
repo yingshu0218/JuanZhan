@@ -9,6 +9,7 @@ import tempfile
 import uuid
 from typing import Annotated,Literal
 from fastapi import APIRouter,Request,Query
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel,ConfigDict,Field,model_validator
 from .auth import fail
 from .database import connect
@@ -82,8 +83,13 @@ def write(settings):
 def receipt(row):
     return {k:row[k] for k in ('id','space_id','document_id','revision_id','original_sha256','created_at')}
 
+def _import_policy(settings):
+    from .upload_policy import read,DEFAULT,GROUPS
+    if settings is None:return {**DEFAULT,'groups':GROUPS}
+    with connect(settings.database) as db:return read(db)
+
 def template_protocol(settings=None,request=None,body=None):
-    return {**CATALOG,'submission_schema':Submission.model_json_schema(),'limits':{'request_bytes':MAX_JSON,'markdown_characters':1000000},
+    return {**CATALOG,'upload_policy':_import_policy(settings),'submission_schema':Submission.model_json_schema(),'limits':{'request_bytes':MAX_JSON,'markdown_characters':1000000},
         'workflow':['POST /agent/imports/{request_id}?space_id=...&filename=... with raw original bytes and Content-Type application/octet-stream',
                     'GET /agent/analysis-templates; analyze externally',
                     'POST /agent/imports/{id}/analyses with version/hash-bound Submission; current-version Agent analysis takes precedence; queued automatic local parsing skips extraction if analysis is already available; absent analysis uses local fallback']}
@@ -126,7 +132,7 @@ def read_analysis(settings,request,body):
 def router(settings):
     routes=APIRouter(prefix='/api/v1/agent')
     @routes.get('/analysis-templates')
-    def templates():return template_protocol()
+    def templates():return template_protocol(settings)
     slots=asyncio.Semaphore(4)
     async def ingest(request_id:str,request:Request,space_id:ID,
                      filename:Annotated[str,Query(min_length=1,max_length=255)]):
@@ -135,7 +141,9 @@ def router(settings):
         if request.headers.get('content-type','').split(';')[0]!='application/octet-stream':fail(415,'INVALID_CONTENT_TYPE','Use raw original bytes')
         if '/' in filename or '\\' in filename or any(ord(c)<32 for c in filename):fail(422,'INVALID_FILENAME','Use a filename, not a path')
         if excluded_file(filename):fail(422,'UPLOAD_EXCLUDED','Auxiliary files are excluded')
+        from .upload_policy import check_file,check
         with transaction(settings) as db:permission(db,request,space_id)
+        await run_in_threadpool(check_file,settings,filename)
         with tempfile.SpooledTemporaryFile(max_size=65536) as stream:
             size=0
             async with asyncio.timeout(settings.upload_timeout_seconds):
@@ -144,7 +152,6 @@ def router(settings):
                     if size>settings.upload_max_bytes:fail(413,'UPLOAD_TOO_LARGE','Original exceeds configured limit')
                     stream.write(chunk)
             stream.seek(0);mime=sniff(stream,filename);stream.seek(0)
-            from starlette.concurrency import run_in_threadpool
             def save():
                 store=request.app.state.storage
                 with store.locked():
@@ -158,6 +165,7 @@ def router(settings):
                             return receipt(old)
                     result={}
                     def record(db,doc):
+                        check(db,filename)
                         permission(db,request,space_id)
                         if db.execute('SELECT 1 FROM agent_imports WHERE agent_id=? AND request_id=?',(request.state.agent_id,request_id)).fetchone():fail(409,'IMPORT_RACE','Retry the same request id')
                         id=uuid.uuid4().hex

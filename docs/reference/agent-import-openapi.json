@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "JuanZhan opt-in Agent import and analysis API",
-    "version": "0.4.37",
+    "version": "0.4.38",
     "description": "Requires an administrator-created scoped import_enabled=true Bearer credential. Existing read-only or OAuth credentials do not gain writes. Preserve original bytes; submit version/hash-bound external analysis. No internal model."
   },
   "servers": [

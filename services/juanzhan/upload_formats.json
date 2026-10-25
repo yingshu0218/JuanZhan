@@ -1,0 +1,188 @@
+{
+  "groups": [
+    {
+      "id": "structured_data",
+      "label": "JSON及程序数据文件",
+      "default_excluded": true,
+      "extensions": [
+        "json",
+        "jsonl",
+        "ndjson"
+      ]
+    },
+    {
+      "id": "developer_config",
+      "label": "开发与运行配置",
+      "default_excluded": true,
+      "extensions": [
+        "yaml",
+        "yml",
+        "toml",
+        "ini",
+        "cfg",
+        "conf",
+        "config",
+        "env",
+        "lock",
+        "properties"
+      ],
+      "files": [
+        ".env",
+        ".npmrc",
+        ".nvmrc",
+        ".editorconfig",
+        "Dockerfile",
+        "Makefile"
+      ],
+      "prefixes": [
+        ".env."
+      ]
+    },
+    {
+      "id": "source_code",
+      "label": "源代码与脚本",
+      "default_excluded": true,
+      "extensions": [
+        "js",
+        "jsx",
+        "ts",
+        "tsx",
+        "mjs",
+        "cjs",
+        "py",
+        "pyc",
+        "pyo",
+        "ipynb",
+        "sh",
+        "bash",
+        "zsh",
+        "fish",
+        "bat",
+        "cmd",
+        "ps1",
+        "java",
+        "class",
+        "c",
+        "cpp",
+        "cc",
+        "h",
+        "hpp",
+        "cs",
+        "go",
+        "rs",
+        "rb",
+        "php",
+        "swift",
+        "kt",
+        "kts",
+        "scala",
+        "r",
+        "vue",
+        "svelte",
+        "css",
+        "less",
+        "scss",
+        "sass",
+        "map"
+      ]
+    },
+    {
+      "id": "executables",
+      "label": "程序与安装包",
+      "default_excluded": true,
+      "extensions": [
+        "exe",
+        "dll",
+        "so",
+        "dylib",
+        "app",
+        "dmg",
+        "pkg",
+        "msi",
+        "deb",
+        "rpm",
+        "bin",
+        "com",
+        "wasm"
+      ],
+      "directory_extensions": [
+        "app"
+      ]
+    },
+    {
+      "id": "archives",
+      "label": "压缩包与磁盘镜像",
+      "default_excluded": true,
+      "extensions": [
+        "zip",
+        "rar",
+        "7z",
+        "tar",
+        "gz",
+        "tgz",
+        "bz2",
+        "xz",
+        "iso",
+        "img"
+      ]
+    },
+    {
+      "id": "databases_logs",
+      "label": "数据库与运行日志",
+      "default_excluded": true,
+      "extensions": [
+        "db",
+        "sqlite",
+        "sqlite3",
+        "sql",
+        "log",
+        "cache"
+      ]
+    },
+    {
+      "id": "development_directories",
+      "label": "开发依赖与缓存目录",
+      "default_excluded": true,
+      "directories": [
+        "node_modules",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".next",
+        ".nuxt",
+        ".cache"
+      ]
+    },
+    {
+      "id": "build_directories",
+      "label": "构建输出目录（可能包含需归档的文档）",
+      "default_excluded": false,
+      "directories": [
+        "build",
+        "dist",
+        "target"
+      ]
+    },
+    {
+      "id": "media",
+      "label": "音频与视频",
+      "default_excluded": false,
+      "extensions": [
+        "mp3",
+        "wav",
+        "flac",
+        "aac",
+        "m4a",
+        "ogg",
+        "mp4",
+        "mov",
+        "avi",
+        "mkv",
+        "webm"
+      ]
+    }
+  ]
+}

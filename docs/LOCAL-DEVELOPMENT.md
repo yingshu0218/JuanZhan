@@ -231,3 +231,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 2026-10-25 T57无新增依赖。devtest .local/upload-panel-*.log和传输tar为本轮可清理文件；rc.25与/backups/before-upload-panel-rc25按回滚策略保留。没有删除旧档案、辅助文件历史记录或原件。
 
 2026-10-25 T58无新增依赖。.local/upload-count-*.log/传输tar与/tmp计数测试目录可清理；原件/档案保留。rc.26与升级前备份按回滚策略保留。
+
+2026-10-25 T59无新依赖，.local/upload-policy-*日志/传输包与/tmp浏览器证据可清理；rc.27及升级前备份按回滚策略保留，业务原件/配置非临时文件。

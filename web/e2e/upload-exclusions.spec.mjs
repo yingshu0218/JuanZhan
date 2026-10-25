@@ -9,8 +9,8 @@ for (const mode of ['picker', 'drop']) test(`auxiliary files are skipped before 
   const temp = await mkdtemp('/tmp/juanzhan-upload-exclusions-');
   try {
     const root = path.join(temp, '资料'); await mkdir(path.join(root, '__MACOSX'), { recursive: true });
-    const excluded = ['.DS_Store', 'Thumbs.db', '._report.txt', '~$draft.docx', '.~lock.notes.odt#', '.report.swp', '.gitignore', '.gitattributes', '.gitmodules'];
-    const kept = ['.env', 'README.md', 'main.py', 'notes.tmp', 'notes.bak', 'report.txt'];
+    const excluded = ['.DS_Store', 'Thumbs.db', '._report.txt', '~$draft.docx', '.~lock.notes.odt#', '.report.swp', '.gitignore', '.gitattributes', '.gitmodules', '.env', 'main.py', 'data.json', 'config.yml'];
+    const kept = ['README.md', 'notes.tmp', 'notes.bak', 'report.txt'];
     for (const name of [...excluded, ...kept]) await writeFile(path.join(root, name), mode + '-' + name);
     await writeFile(path.join(root, '__MACOSX', 'hidden.txt'), 'Not a document');
     for (const directory of ['.git', '.svn', '.hg', '.bzr']) { await mkdir(path.join(root, directory)); await writeFile(path.join(root, directory, 'metadata'), 'Ignored repository data'); }
@@ -46,8 +46,8 @@ for (const mode of ['picker', 'drop']) test(`auxiliary files are skipped before 
 });
 
 test('exclusion boundaries are conservative and ignored directories are never read', async () => {
-  for (const name of ['.DS_Store', '.ds_store', 'desktop.ini', '._test.pdf', '~$test.xlsx', '.~lock.test.odt#', '.test.swo', '.gitignore', '.git', '.gitmodules', '.gitattributes']) expect(uploadExclusion(name)).toBeTruthy();
-  for (const name of ['.env', 'README.md', 'main.py', '.hidden.docx', 'notes.tmp', 'notes.bak', 'notes.docx~', 'Thumbs.db.txt', '~$budget.txt']) expect(uploadExclusion(name)).toBeNull();
+  for (const name of ['.DS_Store', '.ds_store', 'desktop.ini', '._test.pdf', '~$test.xlsx', '.~lock.test.odt#', '.test.swo', '.gitignore', '.git', '.gitmodules', '.gitattributes', '.env', 'main.py', 'data.json', 'config.yml']) expect(uploadExclusion(name)).toBeTruthy();
+  for (const name of ['README.md', '.hidden.docx', 'notes.tmp', 'notes.bak', 'notes.docx~', 'Thumbs.db.txt', '~$budget.txt']) expect(uploadExclusion(name)).toBeNull();
   const selected = selectedFiles([{ name: 'notes.txt', webkitRelativePath: 'root/__MACOSX/notes.txt' }]);
   expect(selected).toHaveLength(0); expect(selected.skipped.total).toBe(1);
   const transfer = { files: [], items: [{ kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => ({ name: '__MACOSX', isDirectory: true, createReader() { throw Error('Excluded directory must not be read'); } }) }] };

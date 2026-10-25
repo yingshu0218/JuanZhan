@@ -1,3 +1,4 @@
+import { UploadPolicy } from "./UploadPolicy.jsx";
 import { AgentManager } from "./AgentManager.jsx";
 import { StorageManager } from "./StorageManager.jsx";
 import { InfoTip } from "./ui.jsx";
@@ -53,6 +54,7 @@ export function Workspace({ api, logout, authError }) {
   const [taskId, setTaskId] = useState(null);
   function openTasks(id) { setTaskId(id); setTasksOpen(true); }
   const [catalogOpen,setCatalogOpen]=useState(false);
+  const [uploadPolicyOpen,setUploadPolicyOpen]=useState(false);
   const [agentOpen,setAgentOpen]=useState(false);
   const [settingsOpen,setSettingsOpen]=useState(false),[backupOpen,setBackupOpen]=useState(false);
   const [storageOpen,setStorageOpen]=useState(false);
@@ -507,7 +509,8 @@ export function Workspace({ api, logout, authError }) {
         </div>
         <div className="header-actions">
           <button aria-label="系统设置" title="系统设置" onClick={()=>setSettingsOpen(true)}><Gear size={22} /></button>
-          {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button onClick={()=>{setSettingsOpen(false);setStorageOpen(true);}}>存储管理</button><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button><button onClick={()=>{setSettingsOpen(false);setAgentOpen(true);}}>Agent 接入</button></div></Dialog>}
+          {settingsOpen && <Dialog title="系统设置" onClose={()=>setSettingsOpen(false)}><div className="settings-choices"><button onClick={()=>{setSettingsOpen(false);setUploadPolicyOpen(true);}}>上传格式规则</button><button onClick={()=>{setSettingsOpen(false);setStorageOpen(true);}}>存储管理</button><button disabled={!space} onClick={()=>{setSettingsOpen(false);setCatalogOpen(true);}}>管理字段与类型</button><button onClick={()=>{setSettingsOpen(false);setBackupOpen(true);}}>备份与恢复</button><button onClick={()=>{setSettingsOpen(false);setAgentOpen(true);}}>Agent 接入</button></div></Dialog>}
+          {uploadPolicyOpen && <UploadPolicy api={api} onClose={()=>setUploadPolicyOpen(false)} />}
           {agentOpen && <AgentManager api={api} spaces={spaces} onClose={()=>setAgentOpen(false)} />}
           {backupOpen && <BackupManager api={api} onClose={()=>setBackupOpen(false)} />}
           {storageOpen && <StorageManager api={api} onClose={()=>setStorageOpen(false)} />}

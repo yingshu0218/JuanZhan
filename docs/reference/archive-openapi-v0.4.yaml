@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 档案库 Archive API
-  version: 0.4.37
+  version: 0.4.38
   description: MVP HTTP 契约。业务规则见 archive-prd-v0.4.md，持久化模型见 archive-schema-v0.4.sql。文件原件与外部存储只读隔离。所有时间为 UTC RFC3339；各
     ID 为不透明字符串。
 servers:
@@ -21,6 +21,38 @@ security:
 - bearerAuth: []
 - sessionAuth: []
 paths:
+  /system/upload-policy:
+    get:
+      operationId: getUploadPolicy
+      summary: Read configured upload exclusions and group catalog
+      responses:
+        '200':
+          description: Current instance upload policy; existing originals are unaffected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadPolicy'
+    put:
+      operationId: updateUploadPolicy
+      summary: Update upload exclusions (admin authentication, Cookie writes require
+        CSRF)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPolicyInput'
+      responses:
+        '200':
+          description: Current instance upload policy; existing originals are unaffected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadPolicy'
+        '409':
+          description: Policy version conflict
+        '422':
+          description: Invalid groups or extensions
   /saved-filters:
     get:
       summary: List saved UI filter drafts for a space
@@ -3521,6 +3553,63 @@ components:
         maximum: 100
         default: 30
   schemas:
+    UploadPolicyInput:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_version
+      - excluded_groups
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        excluded_groups:
+          type: array
+          maxItems: 30
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+        custom_extensions:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            pattern: ^[a-z0-9][a-z0-9._+-]{0,19}$
+    UploadPolicy:
+      type: object
+      required:
+      - version
+      - excluded_groups
+      - custom_extensions
+      - groups
+      properties:
+        version:
+          type: integer
+        excluded_groups:
+          type: array
+          items:
+            type: string
+        custom_extensions:
+          type: array
+          items:
+            type: string
+        groups:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - label
+            - default_excluded
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+              default_excluded:
+                type: boolean
+            additionalProperties: true
     SavedFilterInput:
       type: object
       additionalProperties: false

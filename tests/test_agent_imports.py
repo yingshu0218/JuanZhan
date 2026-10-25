@@ -114,7 +114,7 @@ def test_external_markdown_is_searchable_without_local_text_and_mcp_pages(pipeli
     from test_indexing import drain
     from test_agents import rpc
     settings,client,_,space=pipeline;_,h=token(pipeline)
-    saved=imported(pipeline,h,name='binary.bin',data=b'\x00binary file').json()
+    saved=imported(pipeline,h,name='binary.dat',data=b'\x00binary file').json()
     body=payload(saved,text='External OCR evidence with unique needleword.')
     endpoint=ROOT+'/imports/'+saved['id']+'/analyses'
     assert client.post(endpoint,headers=h,json=body).status_code==201

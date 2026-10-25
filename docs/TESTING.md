@@ -867,3 +867,11 @@ T57成品公网复验已通过三个视口/双入口/关闭/pageerror，截图te
 devtest已有Playwright，9 passed（18.3s）：700文件+701目录+400辅助文件、1000文件加各自目录、1001有效文件拒绝，真实临时目录512文件+513目录队列接纳（暂停目录POST观察队列，未制造1025条测试记录），原22文件真实上传/混合拖放/空目录/重试/辅助排除/三视口保留。原面板测试有两个“导入文件”入口导致严格locator歧义，改为明确顶部banner后通过，不改业务逻辑迁就测试。备份3 passed（17.4s），验证下载ZIP、校验恢复/计划冲突。未新增依赖/API/迁移。
 
 T58公网rc.26三视口及1001合成文件拒绝验证通过：实际数量正确、无伪0B/上传请求/页面异常，线上原件与档案保留。成品证据见DEVTEST。
+
+## T59 可配置上传格式排除 · 2026-10-25
+
+最终相关后端120 passed（119.64s）：upload_policy、uploads、agent_imports、agent_contract、backup、foundation、import_tags、agents；真实SQLite/托管存储/HTTP验证默认11类文件名拒绝且零Document/managed_object、10类常见档案名保留、JSON按配置放行、自定义后缀、CSRF/Agent配置权限/版本冲突、Agent读取当前策略及备份恢复。原保留.env/package.json/main.py测试按用户新决定调整；未知二进制测试改用.dat保持不支持格式语义。.bin改为默认程序文件排除，不放宽新规则。
+
+最终11浏览器检查通过（42.7s），服务器既有Playwright（当前CUA上轮连接测试站超时，延续可重复服务端验证）：选择/拖放/22真实文件/空目录/重试/文件目录配额/辅助文件排除、JSON默认勾选→前端跳过零上传请求→页内设置取消勾选保存→下一批实际入库、自定义后缀、1440/390无溢出，以及node_modules/venv/pycache/App包目录不遍历。策略测试在独立测试服务器结束恢复默认，不改线上设置。日志.local/upload-policy-final-{regression,browser}.log，截图/tmp/juanzhan-upload-policy-{desktop,mobile}.png。
+
+首轮旧策略断言、新契约文件临时重排与字体环境已修正，最终组合通过。无新增依赖。格式按名称/后缀过滤，不声称内容鉴定或全格式安全扫描；已有档案不删除，来源只读扫描不追溯套用上传规则。

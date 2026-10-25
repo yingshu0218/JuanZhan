@@ -177,6 +177,8 @@ def create_app(kind, settings=None, *, converter_config=None):
         app.include_router(adoptions.router(settings))
         app.include_router(content.router(settings))
         app.include_router(jobs.router(settings))
+        from . import upload_policy
+        app.include_router(upload_policy.router(settings))
         app.include_router(uploads.router(settings))
         app.include_router(batches.router(settings))
         from . import search
