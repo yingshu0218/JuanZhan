@@ -241,3 +241,5 @@ T60 final frontend candidate rc.29 adds no dependencies. The navigation build lo
 2026-10-25 T61：无新依赖，构建及浏览器验证沿用devtest Node/Playwright；临时包/脚本为devtest /tmp/compact-filters-*，截图和备份记录在/opt/juanzhan-dev/test-instance/compact-filters-*，构建日志在/opt/juanzhan-dev/.local/compact-filters-build.log。保留当前镜像与升级备份用于回滚。
 
 2026-10-25 T62无新依赖：OCR复用已部署Tesseract/eng/chi_sim离线模型，构建/测试仍在devtest。临时脚本和工作包为/tmp/pending-*；私有原件校验报告在test-instance/pending-batch-audit.json，测试日志在.local/pending-ocr-*。业务备份及原件不得作为临时文件清理。
+
+T62 cleanup: temporary juanzhan-ocr-helper (512MiB/0.5CPU) stopped and removed; five normal services remain. Private target lists, results, integrity reports and sample images are test-instance/pending-ocr-*; image-group browser log is .local/image-group-browser.log. Keep original files, backups, credentials and persistent Markdown. No new dependency, model or public port installed.

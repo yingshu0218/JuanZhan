@@ -893,3 +893,5 @@ T60最终公网rc.29：仅合成示例的四种控制操作已验证，取消/�
 2026-10-25 T61：devtest既有Node/Playwright运行production build、检索4项通过（38.8s）、标签/Agent2项通过（12.7s）。页内组合条件提交和保存/重载/删除组合均验证。无新增依赖。
 
 2026-10-25 T62：全量359份原件SHA-256/大小验证一致（25796107字节），SQLite完整性/外键通过。相关后端首次90项中86通过，4项因新默认值及旧样例事务未提交修正测试后，最终任务/OCR/内容31项全部通过（64.35s）；原90项中的解析、批量及契约其余项通过。任务/OCR浏览器6项通过（1.7m），含旧PNG显式补OCR/清单移出、原件不变及单份/批量默认勾选；导入面板/目录计数/散图归组3项通过（10.1s），含确认前零上传、名称拒绝、指定目录、取消及仍放当前目录。390截图已人工检查，无浏览器原生提示或页面横向溢出。无新依赖。
+
+T62 live completion: 167/167 OCR readable; all 167 persisted Markdown bodies verified against stored hashes/sizes (218021 bytes); all 167 current indexes ready. Pending inventory fell from 170 to 3. All 1624 pre-upgrade files unchanged, existing manual fields retained, original revision/title/folder checks passed, SQLite integrity ok and FK errors 0. Three actual overviews checked for current revision/evidence, one original image visually inspected. Temporary 512MiB/0.5CPU worker removed. Final hint workflow passed after rebuilding dist (1 browser test, 12.4s); the initial attempt used stale dist and was corrected.

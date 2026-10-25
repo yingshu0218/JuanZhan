@@ -1,6 +1,6 @@
 # UI/UX — 当前交互方向
 
-2026-10-25 T62开发：全量原件359/359哈希与大小一致，核对170份待处理原因；按最新用户决定默认中英文OCR、补清单识别选项与散图页内归档引导。无新依赖/迁移，契约0.4.40/103路径。后端最终专项31项、任务/OCR浏览器6项与归档引导3项通过；待部署和存量补识别，见BATCH-PARSING-AUDIT。
+2026-10-25 T62 deployed to devtest rc.32 (3d909b6; core 9973c63): default bilingual OCR, explicit pending-file OCR controls, and in-page folder guidance for 10+ flat images. All 167 existing PNGs now have readable OCR, verified Markdown and current indexes and left pending inventory; 3 explained items remain. Original 1624 files/manual fields preserved; 20 migrations, API 0.4.40/103 paths, no new dependencies. See BATCH-PARSING-AUDIT, TESTING and DEVTEST.
 
 2026-10-25 T60: Bulk pause/resume/cancel/remove task records and independent pending document inventory implemented; final QA in progress. See TASK-CONTROLS. Migration 0020 (20 total), API 0.4.39/103 paths, no new dependencies.
 
