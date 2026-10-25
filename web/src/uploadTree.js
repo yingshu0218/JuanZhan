@@ -1,6 +1,7 @@
 // Browser-relative names only. Never send a client filesystem path to the server.
 import { uploadExclusion } from './uploadExclusions.js';
-export const MAX_UPLOAD_ENTRIES = 1000;
+export const MAX_UPLOAD_ENTRIES = 1000; // Accepted files only; folders have a separate budget.
+export const MAX_UPLOAD_DIRECTORIES = 5000;
 const abort = signal => { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); };
 function parts(path) {
   const result = path.split('/');
@@ -21,7 +22,10 @@ function tree() {
     for (let i = 1; i <= names.length; i++) directories.add(names.slice(0, i).join('/'));
     limit();
   }
-  function limit() { if (directories.size + files.length > MAX_UPLOAD_ENTRIES) throw Error('单批最多1000个文件和目录，请拆分后上传；本批尚未上传。'); }
+  function limit() {
+    if (files.length > MAX_UPLOAD_ENTRIES) throw Error(`已识别${files.length}个可上传文件、${directories.size}个目录；单批最多1000个文件，目录不占文件名额。请拆分后上传，本批尚未上传。`);
+    if (directories.size > MAX_UPLOAD_DIRECTORIES) throw Error(`已识别${files.length}个可上传文件、${directories.size}个目录；单批最多5000个目录。请拆分后上传，本批尚未上传。`);
+  }
   return {
     directory,
     exclude,

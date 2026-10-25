@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { UploadSimple, CheckCircle, XCircle, X } from "@phosphor-icons/react";
 import { message } from "./api.js";
 import { formatSize, Notice, processing } from "./ui.jsx";
-import { selectedFiles, droppedFiles, folderResolver, MAX_UPLOAD_ENTRIES } from './uploadTree.js';
+import { selectedFiles, droppedFiles, folderResolver, MAX_UPLOAD_ENTRIES, MAX_UPLOAD_DIRECTORIES } from './uploadTree.js';
 export function useUploads(api, onSaved) {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
@@ -75,7 +75,7 @@ export function useUploads(api, onSaved) {
   }
   function report(error) {
     setOpen(true);
-    setItems(rows => [...rows, { id: crypto.randomUUID(), file: { name: '未加入上传队列', size: 0 }, status: 'failed', error }]);
+    setItems(rows => [...rows, { id: crypto.randomUUID(), kind:'notice', file: { name: '未加入上传队列', size: 0 }, status: 'failed', error }]);
   }
   function add(list, spaceId, folderId) {
     if (list.skipped?.total) {
@@ -88,8 +88,10 @@ export function useUploads(api, onSaved) {
     const rows = list.map(entry => ({ ...entry, id: crypto.randomUUID(), batch, ensureFolder, spaceId, folderId, policy: 'reject', status: 'waiting', progress: 0 }));
     setOpen(true);
     setItems((current) => {
-      const active = current.filter(i => ['waiting', 'uploading'].includes(i.status)).length;
-      if (active + rows.length > MAX_UPLOAD_ENTRIES) return [...current, { id: batch, file: { name: '本批未加入队列', size: 0 }, status: 'failed', error: '同时最多排队1000个文件和目录，请等待队列结束后重试；本批没有部分上传。' }];
+      const pending = [...current.filter(i => ['waiting', 'uploading'].includes(i.status)), ...rows];
+      const files = pending.filter(i => i.kind !== 'folder').length;
+      const directories = pending.filter(i => i.kind === 'folder').length;
+      if (files > MAX_UPLOAD_ENTRIES || directories > MAX_UPLOAD_DIRECTORIES) return [...current, { id: batch, kind:'notice', file: { name: '本批未加入队列', size: 0 }, status: 'failed', error: `加入本批后将有${files}个待上传文件、${directories}个待准备目录；同时最多排队1000个文件、5000个目录，目录不占文件名额。请等待队列结束后重试；本批尚未上传。` }];
       return [...current, ...rows];
     });
   }
@@ -170,7 +172,7 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask, onDr
   return (
     <section className="upload-panel" aria-label="上传队列">
       <div className="dialog-head">
-        <div className="upload-title"><h2>导入文件</h2><InfoTip>支持多个文件或整个文件夹，保留目录层级；每批最多1000项、最多32层。辅助文件会自动跳过。收起面板不取消上传，关闭页面会停止未完成的上传。</InfoTip></div>
+        <div className="upload-title"><h2>导入文件</h2><InfoTip>支持多个文件或整个文件夹，保留目录层级；每批最多1000个文件，目录独立计数（最多5000个），最多32层。辅助文件会自动跳过。收起面板不取消上传，关闭页面会停止未完成的上传。</InfoTip></div>
         <button aria-label="收起上传队列" onClick={() => queue.setOpen(false)}>
           <X size={21} />
         </button>
@@ -186,7 +188,7 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask, onDr
         </div>
       </div>
       {queue.scanning !== null && <div role="status">正在读取文件夹 · 已发现 {queue.scanning} 项 <button onClick={queue.stopReading}>取消读取</button></div>}
-      {queue.items.some(item => item.ensureFolder) && <small role="status">已保存 {queue.items.filter(item => item.kind === 'file' && item.status === 'saved').length} 个文件 · 待处理 {queue.items.filter(item => ['waiting', 'uploading'].includes(item.status)).length} 项</small>}
+      {queue.items.some(item => item.ensureFolder) && <small role="status">文件 {queue.items.filter(item => item.kind === 'file').length} 个 · 目录 {queue.items.filter(item => item.kind === 'folder').length} 个 · 已保存 {queue.items.filter(item => item.kind === 'file' && item.status === 'saved').length} 个文件 · 待处理 {queue.items.filter(item => ['waiting', 'uploading'].includes(item.status)).length} 项</small>}
       <div className="upload-items">
         {queue.skipped.total > 0 && <details className="upload-skipped"><summary>已跳过 {queue.skipped.total} 项辅助文件/目录</summary><InfoTip>不上传版本控制元数据/配置、系统元数据、缓存和临时锁文件；被排除目录不会继续读取。以下显示最近20项，普通隐藏文档及备份文件仍保留。</InfoTip><ul>{queue.skipped.samples.map((item, index) => <li key={index}><strong>{item.path}</strong><small>{item.reason}</small></li>)}</ul></details>}
         {queue.items.length ? (
@@ -205,7 +207,7 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask, onDr
               </div>
               <div className="upload-info">
                 <strong>{item.path || item.file.name}</strong>
-                <small>{item.kind === 'folder' ? '文件夹' : formatSize(item.file.size)}</small>
+                {item.kind !== 'notice' && <small>{item.kind === 'folder' ? '文件夹' : formatSize(item.file.size)}</small>}
                 {item.status === "uploading" ? (
                   <>
                     <progress

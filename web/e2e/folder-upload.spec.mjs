@@ -91,3 +91,14 @@ test('directory reader drains multiple batches, rejects unsafe paths and aborts 
   const unreadable = { items: [{ kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => ({ name: 'blocked.txt', isFile: true, file: (_ok, fail) => fail(Error('Permission denied')) }) }], files: [] };
   await expect(droppedFiles(unreadable, new AbortController().signal)).rejects.toThrow('Permission denied');
 });
+
+test('file quota excludes directories and excluded files',async()=>{
+ const entries=Array.from({length:700},(_,i)=>({name:`item${i}.txt`,webkitRelativePath:`root/section${i}/item.txt`}));
+ const result=selectedFiles([...entries,...Array.from({length:400},(_,i)=>({name:'.DS_Store',webkitRelativePath:`root/ignored${i}/.DS_Store`}))]);
+ expect(result.filter(row=>row.kind==='file')).toHaveLength(700);
+ expect(result.filter(row=>row.kind==='folder')).toHaveLength(701);
+ expect(result.skipped.total).toBe(400);
+ const exact=selectedFiles(Array.from({length:1000},(_,i)=>({name:`${i}.txt`,webkitRelativePath:`root/section${i}/${i}.txt`})));
+ expect(exact.filter(row=>row.kind==='file')).toHaveLength(1000);
+ expect(()=>selectedFiles(Array.from({length:1001},(_,i)=>({name:`${i}.txt`})))).toThrow(/1001个可上传文件/);
+});

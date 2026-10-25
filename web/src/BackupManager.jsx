@@ -72,7 +72,7 @@ export function BackupManager({api,onClose}){
         <small>备份编号：{item.id}</small>{item.bytes!==null&&<small>{formatSize(item.bytes)} · SHA-256：{item.sha256}</small>}
         {item.error&&<Notice error>{message({code:item.error.code,status:400})}（{item.error.code}）</Notice>}
         <div className="backup-actions">
-          {item.available&&<a className="button" href={`/api/v1/system/backups/${item.id}/download`} target="_blank" rel="noopener noreferrer">下载ZIP</a>}
+          {item.available&&<a className="button" href={`/api/v1/system/backups/${item.id}/download`}>下载ZIP</a>}
           <button disabled={busy||!item.available} onClick={()=>ask('restore',item)}>恢复此备份</button>
           <button disabled={busy||['queued','running','deleted'].includes(item.status)} onClick={()=>ask('delete',item)}>删除备份文件</button>
         </div>
