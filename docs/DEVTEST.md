@@ -147,3 +147,9 @@ test-instance/legacy-before.json与legacy-after.json完全一致：4份原档案
 先推送adb5659，再从干净源码构建/部署rc.26；镜像sha256:64b1015c33e27afb35ac7e67b9da5eb94241e4cb1d676bd51c9ca48a9ec5ff6c，SOURCE_DIRTY=false。升级前一致备份/backups/before-upload-count-rc26。14档案/71文件和业务表完全保留，18迁移/integrity=ok/无外键错误，五服务healthy。HTTPS仍为9443，443未改。
 
 公网三个视口空面板/双入口/关闭验证通过；1001个合成文件在浏览器计数阶段拒绝，显示准确数量，无0B伪文件、无上传HTTP请求、无新增线上档案，page_errors=[]。512文件+513目录测试队列截图已人工查看（测试暂停目录准备以仅检查接纳）。证据test-instance/upload-count-{deploy,browser-live}.json、upload-count-live-{desktop,mobile,short,error}.png；原生OS选择器/浏览器授权提示不是应用可替换的弹窗。
+
+## T59 上传格式配置 · 2026-10-25
+
+先推送c829d94，再从干净源码构建/部署rc.27，镜像sha256:ea9ba495bc813f5479c45f8f2130a5c3f255792e41f5853f375e3c3eb654f91d，SOURCE_DIRTY=false。升级前一致备份/backups/before-upload-policy-rc27，18→19迁移；升级前后358档案/1008文件及业务表完全保留，integrity=ok/外键正常，五服务healthy。用户批量导入形成的既有文件没有追溯清理；正常后台任务继续处理。端口9443，443未改。
+
+公网系统设置→上传格式规则确认七类默认排除勾选，1440/390页内设置可用；JSON浏览器预过滤零上传HTTP请求，直接multipart JSON返回422 UPLOAD_FORMAT_EXCLUDED，未新增档案/原件。验证未更改线上策略，GET前后相同。证据test-instance/upload-policy-{deploy,browser-live}.json及upload-policy-live-{desktop,mobile}.png，默认勾选截图已人工查看（成品截图关闭测试浏览器动画以免截在淡入中间）。无新增依赖。
