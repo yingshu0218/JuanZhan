@@ -227,3 +227,5 @@ PDF专项发现服务器继承的非UTF8 locale会使测试Chromium把中文下�
 
 
 2026-10-24 T56无新依赖，构建/真实集成和Playwright在devtest已有环境执行；.local/import-tags-*.log和本轮传输tar为可清理开发文件，test-instance/import-tags-*部署证据和升级前备份按保留策略管理。原件/持久标签/保存组合不属临时文件。
+
+2026-10-25 T57无新增依赖。devtest .local/upload-panel-*.log和传输tar为本轮可清理文件；rc.25与/backups/before-upload-panel-rc25按回滚策略保留。没有删除旧档案、辅助文件历史记录或原件。

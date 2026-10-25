@@ -19,7 +19,9 @@ test('native folder picker preserves nested files beyond 20 and reuses existing 
     await page.getByRole('navigation').getByRole('button', { name: '目标目录', exact: true }).click();
     await page.getByRole('button', { name: '导入文件', exact: true }).click();
     await expect(page.getByRole('button', { name: '选择文件夹', exact: true })).toBeVisible();
-    await page.getByLabel('上传整个文件夹', { exact: true }).setInputFiles(root);
+    const chooserReady=page.waitForEvent('filechooser');
+    await page.getByRole('button',{name:'选择文件夹',exact:true}).click();
+    await (await chooserReady).setFiles(root);
     const panel = page.getByRole('region', { name: '上传队列', exact: true });
     await expect(panel.getByText('原件已保存', { exact: false })).toHaveCount(22, { timeout: 45000 });
     const folders = (await api(page, '/folders?space_id=' + space)).data;

@@ -801,7 +801,7 @@ export function Workspace({ api, logout, authError }) {
         )}
       </main>
       <Operations state={operations} catalog={catalog} />
-      <Uploads queue={queue} api={api} inputRef={inputRef} folderInputRef={folderInputRef} onOpenTask={openTasks} />
+      <Uploads onDropFiles={drop} queue={queue} api={api} inputRef={inputRef} folderInputRef={folderInputRef} onOpenTask={openTasks} />
       {dialog ? (
         <Dialog
           title={

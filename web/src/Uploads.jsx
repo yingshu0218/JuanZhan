@@ -165,17 +165,26 @@ function SavedState({ api, item }) {
     </small>
   );
 }
-export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask }) {
+export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask, onDropFiles }) {
   if (!queue.open) return null;
   return (
     <section className="upload-panel" aria-label="上传队列">
       <div className="dialog-head">
-        <h2>上传队列</h2>
+        <div className="upload-title"><h2>导入文件</h2><InfoTip>支持多个文件或整个文件夹，保留目录层级；每批最多1000项、最多32层。辅助文件会自动跳过。收起面板不取消上传，关闭页面会停止未完成的上传。</InfoTip></div>
         <button aria-label="收起上传队列" onClick={() => queue.setOpen(false)}>
           <X size={21} />
         </button>
       </div>
-      <InfoTip>支持选择或拖入文件、文件夹，保留目录层级并串行上传，单批最多1000个文件和目录、最多32层。同名逻辑目录复用；原件不会覆盖。文件夹选择器不提供空目录，拖入文件夹可保留空目录。原件保存与正文处理分别进行；关闭页面会停止尚未完成的上传。</InfoTip>
+      <div className="upload-dropzone" aria-label="文件拖放区域"
+        onDragOver={event=>{if([...event.dataTransfer.types].includes('Files')){event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='copy';}}}
+        onDrop={onDropFiles}>
+        <UploadSimple size={30} aria-hidden="true" />
+        <strong>将文件或文件夹拖到这里</strong>
+        <div className="upload-actions">
+          <button className="primary" onClick={() => inputRef.current?.click()}>选择文件</button>
+          <button className="upload-folder-button" onClick={() => folderInputRef.current?.click()}>选择文件夹</button>
+        </div>
+      </div>
       {queue.scanning !== null && <div role="status">正在读取文件夹 · 已发现 {queue.scanning} 项 <button onClick={queue.stopReading}>取消读取</button></div>}
       {queue.items.some(item => item.ensureFolder) && <small role="status">已保存 {queue.items.filter(item => item.kind === 'file' && item.status === 'saved').length} 个文件 · 待处理 {queue.items.filter(item => ['waiting', 'uploading'].includes(item.status)).length} 项</small>}
       <div className="upload-items">
@@ -240,15 +249,8 @@ export function Uploads({ queue, api, inputRef, folderInputRef, onOpenTask }) {
               ) : null}
             </div>
           ))
-        ) : (
-          <InfoTip>选择需要导入的原文件。</InfoTip>
-        )}
+        ) : null}
       </div>
-      <button className="primary" onClick={() => inputRef.current?.click()}>
-        <UploadSimple size={18} />
-        选择文件
-      </button>
-      <button onClick={() => folderInputRef.current?.click()}>选择文件夹</button>
     </section>
   );
 }
