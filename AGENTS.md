@@ -37,3 +37,17 @@
 - 所有后台任务有限重试、可恢复、幂等。失败不抹除原件、既有业务字段或最近成功解析结果。
 - 实施 UI 采用“资料列表 → 结构化详情 → 关联原文件预览 → 返回原位置”。不直接复制旧原型默认原文行为。
 - 生产服务位于 services/juanzhan，前端位于 web/，迁移位于 services/migrations，技术选择见 ADR-015～046；`docs/prototype/` 不应直接成为生产应用或被赋予生产安全承诺。
+
+## Cursor Cloud specific instructions
+
+Cloud Agent 每次启动会拉起本机 Archive、Converter、worker 和 Vite，不启动 Docker Compose。依赖安装与无容器运行方式见 `docs/DEVELOPMENT.md`。
+
+- Python：`UV_CACHE_DIR="$HOME/.cache/uv" uv sync --frozen`。uv 0.13.5 位于 `/usr/local/bin`。服务和测试需要 `PYTHONPATH=services`。
+- OCR 模型：`python3 scripts/setup_ocr_models.py`。模型目录 `ocr-models/` 不入库。
+- 前端：`npm ci --prefix web --cache "$HOME/.npm"`，然后 `npm run build --prefix web`。Vite 在 `127.0.0.1:5173`，把 `/api` 代理到 Archive。
+- 系统字体 `fonts-noto-cjk` 提供 `tests/format_samples.py` 使用的 `/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`，用于生成 OCR 样本。
+- 进程：Archive `127.0.0.1:8000`，Converter `127.0.0.1:8001`，worker，Vite `127.0.0.1:5173`。数据目录 `$HOME/.juanzhan/data`。本机 HTTP 使用 `JUANZHAN_COOKIE_SECURE=false`。`CONVERTER_URL=http://127.0.0.1:8001`。服务令牌在 `$HOME/.juanzhan/converter-token`（权限 600），不要写入仓库或聊天。
+- 没有默认管理员密码。初始化使用 `PYTHONPATH=services JUANZHAN_DATA_DIR="$HOME/.juanzhan/data" .venv/bin/python -m juanzhan.admin set-password --stdin`。
+- 健康检查：`curl -fsS http://127.0.0.1:8000/healthz` 与 `curl -fsS http://127.0.0.1:8001/healthz`。
+- 宿主 `/sys` 是可写挂载，来源只读边界测试会失败。完整 pytest 在私有挂载命名空间内把 `/sys` 重新挂载为只读后执行，不要改宿主 `/sys`：`sudo unshare --mount bash -c 'mount -o remount,ro /sys && sudo -u ubuntu -H bash -lc "cd /workspace && UV_CACHE_DIR=\$HOME/.cache/uv uv run --frozen pytest -q"'`。
+- 未设置 `JUANZHAN_FORMAT_FIXTURES`、`JUANZHAN_EXTRA_FORMAT_FIXTURES` 或 `OFFICE_PREVIEW_URL` 时，Apache POI/Tika 外部样本和原生 Office 预览测试会跳过。这些不是本机开发进程的一部分。
